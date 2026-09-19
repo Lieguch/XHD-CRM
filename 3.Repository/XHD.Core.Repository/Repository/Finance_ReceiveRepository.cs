@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
@@ -20,7 +20,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ¸üĞÂ
+        /// æ›´æ–°
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
@@ -41,7 +41,7 @@ namespace XHD.Core.Repository
 
 
         /// <summary>
-        /// ·ÖÒ³²éÑ¯
+        /// åˆ†é¡µæŸ¥è¯¢
         /// </summary>
         /// <param name="expWhere"></param>
         /// <param name="Page"></param>
@@ -62,7 +62,7 @@ namespace XHD.Core.Repository
                 .Count(out var total)
                 .ToListAsync(true);
 
-            //¹¹½¨·µ»ØÊı¾İ
+            //æ„å»ºè¿”å›æ•°æ®
             XHDData<Finance_Receive> result = new XHDData<Finance_Receive>()
             {
                 data = data,
@@ -73,7 +73,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ·ÖÒ³²éÑ¯
+        /// åˆ†é¡µæŸ¥è¯¢
         /// </summary>
         /// <param name="expWhere"></param>
         /// <param name="Page"></param>
@@ -99,7 +99,7 @@ namespace XHD.Core.Repository
                 .Count(out var total)
                 .ToListAsync(true);
 
-            //¹¹½¨·µ»ØÊı¾İ
+            //æ„å»ºè¿”å›æ•°æ®
             XHDData<Finance_Receive> result = new XHDData<Finance_Receive>()
             {
                 data = data,
@@ -110,7 +110,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ÆÕÍ¨Ìõ¼ş²éÑ¯
+        /// æ™®é€šæ¡ä»¶æŸ¥è¯¢
         /// </summary>
         /// <param name="expWhere"></param>
         /// <returns></returns>
@@ -129,7 +129,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ÆÕÍ¨Ìõ¼ş²éÑ¯´øÅÅĞò
+        /// æ™®é€šæ¡ä»¶æŸ¥è¯¢å¸¦æ’åº
         /// </summary>
         /// <param name="expWhere"></param>
         /// <param name="OrderBy"></param>
@@ -212,7 +212,7 @@ namespace XHD.Core.Repository
 
                 if (string.IsNullOrWhiteSpace(item.xmonth))
                 {
-                    obj.Add("xmonth", "Î´·ÖÀà");
+                    obj.Add("xmonth", "æœªåˆ†ç±»");
                 }
                 else
                 {
@@ -229,17 +229,17 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ÊÕ¿î³É¹¦ºóÈıÏòÁª¶¯¸üĞÂ£¨Wave 3b #11£©
-        /// ÊÂÎñÄÚÒÀ´ÎÍê³ÉËÄ²½£º
-        ///   ¢Ù SUM(Finance_Receive.Receive_amount) °´ receivableId »ã×Ü
-        ///   ¢Ú ¸üĞÂ Finance_Receivable.received_amount + arrears_amount
-        ///   ¢Û SUM(Finance_Receivable.received_amount) °´ orderId »ã×Ü
-        ///   ¢Ü ¸üĞÂ Sale_order.receive_money + arrears_money
-        /// ÈÎºÎÒ»²½Ê§°Ü»òÓ¦ÊÕµ¥²»´æÔÚ£¬Õû¸öÊÂÎñ»Ø¹ö¡£
+        /// æ”¶æ¬¾æˆåŠŸåä¸‰å‘è”åŠ¨æ›´æ–°ï¼ˆWave 3b #11ï¼‰
+        /// äº‹åŠ¡å†…ä¾æ¬¡å®Œæˆå››æ­¥ï¼š
+        ///   â‘  SUM(Finance_Receive.Receive_amount) æŒ‰ receivableId æ±‡æ€»
+        ///   â‘¡ æ›´æ–° Finance_Receivable.received_amount + arrears_amount
+        ///   â‘¢ SUM(Finance_Receivable.received_amount) æŒ‰ orderId æ±‡æ€»
+        ///   â‘£ æ›´æ–° Sale_order.receive_money + arrears_money
+        /// ä»»ä½•ä¸€æ­¥å¤±è´¥æˆ–åº”æ”¶å•ä¸å­˜åœ¨ï¼Œæ•´ä¸ªäº‹åŠ¡å›æ»šã€‚
         /// </summary>
-        /// <param name="receivableId">Ó¦ÊÕµ¥ ID</param>
-        /// <param name="orderId">¶©µ¥ ID</param>
-        /// <returns>ÊÇ·ñÈ«²¿¸üĞÂ³É¹¦</returns>
+        /// <param name="receivableId">åº”æ”¶å• ID</param>
+        /// <param name="orderId">è®¢å• ID</param>
+        /// <returns>æ˜¯å¦å…¨éƒ¨æ›´æ–°æˆåŠŸ</returns>
         public async Task<bool> UpdateReceiveAsync(string receivableId, string orderId)
         {
             if (string.IsNullOrWhiteSpace(receivableId) || string.IsNullOrWhiteSpace(orderId))
@@ -252,13 +252,13 @@ namespace XHD.Core.Repository
             {
                 try
                 {
-                    // ¢Ù ¼ÆËã¸ÃÓ¦ÊÕµ¥ÏÂËùÓĞÒÑÊÕ½ğ¶î
+                    // â‘  è®¡ç®—è¯¥åº”æ”¶å•ä¸‹æ‰€æœ‰å·²æ”¶é‡‘é¢
                     decimal sumReceive = await _fsql.Select<Finance_Receive>()
                         .WithTransaction(tx)
                         .Where(r => r.Receivable_id == receivableId)
                         .SumAsync(r => r.Receive_amount ?? 0);
 
-                    // ¢Ú ¸üĞÂ Finance_Receivable.received_amount + arrears_amount
+                    // â‘¡ æ›´æ–° Finance_Receivable.received_amount + arrears_amount
                     int r1 = await _fsql.Update<Finance_Receivable>()
                         .WithTransaction(tx)
                         .Set(a => a.received_amount == sumReceive)
@@ -268,17 +268,17 @@ namespace XHD.Core.Repository
 
                     if (r1 == 0)
                     {
-                        // Ó¦ÊÕµ¥²»´æÔÚ£¬»Ø¹öÊÂÎñ
+                        // åº”æ”¶å•ä¸å­˜åœ¨ï¼Œå›æ»šäº‹åŠ¡
                         return false;
                     }
 
-                    // ¢Û ¼ÆËã¸Ã¶©µ¥ÏÂËùÓĞÓ¦ÊÕµ¥ÒÑÊÕ½ğ¶îÖ®ºÍ
+                    // â‘¢ è®¡ç®—è¯¥è®¢å•ä¸‹æ‰€æœ‰åº”æ”¶å•å·²æ”¶é‡‘é¢ä¹‹å’Œ
                     decimal orderSum = await _fsql.Select<Finance_Receivable>()
                         .WithTransaction(tx)
                         .Where(a => a.order_id == orderId)
                         .SumAsync(a => a.received_amount ?? 0);
 
-                    // ¢Ü ¸üĞÂ Sale_order.receive_money + arrears_money
+                    // â‘£ æ›´æ–° Sale_order.receive_money + arrears_money
                     int r2 = await _fsql.Update<Sale_order>()
                         .WithTransaction(tx)
                         .Set(a => a.receive_money == orderSum)

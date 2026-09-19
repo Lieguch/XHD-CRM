@@ -1,4 +1,4 @@
-using System;
+锘縰sing System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -15,7 +15,7 @@ namespace XHD.Core.IServices
 {
     public interface IBaseService<TEntity>
     {
-        #region 同步方法
+        #region 鍚屾鏂规硶
         int Add(TEntity entity);
 
         int Add(List<TEntity> entity);
@@ -38,7 +38,7 @@ namespace XHD.Core.IServices
 
         #endregion
 
-        #region 异步方法
+        #region 寮傛鏂规硶
         Task<int> AddAsync(TEntity entity);
 
         Task<int> AddAsync(List<TEntity> entity);

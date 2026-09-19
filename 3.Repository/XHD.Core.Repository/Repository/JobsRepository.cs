@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
@@ -20,7 +20,7 @@ namespace XHD.Core.Repository
 
 
         /// <summary>
-        /// ¸üÐÂ
+        /// æ›´æ–°
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>

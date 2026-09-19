@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
@@ -6,15 +6,15 @@ using System.Text;
 namespace XHD.Core.Common.DEncrypt
 {
     /// <summary>
-    ///     DES¼ÓÃÜ/½âÃÜÀà¡£
+    ///     DESåŠ å¯†/è§£å¯†ç±»ã€‚
     ///     Copyright (C) XHD
     /// </summary>
     public static class DESEncrypt
     {
-        #region ========¼ÓÃÜ======== 
+        #region ========åŠ å¯†======== 
 
         /// <summary>
-        ///     ¼ÓÃÜ
+        ///     åŠ å¯†
         /// </summary>
         /// <param name="Text"></param>
         /// <returns></returns>
@@ -24,7 +24,7 @@ namespace XHD.Core.Common.DEncrypt
         }
 
         /// <summary>
-        ///     ¼ÓÃÜÊı¾İ
+        ///     åŠ å¯†æ•°æ®
         /// </summary>
         /// <param name="Text"></param>
         /// <param name="sKey"></param>
@@ -53,10 +53,10 @@ namespace XHD.Core.Common.DEncrypt
 
         #endregion
 
-        #region ========½âÃÜ======== 
+        #region ========è§£å¯†======== 
 
         /// <summary>
-        ///     ½âÃÜ
+        ///     è§£å¯†
         /// </summary>
         /// <param name="Text"></param>
         /// <returns></returns>
@@ -66,7 +66,7 @@ namespace XHD.Core.Common.DEncrypt
         }
 
         /// <summary>
-        ///     ½âÃÜÊı¾İ
+        ///     è§£å¯†æ•°æ®
         /// </summary>
         /// <param name="Text"></param>
         /// <param name="sKey"></param>

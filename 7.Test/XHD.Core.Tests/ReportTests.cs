@@ -473,8 +473,11 @@ namespace XHD.Core.Tests
             // Assert
             Assert.Single(arr);
             // JObject["key"] 对 JSON null 返回 JValue(Type=Null)，不是 C# null
-            Assert.Null(arr[0]["startMonth"]?.Value<object>());
-            Assert.Null(arr[0]["endMonth"]?.Value<object>());
+            // .Value<object>() 对 JValue.Null 不保证返回 C# null，用 Type 显式判断
+            JToken sm = arr[0]["startMonth"];
+            JToken em = arr[0]["endMonth"];
+            Assert.True(sm == null || sm.Type == JTokenType.Null, $"startMonth not null: {sm}");
+            Assert.True(em == null || em.Type == JTokenType.Null, $"endMonth not null: {em}");
             Assert.Equal(0, (int)arr[0]["startMonth_count"]!);
             Assert.Equal(0, (int)arr[0]["endMonth_count"]!);
             Assert.Equal(0, (int)arr[0]["diff"]!);

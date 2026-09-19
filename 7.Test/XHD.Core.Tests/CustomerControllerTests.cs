@@ -535,7 +535,9 @@ namespace XHD.Core.Tests
             Assert.Equal(1, (int)obj["code"]!);
             Assert.Contains("认领失败", (string)obj["msg"]!);
             // JObject["data"] 对 JSON null 返回 JValue(Type=Null)，不是 C# null
-            Assert.Null(obj["data"]?.Value<object>());
+            // .Value<object>() 对 JValue.Null 不保证返回 C# null，用 Type 显式判断
+            JToken d = obj["data"];
+            Assert.True(d == null || d.Type == JTokenType.Null, $"data not null: {d}");
 
             svc.Verify(s => s.Claimlist(It.IsAny<List<string>>(), It.IsAny<string>()), Times.Never);
         }

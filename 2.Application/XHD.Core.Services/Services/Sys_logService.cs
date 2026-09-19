@@ -1,4 +1,4 @@
-using System;
+锘縰sing System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq.Expressions;
@@ -36,25 +36,25 @@ internal class Sys_logService : BaseService<Sys_log>, ISys_logService
             return XHDResult.Result(0, "", arr);
         }
 
-        //更新日志
+        //鏇存柊鏃ュ織
         public async Task<int> UpdateLog(Sys_log models)
         {
            return await _irepository.AddAsync(models);
         }
 
-        //删除日志
+        //鍒犻櫎鏃ュ織
         public async Task<int> DeleteLog(Sys_log models)
         {
             return await _irepository.AddAsync(models);
         }
 
-        //登录日志
+        //鐧诲綍鏃ュ織
         public async Task<int> LoginLog(string emp_id, string emp_name, string ip)
         {
             Sys_log models = new Sys_log();
 
             models.id = System.Guid.NewGuid().ToString();
-            models.EventType = "用户登录";
+            models.EventType = "鐢ㄦ埛鐧诲綍";
             models.EventID = emp_id;
             models.EventTitle = emp_name;
             models.UserID = emp_id;

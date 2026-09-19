@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq.Expressions;
@@ -26,7 +26,7 @@ namespace XHD.Core.Services
         }
 
         /// <summary>
-        /// ¸üĞÂÓà¶î
+        /// æ›´æ–°ä½™é¢
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>

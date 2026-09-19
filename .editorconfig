@@ -1,0 +1,13 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+
+[*.cs]
+charset = utf-8-bom
+insert_final_newline = true
+
+[*.{yml,yaml,json,xml,html,css,js,ts,vue}]
+charset = utf-8

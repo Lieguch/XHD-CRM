@@ -1,32 +1,32 @@
-using System;
+ï»¿using System;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace XHD.Core.Common.DEncrypt
 {
     /// <summary>
-    ///     Encrypt µÄÕªÒªËµÃ÷¡£
+    ///     Encrypt çš„æ‘˜è¦è¯´æ˜ã€‚
     ///     Copyright (C) XHD
     /// </summary>
     public class DEncrypt
     {
-        #region Ê¹ÓÃ È±Ê¡ÃÜÔ¿×Ö·û´® ¼ÓÃÜ/½âÃÜstring
+        #region ä½¿ç”¨ ç¼ºçœå¯†é’¥å­—ç¬¦ä¸² åŠ å¯†/è§£å¯†string
 
         /// <summary>
-        ///     Ê¹ÓÃÈ±Ê¡ÃÜÔ¿×Ö·û´®¼ÓÃÜstring
+        ///     ä½¿ç”¨ç¼ºçœå¯†é’¥å­—ç¬¦ä¸²åŠ å¯†string
         /// </summary>
-        /// <param name="original">Ã÷ÎÄ</param>
-        /// <returns>ÃÜÎÄ</returns>
+        /// <param name="original">æ˜æ–‡</param>
+        /// <returns>å¯†æ–‡</returns>
         public static string Encrypt(string original)
         {
             return Encrypt(original, "XHD");
         }
 
         /// <summary>
-        ///     Ê¹ÓÃÈ±Ê¡ÃÜÔ¿×Ö·û´®½âÃÜstring
+        ///     ä½¿ç”¨ç¼ºçœå¯†é’¥å­—ç¬¦ä¸²è§£å¯†string
         /// </summary>
-        /// <param name="original">ÃÜÎÄ</param>
-        /// <returns>Ã÷ÎÄ</returns>
+        /// <param name="original">å¯†æ–‡</param>
+        /// <returns>æ˜æ–‡</returns>
         public static string Decrypt(string original)
         {
             return Decrypt(original, "XHD", Encoding.Default);
@@ -34,15 +34,15 @@ namespace XHD.Core.Common.DEncrypt
 
         #endregion
 
-        #region Ê¹ÓÃ ¸ø¶¨ÃÜÔ¿×Ö·û´® ¼ÓÃÜ/½âÃÜstring
+        #region ä½¿ç”¨ ç»™å®šå¯†é’¥å­—ç¬¦ä¸² åŠ å¯†/è§£å¯†string
 
         /// <summary>
-        ///     Ê¹ÓÃ¸ø¶¨ÃÜÔ¿×Ö·û´®¼ÓÃÜstring
+        ///     ä½¿ç”¨ç»™å®šå¯†é’¥å­—ç¬¦ä¸²åŠ å¯†string
         /// </summary>
-        /// <param name="original">Ô­Ê¼ÎÄ×Ö</param>
-        /// <param name="key">ÃÜÔ¿</param>
-        /// <param name="encoding">×Ö·û±àÂë·½°¸</param>
-        /// <returns>ÃÜÎÄ</returns>
+        /// <param name="original">åŸå§‹æ–‡å­—</param>
+        /// <param name="key">å¯†é’¥</param>
+        /// <param name="encoding">å­—ç¬¦ç¼–ç æ–¹æ¡ˆ</param>
+        /// <returns>å¯†æ–‡</returns>
         public static string Encrypt(string original, string key)
         {
             byte[] buff = Encoding.Default.GetBytes(original);
@@ -51,23 +51,23 @@ namespace XHD.Core.Common.DEncrypt
         }
 
         /// <summary>
-        ///     Ê¹ÓÃ¸ø¶¨ÃÜÔ¿×Ö·û´®½âÃÜstring
+        ///     ä½¿ç”¨ç»™å®šå¯†é’¥å­—ç¬¦ä¸²è§£å¯†string
         /// </summary>
-        /// <param name="original">ÃÜÎÄ</param>
-        /// <param name="key">ÃÜÔ¿</param>
-        /// <returns>Ã÷ÎÄ</returns>
+        /// <param name="original">å¯†æ–‡</param>
+        /// <param name="key">å¯†é’¥</param>
+        /// <returns>æ˜æ–‡</returns>
         public static string Decrypt(string original, string key)
         {
             return Decrypt(original, key, Encoding.Default);
         }
 
         /// <summary>
-        ///     Ê¹ÓÃ¸ø¶¨ÃÜÔ¿×Ö·û´®½âÃÜstring,·µ»ØÖ¸¶¨±àÂë·½Ê½Ã÷ÎÄ
+        ///     ä½¿ç”¨ç»™å®šå¯†é’¥å­—ç¬¦ä¸²è§£å¯†string,è¿”å›æŒ‡å®šç¼–ç æ–¹å¼æ˜æ–‡
         /// </summary>
-        /// <param name="encrypted">ÃÜÎÄ</param>
-        /// <param name="key">ÃÜÔ¿</param>
-        /// <param name="encoding">×Ö·û±àÂë·½°¸</param>
-        /// <returns>Ã÷ÎÄ</returns>
+        /// <param name="encrypted">å¯†æ–‡</param>
+        /// <param name="key">å¯†é’¥</param>
+        /// <param name="encoding">å­—ç¬¦ç¼–ç æ–¹æ¡ˆ</param>
+        /// <returns>æ˜æ–‡</returns>
         public static string Decrypt(string encrypted, string key, Encoding encoding)
         {
             byte[] buff = Convert.FromBase64String(encrypted);
@@ -77,14 +77,14 @@ namespace XHD.Core.Common.DEncrypt
 
         #endregion
 
-        #region Ê¹ÓÃ È±Ê¡ÃÜÔ¿×Ö·û´® ¼ÓÃÜ/½âÃÜ/byte[]
+        #region ä½¿ç”¨ ç¼ºçœå¯†é’¥å­—ç¬¦ä¸² åŠ å¯†/è§£å¯†/byte[]
 
         /// <summary>
-        ///     Ê¹ÓÃÈ±Ê¡ÃÜÔ¿×Ö·û´®½âÃÜbyte[]
+        ///     ä½¿ç”¨ç¼ºçœå¯†é’¥å­—ç¬¦ä¸²è§£å¯†byte[]
         /// </summary>
-        /// <param name="encrypted">ÃÜÎÄ</param>
-        /// <param name="key">ÃÜÔ¿</param>
-        /// <returns>Ã÷ÎÄ</returns>
+        /// <param name="encrypted">å¯†æ–‡</param>
+        /// <param name="key">å¯†é’¥</param>
+        /// <returns>æ˜æ–‡</returns>
         public static byte[] Decrypt(byte[] encrypted)
         {
             byte[] key = Encoding.Default.GetBytes("XHD");
@@ -92,11 +92,11 @@ namespace XHD.Core.Common.DEncrypt
         }
 
         /// <summary>
-        ///     Ê¹ÓÃÈ±Ê¡ÃÜÔ¿×Ö·û´®¼ÓÃÜ
+        ///     ä½¿ç”¨ç¼ºçœå¯†é’¥å­—ç¬¦ä¸²åŠ å¯†
         /// </summary>
-        /// <param name="original">Ô­Ê¼Êı¾İ</param>
-        /// <param name="key">ÃÜÔ¿</param>
-        /// <returns>ÃÜÎÄ</returns>
+        /// <param name="original">åŸå§‹æ•°æ®</param>
+        /// <param name="key">å¯†é’¥</param>
+        /// <returns>å¯†æ–‡</returns>
         public static byte[] Encrypt(byte[] original)
         {
             byte[] key = Encoding.Default.GetBytes("XHD");
@@ -105,13 +105,13 @@ namespace XHD.Core.Common.DEncrypt
 
         #endregion
 
-        #region  Ê¹ÓÃ ¸ø¶¨ÃÜÔ¿ ¼ÓÃÜ/½âÃÜ/byte[]
+        #region  ä½¿ç”¨ ç»™å®šå¯†é’¥ åŠ å¯†/è§£å¯†/byte[]
 
         /// <summary>
-        ///     Éú³ÉMD5ÕªÒª
+        ///     ç”ŸæˆMD5æ‘˜è¦
         /// </summary>
-        /// <param name="original">Êı¾İÔ´</param>
-        /// <returns>ÕªÒª</returns>
+        /// <param name="original">æ•°æ®æº</param>
+        /// <returns>æ‘˜è¦</returns>
         public static byte[] MakeMD5(byte[] original)
         {
             var hashmd5 = new MD5CryptoServiceProvider();
@@ -122,11 +122,11 @@ namespace XHD.Core.Common.DEncrypt
 
 
         /// <summary>
-        ///     Ê¹ÓÃ¸ø¶¨ÃÜÔ¿¼ÓÃÜ
+        ///     ä½¿ç”¨ç»™å®šå¯†é’¥åŠ å¯†
         /// </summary>
-        /// <param name="original">Ã÷ÎÄ</param>
-        /// <param name="key">ÃÜÔ¿</param>
-        /// <returns>ÃÜÎÄ</returns>
+        /// <param name="original">æ˜æ–‡</param>
+        /// <param name="key">å¯†é’¥</param>
+        /// <returns>å¯†æ–‡</returns>
         public static byte[] Encrypt(byte[] original, byte[] key)
         {
             var des = new TripleDESCryptoServiceProvider();
@@ -137,11 +137,11 @@ namespace XHD.Core.Common.DEncrypt
         }
 
         /// <summary>
-        ///     Ê¹ÓÃ¸ø¶¨ÃÜÔ¿½âÃÜÊı¾İ
+        ///     ä½¿ç”¨ç»™å®šå¯†é’¥è§£å¯†æ•°æ®
         /// </summary>
-        /// <param name="encrypted">ÃÜÎÄ</param>
-        /// <param name="key">ÃÜÔ¿</param>
-        /// <returns>Ã÷ÎÄ</returns>
+        /// <param name="encrypted">å¯†æ–‡</param>
+        /// <param name="key">å¯†é’¥</param>
+        /// <returns>æ˜æ–‡</returns>
         public static byte[] Decrypt(byte[] encrypted, byte[] key)
         {
             var des = new TripleDESCryptoServiceProvider();

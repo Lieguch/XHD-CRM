@@ -1,4 +1,4 @@
-
+ï»¿
 
 using FreeSql;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -57,9 +57,9 @@ namespace XHD.Core.View
 
             services.AddSession();
             services.AddDb(_env);
-            // Sprint 0 ĞŞ¸´ (2026-09-18): ²¹ AddHsts() ×¢²á
-            // Ô­´úÂëÖ»µ÷ app.UseHsts() µ«Î´ services.AddHsts()£¬µ¼ÖÂ HstsOptions Î´×¢²á£¬
-            // ÈİÆ÷²¿ÊğÊ± HTTPS Ê§°Ü¡£²Î¿¼ https://docs.microsoft.com/en-us/aspnet/core/security/enforcing-ssl
+            // Sprint 0 ä¿®å¤ (2026-09-18): è¡¥ AddHsts() æ³¨å†Œ
+            // åŸä»£ç åªè°ƒ app.UseHsts() ä½†æœª services.AddHsts()ï¼Œå¯¼è‡´ HstsOptions æœªæ³¨å†Œï¼Œ
+            // å®¹å™¨éƒ¨ç½²æ—¶ HTTPS å¤±è´¥ã€‚å‚è€ƒ https://docs.microsoft.com/en-us/aspnet/core/security/enforcing-ssl
             services.AddHsts(options =>
             {
                 options.IncludeSubDomains = true;
@@ -80,14 +80,14 @@ namespace XHD.Core.View
                  services.AddRazorPages().AddRazorRuntimeCompilation();
             #endif
 
-            //¿çÓò
+            //è·¨åŸŸ
             services.AddCors(options => options.AddPolicy("CorsPolicy",
                builder =>
                {
                    builder.AllowAnyMethod()
                        .AllowAnyHeader()
                        //.SetIsOriginAllowed(origin => origin.StartsWith("http://192.168.*.*"));
-                       .AllowAnyOrigin();  //²âÊÔ»·¾³²ÅÓÃÕâ¸ö
+                       .AllowAnyOrigin();  //æµ‹è¯•ç¯å¢ƒæ‰ç”¨è¿™ä¸ª
                        //.WithOrigins("https://sfs.huilongtech.com");
 
                }));
@@ -118,7 +118,7 @@ namespace XHD.Core.View
                         var ex = exHeader.Error;
                         if (ex != default)
                         {
-                            await context.Response.WriteAsJsonAsync(new { code = 500, errPath = exHeader.Path, msg = $"·şÎñÆ÷ÄÚ²¿´íÎó->{ex.Message}" });
+                            await context.Response.WriteAsJsonAsync(new { code = 500, errPath = exHeader.Path, msg = $"æœåŠ¡å™¨å†…éƒ¨é”™è¯¯->{ex.Message}" });
                         }
 
                         //NLogger.WriteLog("sys_Error1_", ex.Message);
@@ -137,9 +137,9 @@ namespace XHD.Core.View
             provider.Mappings[".less"] = "text/css";
 
             app.UseSession();
-            // Sprint 0 ĞŞ¸´ (2026-09-18): UseHttpsRedirection ¸ÄÌõ¼şÅĞ¶Ï
-            // Ô­´úÂëÎŞÌõ¼şµ÷ÓÃ£¬ÈİÆ÷ÎŞ HTTPS °ó¶¨Ê±È«±» 307 µ¯×ß¡£
-            // Í¨¹ıÅäÖÃÏî¿ØÖÆ£¬appsettings.Production.json ¿ÉÉèÖÃ HttpsRedirection:Enabled=false
+            // Sprint 0 ä¿®å¤ (2026-09-18): UseHttpsRedirection æ”¹æ¡ä»¶åˆ¤æ–­
+            // åŸä»£ç æ— æ¡ä»¶è°ƒç”¨ï¼Œå®¹å™¨æ—  HTTPS ç»‘å®šæ—¶å…¨è¢« 307 å¼¹èµ°ã€‚
+            // é€šè¿‡é…ç½®é¡¹æ§åˆ¶ï¼Œappsettings.Production.json å¯è®¾ç½® HttpsRedirection:Enabled=false
             var httpsRedirEnabled = Configuration.GetValue<bool>("HttpsRedirection:Enabled", true);
             if (httpsRedirEnabled)
             {

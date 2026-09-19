@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
@@ -20,7 +20,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ¸üĞÂ
+        /// æ›´æ–°
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
@@ -41,7 +41,7 @@ namespace XHD.Core.Repository
 
 
         /// <summary>
-        /// ·ÖÒ³²éÑ¯
+        /// åˆ†é¡µæŸ¥è¯¢
         /// </summary>
         /// <param name="expWhere"></param>
         /// <param name="Page"></param>
@@ -63,7 +63,7 @@ namespace XHD.Core.Repository
                 .Count(out var total)
                 .ToListAsync(true);
 
-            //¹¹½¨·µ»ØÊı¾İ
+            //æ„å»ºè¿”å›æ•°æ®
             XHDData<Finance_Invoice> result = new XHDData<Finance_Invoice>()
             {
                 data = data,
@@ -74,7 +74,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ·ÖÒ³²éÑ¯
+        /// åˆ†é¡µæŸ¥è¯¢
         /// </summary>
         /// <param name="expWhere"></param>
         /// <param name="Page"></param>
@@ -101,7 +101,7 @@ namespace XHD.Core.Repository
                 .Count(out var total)
                 .ToListAsync(true);
 
-            //¹¹½¨·µ»ØÊı¾İ
+            //æ„å»ºè¿”å›æ•°æ®
             XHDData<Finance_Invoice> result = new XHDData<Finance_Invoice>()
             {
                 data = data,
@@ -112,7 +112,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ÆÕÍ¨Ìõ¼ş²éÑ¯
+        /// æ™®é€šæ¡ä»¶æŸ¥è¯¢
         /// </summary>
         /// <param name="expWhere"></param>
         /// <returns></returns>
@@ -132,7 +132,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ÆÕÍ¨Ìõ¼ş²éÑ¯´øÅÅĞò
+        /// æ™®é€šæ¡ä»¶æŸ¥è¯¢å¸¦æ’åº
         /// </summary>
         /// <param name="expWhere"></param>
         /// <param name="OrderBy"></param>
@@ -216,7 +216,7 @@ namespace XHD.Core.Repository
 
                 if (string.IsNullOrWhiteSpace(item.xmonth))
                 {
-                    obj.Add("xmonth", "Î´·ÖÀà");
+                    obj.Add("xmonth", "æœªåˆ†ç±»");
                 }
                 else
                 {

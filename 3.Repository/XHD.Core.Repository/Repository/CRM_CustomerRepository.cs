@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
 using System.Threading;
@@ -24,7 +24,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ¸üĞÂ
+        /// æ›´æ–°
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
@@ -39,7 +39,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ×îºó¸ú½ø
+        /// æœ€åè·Ÿè¿›
         /// </summary>
         /// <param name="model"></param>
         /// <returns></returns>
@@ -59,14 +59,14 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ÈÏÁì¿Í»§£¨µ×²ã¸üĞÂ£©£º½«Ö¸¶¨¿Í»§ÁĞ±íµÄ state ¸üĞÂÎªÄ¿±êÖµ£¨Ò»°ã 0=Õı³££©£¬²¢½«¹éÊôÈËÉèÖÃÎª empId
-        /// ÓïÒå£ºÈÏÁì = state ¸ÄÎª targetState + emp_id ÉèÎªµ±Ç°ÓÃ»§£¨µ±Ç°ÓÃ»§Éí·İÓÉÉÏ²ã´«Èë£©
-        /// ²ÎÊı»¯£ºFreeSql »á×Ô¶¯°Ñ ids Õ¹¿ªÎª IN (@p0,@p1,...) ²ÎÊı»¯Óï¾ä£¬¶Å¾ø SQL ×¢Èë
+        /// è®¤é¢†å®¢æˆ·ï¼ˆåº•å±‚æ›´æ–°ï¼‰ï¼šå°†æŒ‡å®šå®¢æˆ·åˆ—è¡¨çš„ state æ›´æ–°ä¸ºç›®æ ‡å€¼ï¼ˆä¸€èˆ¬ 0=æ­£å¸¸ï¼‰ï¼Œå¹¶å°†å½’å±äººè®¾ç½®ä¸º empId
+        /// è¯­ä¹‰ï¼šè®¤é¢† = state æ”¹ä¸º targetState + emp_id è®¾ä¸ºå½“å‰ç”¨æˆ·ï¼ˆå½“å‰ç”¨æˆ·èº«ä»½ç”±ä¸Šå±‚ä¼ å…¥ï¼‰
+        /// å‚æ•°åŒ–ï¼šFreeSql ä¼šè‡ªåŠ¨æŠŠ ids å±•å¼€ä¸º IN (@p0,@p1,...) å‚æ•°åŒ–è¯­å¥ï¼Œæœç» SQL æ³¨å…¥
         /// </summary>
-        /// <param name="ids">¿Í»§ ID ÁĞ±í</param>
-        /// <param name="targetState">Ä¿±ê state Öµ£¨ÈÏÁìÊ±Í¨³£Îª 0£©</param>
-        /// <param name="empId">ÈÏÁìÈË ID</param>
-        /// <returns>ÊÇ·ñÓĞ¼ÇÂ¼±»¸üĞÂ</returns>
+        /// <param name="ids">å®¢æˆ· ID åˆ—è¡¨</param>
+        /// <param name="targetState">ç›®æ ‡ state å€¼ï¼ˆè®¤é¢†æ—¶é€šå¸¸ä¸º 0ï¼‰</param>
+        /// <param name="empId">è®¤é¢†äºº ID</param>
+        /// <returns>æ˜¯å¦æœ‰è®°å½•è¢«æ›´æ–°</returns>
         public async Task<bool> ClaimlistAsync(List<string> ids, int targetState, string empId)
         {
             if (ids == null || ids.Count == 0)
@@ -84,13 +84,13 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ·ÅÆú¿Í»§£¨µ×²ã¸üĞÂ£©£º½«Ö¸¶¨¿Í»§ÁĞ±íµÄ state ¸üĞÂÎªÄ¿±êÖµ£¨Ò»°ã 1=»Øµ½¹«¹²³Ø£©£¬²»Çå¿Õ emp_id
-        /// ÓïÒå£º·ÅÆú = state ¸ÄÎª targetState£»emp_id ±£ÁôÔ­¹éÊô£¬¹©Éó¼Æ/»Ø¹éÊ¹ÓÃ
-        /// ²ÎÊı»¯£ºFreeSql »á×Ô¶¯°Ñ ids Õ¹¿ªÎª IN (@p0,@p1,...) ²ÎÊı»¯Óï¾ä£¬¶Å¾ø SQL ×¢Èë
+        /// æ”¾å¼ƒå®¢æˆ·ï¼ˆåº•å±‚æ›´æ–°ï¼‰ï¼šå°†æŒ‡å®šå®¢æˆ·åˆ—è¡¨çš„ state æ›´æ–°ä¸ºç›®æ ‡å€¼ï¼ˆä¸€èˆ¬ 1=å›åˆ°å…¬å…±æ± ï¼‰ï¼Œä¸æ¸…ç©º emp_id
+        /// è¯­ä¹‰ï¼šæ”¾å¼ƒ = state æ”¹ä¸º targetStateï¼›emp_id ä¿ç•™åŸå½’å±ï¼Œä¾›å®¡è®¡/å›å½’ä½¿ç”¨
+        /// å‚æ•°åŒ–ï¼šFreeSql ä¼šè‡ªåŠ¨æŠŠ ids å±•å¼€ä¸º IN (@p0,@p1,...) å‚æ•°åŒ–è¯­å¥ï¼Œæœç» SQL æ³¨å…¥
         /// </summary>
-        /// <param name="ids">¿Í»§ ID ÁĞ±í</param>
-        /// <param name="targetState">Ä¿±ê state Öµ£¨·ÅÆúÊ±Í¨³£Îª 1£©</param>
-        /// <returns>ÊÇ·ñÓĞ¼ÇÂ¼±»¸üĞÂ</returns>
+        /// <param name="ids">å®¢æˆ· ID åˆ—è¡¨</param>
+        /// <param name="targetState">ç›®æ ‡ state å€¼ï¼ˆæ”¾å¼ƒæ—¶é€šå¸¸ä¸º 1ï¼‰</param>
+        /// <returns>æ˜¯å¦æœ‰è®°å½•è¢«æ›´æ–°</returns>
         public async Task<bool> AbanDonAsync(List<string> ids, int targetState)
         {
             if (ids == null || ids.Count == 0)
@@ -107,7 +107,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ·ÖÒ³²éÑ¯
+        /// åˆ†é¡µæŸ¥è¯¢
         /// </summary>
         /// <param name="expWhere"></param>
         /// <param name="Page"></param>
@@ -132,7 +132,7 @@ namespace XHD.Core.Repository
                 .Count(out var total)
                 .ToListAsync(true);
 
-            //¹¹½¨·µ»ØÊı¾İ
+            //æ„å»ºè¿”å›æ•°æ®
             XHDData<CRM_Customer> result = new XHDData<CRM_Customer>()
             {
                 data = data,
@@ -143,7 +143,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ·ÖÒ³²éÑ¯
+        /// åˆ†é¡µæŸ¥è¯¢
         /// </summary>
         /// <param name="expWhere"></param>
         /// <param name="Page"></param>
@@ -173,7 +173,7 @@ namespace XHD.Core.Repository
                 .Count(out var total)
                 .ToListAsync(true);
 
-            //¹¹½¨·µ»ØÊı¾İ
+            //æ„å»ºè¿”å›æ•°æ®
             XHDData<CRM_Customer> result = new XHDData<CRM_Customer>()
             {
                 data = data,
@@ -184,7 +184,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ÆÕÍ¨Ìõ¼ş²éÑ¯
+        /// æ™®é€šæ¡ä»¶æŸ¥è¯¢
         /// </summary>
         /// <param name="expWhere"></param>
         /// <returns></returns>
@@ -207,7 +207,7 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ÆÕÍ¨Ìõ¼ş²éÑ¯´øÅÅĞò
+        /// æ™®é€šæ¡ä»¶æŸ¥è¯¢å¸¦æ’åº
         /// </summary>
         /// <param name="expWhere"></param>
         /// <param name="OrderBy"></param>
@@ -272,7 +272,7 @@ namespace XHD.Core.Repository
 
                 if (string.IsNullOrWhiteSpace(item.xmonth))
                 {
-                    obj.Add("xmonth", "Î´·ÖÀà");
+                    obj.Add("xmonth", "æœªåˆ†ç±»");
                 }
                 else
                 {
@@ -303,7 +303,7 @@ namespace XHD.Core.Repository
 
                 if (string.IsNullOrWhiteSpace(item.xmonth))
                 {
-                    obj.Add("xmonth", "Î´·ÖÀà");
+                    obj.Add("xmonth", "æœªåˆ†ç±»");
                 }
                 else
                 {
@@ -334,7 +334,7 @@ namespace XHD.Core.Repository
 
                 if (string.IsNullOrWhiteSpace(item.xmonth))
                 {
-                    obj.Add("xmonth", "Î´·ÖÀà");
+                    obj.Add("xmonth", "æœªåˆ†ç±»");
                 }
                 else
                 {
@@ -365,7 +365,7 @@ namespace XHD.Core.Repository
 
                 if (string.IsNullOrWhiteSpace(item.xmonth))
                 {
-                    obj.Add("xmonth", "Î´·ÖÀà");
+                    obj.Add("xmonth", "æœªåˆ†ç±»");
                 }
                 else
                 {
@@ -438,11 +438,11 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// ¿Í»§×ª»¯Â©¶·£º°´¿Í»§ÀàĞÍ£¨cus_type_id ¹ØÁª Sys_Param£©Í³¼ÆÄê¶È¿Í»§Êı
-        /// °´ params_order ÅÅĞò£¬Î´·ÖÀà¿Í»§¹éÈë"Î´·ÖÀà"
+        /// å®¢æˆ·è½¬åŒ–æ¼æ–—ï¼šæŒ‰å®¢æˆ·ç±»å‹ï¼ˆcus_type_id å…³è” Sys_Paramï¼‰ç»Ÿè®¡å¹´åº¦å®¢æˆ·æ•°
+        /// æŒ‰ params_order æ’åºï¼Œæœªåˆ†ç±»å®¢æˆ·å½’å…¥"æœªåˆ†ç±»"
         /// </summary>
-        /// <param name="year">Äê·İ¹ıÂË£¬null ±íÊ¾²»ÏŞÄê·İ</param>
-        /// <returns>JArray£¬Ã¿Ïîº¬ CustomerType/CustomerType_id/params_order/cc</returns>
+        /// <param name="year">å¹´ä»½è¿‡æ»¤ï¼Œnull è¡¨ç¤ºä¸é™å¹´ä»½</param>
+        /// <returns>JArrayï¼Œæ¯é¡¹å« CustomerType/CustomerType_id/params_order/cc</returns>
         public async Task<JArray> FunnelAsync(int? year)
         {
             var query = _fsql.Select<CRM_Customer>();
@@ -475,7 +475,7 @@ namespace XHD.Core.Repository
 
                 if (string.IsNullOrWhiteSpace(item.name))
                 {
-                    obj.Add("CustomerType", "Î´·ÖÀà");
+                    obj.Add("CustomerType", "æœªåˆ†ç±»");
                 }
                 else
                 {
@@ -493,12 +493,12 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// Ô±¹¤Äê¶È¿Í»§ĞÂÔö±¨±í£¨Wave 3b #13£©£ºÃ÷Ï¸²éÑ¯ + ÄÚ´æ PIVOT
-        /// °´ create_id£¨¿Í»§´´½¨ÈË£©¡Á 12 ¸öÔÂ·Ö×é¼ÆÊı
+        /// å‘˜å·¥å¹´åº¦å®¢æˆ·æ–°å¢æŠ¥è¡¨ï¼ˆWave 3b #13ï¼‰ï¼šæ˜ç»†æŸ¥è¯¢ + å†…å­˜ PIVOT
+        /// æŒ‰ create_idï¼ˆå®¢æˆ·åˆ›å»ºäººï¼‰Ã— 12 ä¸ªæœˆåˆ†ç»„è®¡æ•°
         /// </summary>
-        /// <param name="year">Í³¼ÆÄê·İ</param>
-        /// <param name="empIds">²ÎÓëÍ³¼ÆµÄÔ±¹¤ ID ÁĞ±í£»null »ò¿Õ¼¯ºÏ±íÊ¾Í³¼ÆÈ«²¿Ô±¹¤</param>
-        /// <returns>JArray£¬Ã¿Ô±¹¤Ò»Ïî£¬º¬ name¡¢yy Óë m1..m12 ¼ÆÊı</returns>
+        /// <param name="year">ç»Ÿè®¡å¹´ä»½</param>
+        /// <param name="empIds">å‚ä¸ç»Ÿè®¡çš„å‘˜å·¥ ID åˆ—è¡¨ï¼›null æˆ–ç©ºé›†åˆè¡¨ç¤ºç»Ÿè®¡å…¨éƒ¨å‘˜å·¥</param>
+        /// <returns>JArrayï¼Œæ¯å‘˜å·¥ä¸€é¡¹ï¼Œå« nameã€yy ä¸ m1..m12 è®¡æ•°</returns>
         public async Task<JArray> ReportEmpCusAsync(int year, List<string> empIds)
         {
             bool hasEmpIds = empIds != null && empIds.Count > 0;
@@ -540,13 +540,13 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// Ô±¹¤ÔÂ¶È¿Í»§ĞÂÔö±¨±í£¨Wave 3b #14£©£ºÃ÷Ï¸²éÑ¯ + ÄÚ´æ PIVOT
-        /// °´ create_id ¡Á 12 ¸öÔÂ·Ö×é¼ÆÊı£¬·µ»Ø½á¹¹Óë #13 ±£³ÖÒ»ÖÂ£¨Ç°¶Ë¼æÈİ£©
+        /// å‘˜å·¥æœˆåº¦å®¢æˆ·æ–°å¢æŠ¥è¡¨ï¼ˆWave 3b #14ï¼‰ï¼šæ˜ç»†æŸ¥è¯¢ + å†…å­˜ PIVOT
+        /// æŒ‰ create_id Ã— 12 ä¸ªæœˆåˆ†ç»„è®¡æ•°ï¼Œè¿”å›ç»“æ„ä¸ #13 ä¿æŒä¸€è‡´ï¼ˆå‰ç«¯å…¼å®¹ï¼‰
         /// </summary>
-        /// <param name="start">ÆğÊ¼Ê±¼ä£¨º¬£©</param>
-        /// <param name="end">½áÊøÊ±¼ä£¨º¬£©</param>
-        /// <param name="empIds">²ÎÓëÍ³¼ÆµÄÔ±¹¤ ID ÁĞ±í£»null »ò¿Õ¼¯ºÏ±íÊ¾Í³¼ÆÈ«²¿Ô±¹¤</param>
-        /// <returns>JArray£¬Ã¿Ô±¹¤Ò»Ïî£¬º¬ name Óë m1..m12 ¼ÆÊı</returns>
+        /// <param name="start">èµ·å§‹æ—¶é—´ï¼ˆå«ï¼‰</param>
+        /// <param name="end">ç»“æŸæ—¶é—´ï¼ˆå«ï¼‰</param>
+        /// <param name="empIds">å‚ä¸ç»Ÿè®¡çš„å‘˜å·¥ ID åˆ—è¡¨ï¼›null æˆ–ç©ºé›†åˆè¡¨ç¤ºç»Ÿè®¡å…¨éƒ¨å‘˜å·¥</param>
+        /// <returns>JArrayï¼Œæ¯å‘˜å·¥ä¸€é¡¹ï¼Œå« name ä¸ m1..m12 è®¡æ•°</returns>
         public async Task<JArray> ReportMonthEmpCusAsync(DateTime? start, DateTime? end, List<string> empIds)
         {
             bool hasEmpIds = empIds != null && empIds.Count > 0;
@@ -590,16 +590,16 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
-        /// Ô±¹¤Î¬¶ÈË«ÔÂ¿Í»§ĞÂÔö¶Ô±È£¨Wave 3b #15£©£º
-        /// °´Äê + ÆğÖ¹ÔÂ·İÇø¼ä¹ıÂË£¬ÖğÔ±¹¤Êä³ö startMonth_count¡¢endMonth_count¡¢diff¡£
-        /// Sprint 1 ¼ò»¯£º²»Í¨¹ı hr_post ¼ä½Ó¹ıÂË£¬Ö±½Ó½ÓÊÕ empIds ÁĞ±í¡£
-        /// Èô startMonth / endMonth Îª null£¬Ôò¶ÔÓ¦ count ¼ÇÎª 0¡£
+        /// å‘˜å·¥ç»´åº¦åŒæœˆå®¢æˆ·æ–°å¢å¯¹æ¯”ï¼ˆWave 3b #15ï¼‰ï¼š
+        /// æŒ‰å¹´ + èµ·æ­¢æœˆä»½åŒºé—´è¿‡æ»¤ï¼Œé€å‘˜å·¥è¾“å‡º startMonth_countã€endMonth_countã€diffã€‚
+        /// Sprint 1 ç®€åŒ–ï¼šä¸é€šè¿‡ hr_post é—´æ¥è¿‡æ»¤ï¼Œç›´æ¥æ¥æ”¶ empIds åˆ—è¡¨ã€‚
+        /// è‹¥ startMonth / endMonth ä¸º nullï¼Œåˆ™å¯¹åº” count è®°ä¸º 0ã€‚
         /// </summary>
-        /// <param name="startMonth">ÆğÊ¼ÔÂ·İ£¨1-12£©£¬null ±íÊ¾Î´Ö¸¶¨</param>
-        /// <param name="endMonth">½áÊøÔÂ·İ£¨1-12£©£¬null ±íÊ¾Î´Ö¸¶¨</param>
-        /// <param name="year">Í³¼ÆÄê·İ</param>
-        /// <param name="empIds">²ÎÓëÍ³¼ÆµÄÔ±¹¤ ID ÁĞ±í£»null »ò¿Õ¼¯ºÏ±íÊ¾Í³¼ÆÈ«²¿Ô±¹¤</param>
-        /// <returns>JArray£¬Ã¿Ô±¹¤Ò»Ïî£¬º¬ name¡¢startMonth_count¡¢endMonth_count¡¢diff</returns>
+        /// <param name="startMonth">èµ·å§‹æœˆä»½ï¼ˆ1-12ï¼‰ï¼Œnull è¡¨ç¤ºæœªæŒ‡å®š</param>
+        /// <param name="endMonth">ç»“æŸæœˆä»½ï¼ˆ1-12ï¼‰ï¼Œnull è¡¨ç¤ºæœªæŒ‡å®š</param>
+        /// <param name="year">ç»Ÿè®¡å¹´ä»½</param>
+        /// <param name="empIds">å‚ä¸ç»Ÿè®¡çš„å‘˜å·¥ ID åˆ—è¡¨ï¼›null æˆ–ç©ºé›†åˆè¡¨ç¤ºç»Ÿè®¡å…¨éƒ¨å‘˜å·¥</param>
+        /// <returns>JArrayï¼Œæ¯å‘˜å·¥ä¸€é¡¹ï¼Œå« nameã€startMonth_countã€endMonth_countã€diff</returns>
         public async Task<JArray> ComparedEmpCusAddAsync(int? startMonth, int? endMonth, int year, List<string> empIds)
         {
             bool hasEmpIds = empIds != null && empIds.Count > 0;

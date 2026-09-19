@@ -1,16 +1,16 @@
-using System;
+ï»¿using System;
 using System.Security.Cryptography;
 using System.Text;
 
 namespace XHD.Core.Common.DEncrypt
 {
     /// <summary>
-    ///     µÃµ½Ëæ»ú°²È«Âë£¨¹şÏ£¼ÓÃÜ£©¡£
+    ///     å¾—åˆ°éšæœºå®‰å…¨ç ï¼ˆå“ˆå¸ŒåŠ å¯†ï¼‰ã€‚
     /// </summary>
     public class HashEncode
     {
         /// <summary>
-        ///     µÃµ½Ëæ»ú¹şÏ£¼ÓÃÜ×Ö·û´®
+        ///     å¾—åˆ°éšæœºå“ˆå¸ŒåŠ å¯†å­—ç¬¦ä¸²
         /// </summary>
         /// <returns></returns>
         public static string GetSecurity()
@@ -20,7 +20,7 @@ namespace XHD.Core.Common.DEncrypt
         }
 
         /// <summary>
-        ///     µÃµ½Ò»¸öËæ»úÊıÖµ
+        ///     å¾—åˆ°ä¸€ä¸ªéšæœºæ•°å€¼
         /// </summary>
         /// <returns></returns>
         public static string GetRandomValue()
@@ -31,7 +31,7 @@ namespace XHD.Core.Common.DEncrypt
         }
 
         /// <summary>
-        ///     ¹şÏ£¼ÓÃÜÒ»¸ö×Ö·û´®
+        ///     å“ˆå¸ŒåŠ å¯†ä¸€ä¸ªå­—ç¬¦ä¸²
         /// </summary>
         /// <param name="Security"></param>
         /// <returns></returns>

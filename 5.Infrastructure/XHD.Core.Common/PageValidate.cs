@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -7,7 +7,7 @@ using System.Web;
 namespace XHD.Core.Common
 {
     /// <summary>
-    ///     Ò³ÃæÊı¾İĞ£ÑéÀà
+    ///     é¡µé¢æ•°æ®æ ¡éªŒç±»
     ///     Copyright (C) XHD 2004-2012
     /// </summary>
     public class PageValidate
@@ -16,14 +16,14 @@ namespace XHD.Core.Common
         private static readonly Regex RegNumber = new Regex("^[0-9]+$");
         private static readonly Regex RegNumberSign = new Regex("^[+-]?[0-9]+$");
         private static readonly Regex RegDecimal = new Regex("^[0-9]+[.]?[0-9]+$");
-        private static readonly Regex RegDecimalSign = new Regex("^[+-]?[0-9]+[.]?[0-9]+$"); //µÈ¼ÛÓÚ^[+-]?\d+[.]?\d+$
+        private static readonly Regex RegDecimalSign = new Regex("^[+-]?[0-9]+[.]?[0-9]+$"); //ç­‰ä»·äº^[+-]?\d+[.]?\d+$
 
         private static readonly Regex RegEmail = new Regex("^[\\w-]+@[\\w-]+\\.(com|net|org|edu|mil|tv|biz|info)$");
-        //w Ó¢ÎÄ×ÖÄ¸»òÊı×ÖµÄ×Ö·û´®£¬ºÍ [a-zA-Z0-9] Óï·¨Ò»Ñù 
+        //w è‹±æ–‡å­—æ¯æˆ–æ•°å­—çš„å­—ç¬¦ä¸²ï¼Œå’Œ [a-zA-Z0-9] è¯­æ³•ä¸€æ · 
 
         private static readonly Regex RegCHZN = new Regex("[\u4e00-\u9fa5]");
 
-        #region Êı×Ö×Ö·û´®¼ì²é
+        #region æ•°å­—å­—ç¬¦ä¸²æ£€æŸ¥
 
         public static bool IsPhone(string inputData)
         {
@@ -33,9 +33,9 @@ namespace XHD.Core.Common
 
 
         /// <summary>
-        ///     ÊÇ·ñÊı×Ö×Ö·û´®
+        ///     æ˜¯å¦æ•°å­—å­—ç¬¦ä¸²
         /// </summary>
-        /// <param name="inputData">ÊäÈë×Ö·û´®</param>
+        /// <param name="inputData">è¾“å…¥å­—ç¬¦ä¸²</param>
         /// <returns></returns>
         public static bool IsNumber(string inputData)
         {
@@ -45,9 +45,9 @@ namespace XHD.Core.Common
         }
 
         /// <summary>
-        ///     ÊÇ·ñÊı×Ö×Ö·û´® ¿É´øÕı¸ººÅ
+        ///     æ˜¯å¦æ•°å­—å­—ç¬¦ä¸² å¯å¸¦æ­£è´Ÿå·
         /// </summary>
-        /// <param name="inputData">ÊäÈë×Ö·û´®</param>
+        /// <param name="inputData">è¾“å…¥å­—ç¬¦ä¸²</param>
         /// <returns></returns>
         public static bool IsNumberSign(string inputData)
         {
@@ -56,9 +56,9 @@ namespace XHD.Core.Common
         }
 
         /// <summary>
-        ///     ÊÇ·ñÊÇ¸¡µãÊı
+        ///     æ˜¯å¦æ˜¯æµ®ç‚¹æ•°
         /// </summary>
-        /// <param name="inputData">ÊäÈë×Ö·û´®</param>
+        /// <param name="inputData">è¾“å…¥å­—ç¬¦ä¸²</param>
         /// <returns></returns>
         public static bool IsDecimal(string inputData)
         {
@@ -67,9 +67,9 @@ namespace XHD.Core.Common
         }
 
         /// <summary>
-        ///     ÊÇ·ñÊÇ¸¡µãÊı ¿É´øÕı¸ººÅ
+        ///     æ˜¯å¦æ˜¯æµ®ç‚¹æ•° å¯å¸¦æ­£è´Ÿå·
         /// </summary>
-        /// <param name="inputData">ÊäÈë×Ö·û´®</param>
+        /// <param name="inputData">è¾“å…¥å­—ç¬¦ä¸²</param>
         /// <returns></returns>
         public static bool IsDecimalSign(string inputData)
         {
@@ -79,10 +79,10 @@ namespace XHD.Core.Common
 
         #endregion
 
-        #region ÖĞÎÄ¼ì²â
+        #region ä¸­æ–‡æ£€æµ‹
 
         /// <summary>
-        ///     ¼ì²âÊÇ·ñÓĞÖĞÎÄ×Ö·û
+        ///     æ£€æµ‹æ˜¯å¦æœ‰ä¸­æ–‡å­—ç¬¦
         /// </summary>
         /// <param name="inputData"></param>
         /// <returns></returns>
@@ -94,12 +94,12 @@ namespace XHD.Core.Common
 
         #endregion
 
-        #region ÓÊ¼şµØÖ·
+        #region é‚®ä»¶åœ°å€
 
         /// <summary>
-        ///     ÊÇ·ñÊÇ¸¡µãÊı ¿É´øÕı¸ººÅ
+        ///     æ˜¯å¦æ˜¯æµ®ç‚¹æ•° å¯å¸¦æ­£è´Ÿå·
         /// </summary>
-        /// <param name="inputData">ÊäÈë×Ö·û´®</param>
+        /// <param name="inputData">è¾“å…¥å­—ç¬¦ä¸²</param>
         /// <returns></returns>
         public static bool IsEmail(string inputData)
         {
@@ -109,10 +109,10 @@ namespace XHD.Core.Common
 
         #endregion
 
-        #region ÈÕÆÚ¸ñÊ½ÅĞ¶Ï
+        #region æ—¥æœŸæ ¼å¼åˆ¤æ–­
 
         /// <summary>
-        ///     ÈÕÆÚ¸ñÊ½×Ö·û´®ÅĞ¶Ï
+        ///     æ—¥æœŸæ ¼å¼å­—ç¬¦ä¸²åˆ¤æ–­
         /// </summary>
         /// <param name="str"></param>
         /// <returns></returns>
@@ -135,27 +135,27 @@ namespace XHD.Core.Common
 
         #endregion
 
-        #region ÆäËû
+        #region å…¶ä»–
 
         /// <summary>
-        ///     ¼ì²é×Ö·û´®×î´ó³¤¶È£¬·µ»ØÖ¸¶¨³¤¶ÈµÄ´®
+        ///     æ£€æŸ¥å­—ç¬¦ä¸²æœ€å¤§é•¿åº¦ï¼Œè¿”å›æŒ‡å®šé•¿åº¦çš„ä¸²
         /// </summary>
-        /// <param name="sqlInput">ÊäÈë×Ö·û´®</param>
-        /// <param name="maxLength">×î´ó³¤¶È</param>
+        /// <param name="sqlInput">è¾“å…¥å­—ç¬¦ä¸²</param>
+        /// <param name="maxLength">æœ€å¤§é•¿åº¦</param>
         /// <returns></returns>
         public static string SqlText(string sqlInput, int maxLength)
         {
             if (sqlInput != null && sqlInput != string.Empty)
             {
                 sqlInput = sqlInput.Trim();
-                if (sqlInput.Length > maxLength) //°´×î´ó³¤¶È½ØÈ¡×Ö·û´®
+                if (sqlInput.Length > maxLength) //æŒ‰æœ€å¤§é•¿åº¦æˆªå–å­—ç¬¦ä¸²
                     sqlInput = sqlInput.Substring(0, maxLength);
             }
             return sqlInput;
         }
 
         /// <summary>
-        ///     ×Ö·û´®±àÂë
+        ///     å­—ç¬¦ä¸²ç¼–ç 
         /// </summary>
         /// <param name="inputData"></param>
         /// <returns></returns>
@@ -164,21 +164,21 @@ namespace XHD.Core.Common
             return HttpUtility.HtmlEncode(inputData);
         }
 
-        //×Ö·û´®ÇåÀí
+        //å­—ç¬¦ä¸²æ¸…ç†
         public static string InputText(string inputString, int maxLength)
         {
             var retVal = new StringBuilder();
 
-            // ¼ì²éÊÇ·ñÎª¿Õ
+            // æ£€æŸ¥æ˜¯å¦ä¸ºç©º
             if (!string.IsNullOrEmpty(inputString))
             {
                 inputString = inputString.Trim();
 
-                //¼ì²é³¤¶È
+                //æ£€æŸ¥é•¿åº¦
                 if (inputString.Length > maxLength)
                     inputString = inputString.Substring(0, maxLength);
 
-                //Ìæ»»Î£ÏÕ×Ö·û
+                //æ›¿æ¢å±é™©å­—ç¬¦
                 for (int i = 0; i < inputString.Length; i++)
                 {
                     switch (inputString[i])
@@ -197,13 +197,13 @@ namespace XHD.Core.Common
                             break;
                     }
                 }
-                retVal.Replace("'", " "); // Ìæ»»µ¥ÒıºÅ
+                retVal.Replace("'", " "); // æ›¿æ¢å•å¼•å·
             }
             return retVal.ToString();
         }
 
         /// <summary>
-        ///     ×ª»»³É HTML code
+        ///     è½¬æ¢æˆ HTML code
         /// </summary>
         /// <param name="str">string</param>
         /// <returns>string</returns>
@@ -220,7 +220,7 @@ namespace XHD.Core.Common
         }
 
         /// <summary>
-        ///     ½âÎöhtml³É ÆÕÍ¨ÎÄ±¾
+        ///     è§£æhtmlæˆ æ™®é€šæ–‡æœ¬
         /// </summary>
         /// <param name="str">string</param>
         /// <returns>string</returns>
@@ -244,21 +244,21 @@ namespace XHD.Core.Common
             {
                 return "";
             }
-            sqlText = sqlText.Replace(",", ""); //È¥³ı,
-            sqlText = sqlText.Replace("<", ""); //È¥³ı<
-            sqlText = sqlText.Replace(">", ""); //È¥³ı>
-            sqlText = sqlText.Replace("--", ""); //È¥³ı--
-            sqlText = sqlText.Replace("'", ""); //È¥³ı'
-            sqlText = sqlText.Replace("\"", ""); //È¥³ı"
-            sqlText = sqlText.Replace("=", ""); //È¥³ı=
-            sqlText = sqlText.Replace("%", ""); //È¥³ı%
-            sqlText = sqlText.Replace(" ", ""); //È¥³ı¿Õ¸ñ
+            sqlText = sqlText.Replace(",", ""); //å»é™¤,
+            sqlText = sqlText.Replace("<", ""); //å»é™¤<
+            sqlText = sqlText.Replace(">", ""); //å»é™¤>
+            sqlText = sqlText.Replace("--", ""); //å»é™¤--
+            sqlText = sqlText.Replace("'", ""); //å»é™¤'
+            sqlText = sqlText.Replace("\"", ""); //å»é™¤"
+            sqlText = sqlText.Replace("=", ""); //å»é™¤=
+            sqlText = sqlText.Replace("%", ""); //å»é™¤%
+            sqlText = sqlText.Replace(" ", ""); //å»é™¤ç©ºæ ¼
             return sqlText;
         }
 
         #endregion
 
-        #region ÊÇ·ñÓÉÌØ¶¨×Ö·û×é³É
+        #region æ˜¯å¦ç”±ç‰¹å®šå­—ç¬¦ç»„æˆ
 
         public static bool isContainSameChar(string strInput)
         {
@@ -284,10 +284,10 @@ namespace XHD.Core.Common
 
         #endregion
 
-        #region ¼ì²éÊäÈëµÄ²ÎÊıÊÇ²»ÊÇÄ³Ğ©¶¨ÒåºÃµÄÌØÊâ×Ö·û£ºÕâ¸ö·½·¨Ä¿Ç°ÓÃÓÚÃÜÂëÊäÈëµÄ°²È«¼ì²é
+        #region æ£€æŸ¥è¾“å…¥çš„å‚æ•°æ˜¯ä¸æ˜¯æŸäº›å®šä¹‰å¥½çš„ç‰¹æ®Šå­—ç¬¦ï¼šè¿™ä¸ªæ–¹æ³•ç›®å‰ç”¨äºå¯†ç è¾“å…¥çš„å®‰å…¨æ£€æŸ¥
 
         /// <summary>
-        ///     ¼ì²éÊäÈëµÄ²ÎÊıÊÇ²»ÊÇÄ³Ğ©¶¨ÒåºÃµÄÌØÊâ×Ö·û£ºÕâ¸ö·½·¨Ä¿Ç°ÓÃÓÚÃÜÂëÊäÈëµÄ°²È«¼ì²é
+        ///     æ£€æŸ¥è¾“å…¥çš„å‚æ•°æ˜¯ä¸æ˜¯æŸäº›å®šä¹‰å¥½çš„ç‰¹æ®Šå­—ç¬¦ï¼šè¿™ä¸ªæ–¹æ³•ç›®å‰ç”¨äºå¯†ç è¾“å…¥çš„å®‰å…¨æ£€æŸ¥
         /// </summary>
         public static bool isContainSpecChar(string strInput)
         {
@@ -326,7 +326,7 @@ namespace XHD.Core.Common
         }
 
         /// <summary>
-        /// ¼ì²éID
+        /// æ£€æŸ¥ID
         /// </summary>
         /// <param name="strInput"></param>
         /// <returns></returns>
@@ -337,7 +337,7 @@ namespace XHD.Core.Common
         }
 
         /// <summary>
-        /// ¼ì²éID
+        /// æ£€æŸ¥ID
         /// </summary>
         /// <param name="strInput"></param>
         /// <returns></returns>
