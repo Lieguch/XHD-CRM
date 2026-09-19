@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <IsPackable>false</IsPackable>
+    <RootNamespace>XHD.Core.Tests</RootNamespace>
+    <LangVersion>latest</LangVersion>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="xunit" Version="2.6.6" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" />
+    <PackageReference Include="xunit.runner.utility" Version="2.5.6" />
+    <PackageReference Include="Moq" Version="4.20.70" />
+    <PackageReference Include="FreeSql" Version="3.5.310" />
+    <PackageReference Include="FreeSql.Provider.Sqlite" Version="3.5.310" />
+    <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.6" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\1.UI\XHD.Core.View\XHD.Core.View.csproj" />
+    <ProjectReference Include="..\..\2.Application\XHD.Core.Services\XHD.Core.Services.csproj" />
+    <ProjectReference Include="..\..\3.Repository\XHD.Core.Repository\XHD.Core.Repository.csproj" />
+    <ProjectReference Include="..\..\4.Entity\XHD.Core.Models\XHD.Core.Models.csproj" />
+    <ProjectReference Include="..\..\5.Infrastructure\XHD.Core.Common\XHD.Core.Common.csproj" />
+  </ItemGroup>
+
+</Project>
