@@ -1,0 +1,33 @@
+main:
+  push:
+    - name: build-and-test
+      docker:
+        image: mcr.microsoft.com/dotnet/sdk:8.0
+      env:
+        DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+        DOTNET_NOLOGO: "1"
+        DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+      stages:
+        - name: build
+          jobs:
+            - name: dotnet-build
+              script: |
+                set -euo pipefail
+                echo "=== dotnet --version ==="
+                dotnet --version
+                echo "=== dotnet --info ==="
+                dotnet --info
+                echo "=== dotnet restore ==="
+                dotnet restore XHDCRM3.sln
+                echo "=== dotnet build ==="
+                dotnet build XHDCRM3.sln --no-restore --verbosity normal
+
+        - name: test
+          jobs:
+            - name: dotnet-test
+              script: |
+                set -euo pipefail
+                echo "=== dotnet test ==="
+                dotnet test 7.Test/XHD.Core.Tests/XHD.Core.Tests.csproj --no-restore --no-build --logger "console;verbosity=normal" --logger "trx;LogFileName=results.trx"
+                echo "=== build result ==="
+                echo "TESTS_DONE"
