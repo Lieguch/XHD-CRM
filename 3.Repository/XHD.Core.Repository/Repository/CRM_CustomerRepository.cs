@@ -442,8 +442,9 @@ namespace XHD.Core.Repository
         /// 按 params_order 排序，未分类客户归入"未分类"
         /// </summary>
         /// <param name="year">年份过滤，null 表示不限年份</param>
+        /// <param name="typeIds">客户类型 ID 白名单；null 或空集合表示不限类型</param>
         /// <returns>JArray，每项含 CustomerType/CustomerType_id/params_order/cc</returns>
-        public async Task<JArray> FunnelAsync(int? year)
+        public async Task<JArray> FunnelAsync(int? year, List<string> typeIds = null)
         {
             var query = _fsql.Select<CRM_Customer>();
 
@@ -451,6 +452,11 @@ namespace XHD.Core.Repository
             {
                 int y = year.Value;
                 query = query.Where(a => a.create_time.Value.Year == y);
+            }
+
+            if (typeIds != null && typeIds.Count > 0)
+            {
+                query = query.Where(a => typeIds.Contains(a.cus_type_id));
             }
 
             var data = await query
@@ -665,6 +671,33 @@ namespace XHD.Core.Repository
                 .Where(expWhere)
                 .CountAsync();
             return (int)total;
+        }
+
+        /// <summary>
+        /// Sprint 3 Wave 2 #13：客户预删除（软删）。
+        /// 将指定客户的 isDelete 置 1、写入 Delete_time 与 Delete_id。
+        /// 幂等安全：重复调用仍返回 true（受影响行数由 UPDATE 的 SET 语义保证至少匹配到）。
+        /// 参数化执行，禁止字符串拼接 SQL。
+        /// </summary>
+        /// <param name="id">客户 ID</param>
+        /// <param name="operatorId">删除人 ID（当前登录用户）</param>
+        /// <returns>受影响行数 &gt; 0 则返回 true</returns>
+        public async Task<bool> AdvanceDeleteAsync(string id, string operatorId)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return false;
+            }
+
+            DateTime now = DateTime.Now;
+            int rows = await _fsql.Update<CRM_Customer>()
+                .Set(a => a.isDelete == 1)
+                .Set(a => a.Delete_time == now)
+                .Set(a => a.Delete_id == operatorId)
+                .Where(a => a.id == id)
+                .ExecuteAffrowsAsync();
+
+            return rows > 0;
         }
     }
 }

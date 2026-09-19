@@ -46,7 +46,8 @@ namespace XHD.Core.IRepository
         /// 客户转化漏斗：按客户类型（cus_type_id 关联 Sys_Param）统计年度客户数
         /// </summary>
         /// <param name="year">年份过滤，null 表示不限年份</param>
-        Task<JArray> FunnelAsync(int? year);
+        /// <param name="typeIds">客户类型 ID 白名单；null 或空集合表示不限类型</param>
+        Task<JArray> FunnelAsync(int? year, List<string> typeIds = null);
 
         /// <summary>
         /// 员工年度客户新增报表（Wave 3b #13）：按 create_id × 12 个月分组计数
@@ -80,5 +81,14 @@ namespace XHD.Core.IRepository
         /// <param name="expWhere">完整过滤表达式（含 isDelete=0 与其它业务过滤）</param>
         /// <returns>符合条件的客户总数</returns>
         Task<int> CountAsync(Expression<Func<CRM_Customer, bool>> expWhere);
+
+        /// <summary>
+        /// Sprint 3 Wave 2 #13：客户预删除（软删）。
+        /// 将指定客户的 isDelete 置 1、写入 Delete_time 与 Delete_id。
+        /// </summary>
+        /// <param name="id">客户 ID</param>
+        /// <param name="operatorId">删除人 ID</param>
+        /// <returns>是否成功（受影响行数 &gt; 0）</returns>
+        Task<bool> AdvanceDeleteAsync(string id, string operatorId);
     }
 }

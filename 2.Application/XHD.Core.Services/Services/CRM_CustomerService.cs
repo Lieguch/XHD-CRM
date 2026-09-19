@@ -107,9 +107,10 @@ namespace XHD.Core.Services
         /// 客户转化漏斗：service 层薄封装，委托 Repository 执行
         /// </summary>
         /// <param name="year">年份过滤，null 表示不限年份</param>
-        public async Task<JArray> FunnelAsync(int? year)
+        /// <param name="typeIds">客户类型 ID 白名单；null 或空集合表示不限类型</param>
+        public async Task<JArray> FunnelAsync(int? year, List<string> typeIds = null)
         {
-            return await _irepositoryBase.FunnelAsync(year);
+            return await _irepositoryBase.FunnelAsync(year, typeIds);
         }
 
         /// <summary>
@@ -153,6 +154,17 @@ namespace XHD.Core.Services
         public async Task<int> CountAsync(Expression<Func<CRM_Customer, bool>> expWhere)
         {
             return await _irepositoryBase.CountAsync(expWhere);
+        }
+
+        /// <summary>
+        /// Sprint 3 Wave 2 #13：客户预删除（软删），service 层薄封装，委托 Repository 执行。
+        /// </summary>
+        /// <param name="id">客户 ID</param>
+        /// <param name="operatorId">删除人 ID</param>
+        /// <returns>是否成功</returns>
+        public async Task<bool> AdvanceDeleteAsync(string id, string operatorId)
+        {
+            return await _irepositoryBase.AdvanceDeleteAsync(id, operatorId);
         }
     }
 }

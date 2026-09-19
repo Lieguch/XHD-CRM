@@ -482,5 +482,101 @@ namespace XHD.Core.Tests
             Assert.Equal(0, (int)arr[0]["endMonth_count"]!);
             Assert.Equal(0, (int)arr[0]["diff"]!);
         }
+
+        // =========================================================
+        // Sprint 3 Wave 2 #11：Funnel 扩展 stype_val 参数
+        // =========================================================
+
+        [Fact]
+        public async Task Funnel_WithTypeIdWhitelist_OnlyReturnsMatchingTypes()
+        {
+            // Arrange：3 种类型 T1/T2/T3，白名单仅 T1+T2
+            await InsertParamAsync(NewParam("T1", "意向", 1, "cus_type"));
+            await InsertParamAsync(NewParam("T2", "高意向", 2, "cus_type"));
+            await InsertParamAsync(NewParam("T3", "成交", 3, "cus_type"));
+            await InsertCustomerAsync(NewCustomer("C1", "E1", new DateTime(2024, 3, 10), cusTypeId: "T1"));
+            await InsertCustomerAsync(NewCustomer("C2", "E1", new DateTime(2024, 3, 11), cusTypeId: "T2"));
+            await InsertCustomerAsync(NewCustomer("C3", "E1", new DateTime(2024, 3, 12), cusTypeId: "T3"));
+            await InsertCustomerAsync(NewCustomer("C4", "E1", new DateTime(2024, 3, 13), cusTypeId: "T3"));
+
+            // Act
+            var arr = await _custRepo.FunnelAsync(2024, new List<string> { "T1", "T2" });
+
+            // Assert：仅返回 T1+T2 两类，T3 被过滤
+            Assert.Equal(2, arr.Count);
+            var typeIds = arr.Select(o => (string)o["CustomerType_id"]).ToList();
+            Assert.Contains("T1", typeIds);
+            Assert.Contains("T2", typeIds);
+            Assert.DoesNotContain("T3", typeIds);
+        }
+
+        [Fact]
+        public async Task Funnel_WithEmptyTypeIds_FallsBackToUnlimited()
+        {
+            // Arrange：空白名单应等价于 null，走原逻辑返回全部
+            await InsertParamAsync(NewParam("T1", "意向", 1, "cus_type"));
+            await InsertParamAsync(NewParam("T2", "高意向", 2, "cus_type"));
+            await InsertCustomerAsync(NewCustomer("C1", "E1", new DateTime(2024, 3, 10), cusTypeId: "T1"));
+            await InsertCustomerAsync(NewCustomer("C2", "E1", new DateTime(2024, 3, 11), cusTypeId: "T2"));
+
+            // Act
+            var arr = await _custRepo.FunnelAsync(2024, new List<string>());
+
+            // Assert
+            Assert.Equal(2, arr.Count);
+        }
+
+        [Fact]
+        public async Task Funnel_WithNullTypeIds_FallsBackToUnlimited()
+        {
+            // Arrange：null 白名单保持原逻辑
+            await InsertParamAsync(NewParam("T1", "意向", 1, "cus_type"));
+            await InsertParamAsync(NewParam("T2", "高意向", 2, "cus_type"));
+            await InsertCustomerAsync(NewCustomer("C1", "E1", new DateTime(2024, 3, 10), cusTypeId: "T1"));
+            await InsertCustomerAsync(NewCustomer("C2", "E1", new DateTime(2024, 3, 11), cusTypeId: "T2"));
+
+            // Act
+            var arr = await _custRepo.FunnelAsync(2024, null);
+
+            // Assert
+            Assert.Equal(2, arr.Count);
+        }
+
+        [Fact]
+        public async Task Funnel_WithUnknownTypeInWhitelist_ReturnsOnlyMatchedTypes()
+        {
+            // Arrange：白名单含不存在的类型 ID "T4"，应仅返回存在的 T1
+            await InsertParamAsync(NewParam("T1", "意向", 1, "cus_type"));
+            await InsertParamAsync(NewParam("T2", "高意向", 2, "cus_type"));
+            await InsertCustomerAsync(NewCustomer("C1", "E1", new DateTime(2024, 3, 10), cusTypeId: "T1"));
+            await InsertCustomerAsync(NewCustomer("C2", "E1", new DateTime(2024, 3, 11), cusTypeId: "T2"));
+
+            // Act
+            var arr = await _custRepo.FunnelAsync(2024, new List<string> { "T1", "T4" });
+
+            // Assert
+            Assert.Single(arr);
+            Assert.Equal("T1", (string)arr[0]["CustomerType_id"]);
+        }
+
+        [Fact]
+        public async Task Funnel_WithYearAndTypeIds_BothFiltersApplied()
+        {
+            // Arrange：验证 year 与 typeIds 两条件叠加生效
+            await InsertParamAsync(NewParam("T1", "意向", 1, "cus_type"));
+            await InsertParamAsync(NewParam("T2", "高意向", 2, "cus_type"));
+            await InsertCustomerAsync(NewCustomer("C1", "E1", new DateTime(2024, 3, 10), cusTypeId: "T1"));
+            await InsertCustomerAsync(NewCustomer("C2", "E1", new DateTime(2024, 3, 11), cusTypeId: "T2"));
+            await InsertCustomerAsync(NewCustomer("C3", "E1", new DateTime(2023, 3, 10), cusTypeId: "T1")); // 非 2024
+            await InsertCustomerAsync(NewCustomer("C4", "E1", new DateTime(2024, 4, 1), cusTypeId: "T2"));
+
+            // Act：year=2024 + 白名单仅 T1
+            var arr = await _custRepo.FunnelAsync(2024, new List<string> { "T1" });
+
+            // Assert：仅 2024 年且类型 T1 的 1 条
+            Assert.Single(arr);
+            Assert.Equal("T1", (string)arr[0]["CustomerType_id"]);
+            Assert.Equal(1, (int)arr[0]["cc"]!);
+        }
     }
 }

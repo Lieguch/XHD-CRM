@@ -438,10 +438,30 @@ namespace XHD.Core.View.Controllers
         /// <summary>
         /// 客户转化漏斗：按客户类型（cus_type_id 关联 Sys_Param）统计年度客户数
         /// </summary>
+        /// <param name="year">年份过滤，null 表示不限年份</param>
+        /// <param name="stype_val">客户类型 ID 列表，逗号分隔；非法 GUID 项会被过滤，null 或空集合表示不限类型</param>
         [HttpGet("Funnel")]
-        public async Task<string> Funnel(int? year)
+        public async Task<string> Funnel(int? year, [FromQuery] List<string> stype_val = null)
         {
-            var data = await _service.FunnelAsync(year);
+            // 过滤非法 GUID 项，仅保留可通过 PageValidate.checkID 校验的类型 ID
+            List<string> typeIds = null;
+            if (stype_val != null && stype_val.Count > 0)
+            {
+                typeIds = new List<string>(stype_val.Count);
+                foreach (var t in stype_val)
+                {
+                    if (!string.IsNullOrWhiteSpace(t) && PageValidate.checkID(t))
+                    {
+                        typeIds.Add(t);
+                    }
+                }
+                if (typeIds.Count == 0)
+                {
+                    typeIds = null;
+                }
+            }
+
+            var data = await _service.FunnelAsync(year, typeIds);
             return data.ToString();
         }
 

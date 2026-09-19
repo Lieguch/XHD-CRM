@@ -563,6 +563,87 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Result(0, "", new JArray(), total).ToString();
         }
 
+        /// <summary>
+        /// Sprint 3 Wave 2 #14：客户预删除（软删）。
+        /// 与 <see cref="Delete"/> 的区别：预删除不阻止关联数据存在，仅统计后写入 Sys_log 供回收站还原参考。
+        /// </summary>
+        /// <param name="id">客户 ID</param>
+        /// <returns>标准 XHDResult 字符串</returns>
+        [HttpPost("AdvanceDelete")]
+        public async Task<string> AdvanceDelete(string id)
+        {
+            // 参数校验
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return XHDResult.Error("系统错误，找不到数据！").ToString();
+            }
+
+            // 存在性检查（仅看未删除的记录）
+            var customer = (await _service.GridAsync(c => c.id == id && c.isDelete == 0, 1, 1)).data.FirstOrDefault();
+            if (customer == null)
+            {
+                return XHDResult.Error("系统错误，找不到数据！").ToString();
+            }
+
+            // 按钮权限校验（与 Delete 使用同一按钮键，保证业务口径一致）
+            if (!await _dBAuthService.GetAuth(GetUserId(), "CRM_Customer|del"))
+            {
+                return XHDResult.Error("无权限！").ToString();
+            }
+
+            // 数据权限校验（预删除属于数据级操作，需检查 authtype 是否允许触及该客户的员工归属）
+            var roledata = await _dBAuthService.GetDataAuth(GetUserId());
+            if (roledata.authtype == 0)
+            {
+                return XHDResult.Error("无权限！").ToString();
+            }
+            if (roledata.authtype != 4 && !roledata.empList.Contains(customer.emp_id))
+            {
+                return XHDResult.Error("无权限！").ToString();
+            }
+
+            // 关联数据数量统计（ICRM_ContactService/ISale_orderService 未提供 CountAsync，
+            // 采用 GridAsync(1,1).count 的轻量计数模式，与 Delete 保持同一模式）
+            long contactCountL = (await _contactService.GridAsync(c => c.customer_id == id, 1, 1)).count;
+            long followCountL = (await _followService.GridAsync(f => f.customer_id == id, 1, 1)).count;
+            long orderCountL = (await _orderService.GridAsync(o => o.customer_id == id, 1, 1)).count;
+            int contactCount = (int)contactCountL;
+            int followCount = (int)followCountL;
+            int orderCount = (int)orderCountL;
+
+            // 执行软删
+            var ok = await _service.AdvanceDeleteAsync(id, GetUserId());
+            if (!ok)
+            {
+                return XHDResult.Error("删除失败！").ToString();
+            }
+
+            // 写 Sys_log（参照 Delete L474-487，注意用 DeleteLog 而非 UpdateLog）
+            _logExt.getEntityText(customer);
+            await _logService.DeleteLog(new Sys_log
+            {
+                id = Guid.NewGuid().ToString(),
+                EventType = "[客户]预删除",
+                EventID = id,
+                cus_id = id,
+                EventTitle = customer.cus_name,
+                UserID = GetUserId(),
+                UserName = User.FindFirst(ClaimTypes.Name)?.Value,
+                IPStreet = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                EventDate = DateTime.Now
+            });
+
+            // 组装返回文案：有关联数据时附带计数，便于回收站还原前判断影响面
+            int totalRelated = contactCount + followCount + orderCount;
+            if (totalRelated > 0)
+            {
+                string msg = $"此客户已放入回收站。（含 {contactCount} 个联系人、{followCount} 条跟进、{orderCount} 个订单，共 {totalRelated} 项关联数据）";
+                return XHDResult.Success(msg).ToString();
+            }
+
+            return XHDResult.Success("此客户已放入回收站。").ToString();
+        }
+
         public async Task<ActionResult> Export()
         {
             // 原有业务逻辑完全保留
