@@ -1,10 +1,19 @@
 using FreeSql;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
+using Moq;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
+using System.Security.Claims;
 using System.Threading.Tasks;
+using XHD.Core.Common;
+using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.Repository;
+using XHD.Core.View.Controllers;
 using Xunit;
 
 namespace XHD.Core.Tests
@@ -577,6 +586,116 @@ namespace XHD.Core.Tests
             Assert.Single(arr);
             Assert.Equal("T1", (string)arr[0]["CustomerType_id"]);
             Assert.Equal(1, (int)arr[0]["cc"]!);
+        }
+
+        // =========================================================
+        // #10 ReportFollowYear 端点（Report_CustomerController）
+        // =========================================================
+
+        [Fact]
+        public async Task Controller_ReportFollowYear_WithFollowType_ReturnsYearMatrix()
+        {
+            // Arrange：2 条 2024 跟进，Follow_Type 分组：电话(1)/邮件(1)
+            var followRepo = new CRM_followRepository(_fsql);
+            await _fsql.Insert(new Sys_Param
+            {
+                id = "FT1", params_name = "电话", params_type = "follow_type",
+                params_order = 1, create_id = "SYSTEM", create_time = new DateTime(2023, 1, 1), isDelete = 0
+            }).ExecuteAffrowsAsync();
+            await _fsql.Insert(new Sys_Param
+            {
+                id = "FT2", params_name = "邮件", params_type = "follow_type",
+                params_order = 2, create_id = "SYSTEM", create_time = new DateTime(2023, 1, 1), isDelete = 0
+            }).ExecuteAffrowsAsync();
+            await InsertCustomerAsync(NewCustomer("C1", "E1", new DateTime(2024, 1, 1)));
+            await _fsql.Insert(new CRM_follow
+            {
+                id = "F1", follow_time = new DateTime(2024, 3, 10), employee_id = "E1",
+                follow_type_id = "FT1", customer_id = "C1", contact_id = "",
+                follow_content = "跟进内容", isDelete = 0
+            }).ExecuteAffrowsAsync();
+            await _fsql.Insert(new CRM_follow
+            {
+                id = "F2", follow_time = new DateTime(2024, 6, 15), employee_id = "E1",
+                follow_type_id = "FT2", customer_id = "C1", contact_id = "",
+                follow_content = "跟进内容", isDelete = 0
+            }).ExecuteAffrowsAsync();
+
+            // Act：通过 Report_CustomerController 端点
+            var ctrl = CreateReportController(followRepo, "syear=2024&items=Follow_Type");
+            var json = await ctrl.ReportFollowYear();
+
+            // Assert：返回 JArray 字符串
+            var arr = JArray.Parse(json);
+            Assert.Equal(2, arr.Count);
+            var phone = arr.FirstOrDefault(o => (string)o["params_name"] == "电话");
+            var email = arr.FirstOrDefault(o => (string)o["params_name"] == "邮件");
+            Assert.NotNull(phone);
+            Assert.NotNull(email);
+            Assert.Equal(1, (int)phone["m3"]!);
+            Assert.Equal(1, (int)email["m6"]!);
+        }
+
+        [Fact]
+        public async Task Controller_ReportFollowYear_WithInvalidItems_ReturnsError()
+        {
+            var followRepo = new CRM_followRepository(_fsql);
+            var ctrl = CreateReportController(followRepo, "syear=2024&items=InvalidType");
+
+            var json = await ctrl.ReportFollowYear();
+            var obj = JObject.Parse(json);
+
+            Assert.Equal(-1, (int)obj["code"]!);
+            Assert.Contains("items", (string)obj["msg"]!);
+        }
+
+        [Fact]
+        public async Task Controller_ReportFollowYear_EmptyData_ReturnsEmptyArray()
+        {
+            var followRepo = new CRM_followRepository(_fsql);
+            var ctrl = CreateReportController(followRepo, "syear=2024&items=Follow_Type");
+
+            var json = await ctrl.ReportFollowYear();
+            var arr = JArray.Parse(json);
+
+            Assert.Empty(arr);
+        }
+
+        // ============ #10 Controller 装配辅助 ============
+
+        private static Report_CustomerController CreateReportController(
+            CRM_followRepository followRepo,
+            string queryString = "",
+            string userId = "TEST_USER")
+        {
+            var followSvcMock = new Mock<ICRM_followService>();
+            followSvcMock.Setup(s => s.ReportsYearAsync(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<Expression<Func<CRM_follow, bool>>>()))
+                .Returns((string items, int year, Expression<Func<CRM_follow, bool>> exp)
+                    => followRepo.ReportsYearAsync(items, year, exp));
+
+            var logger = new Mock<ILogger<Report_CustomerController>>().Object;
+            var custSvc = new Mock<ICRM_CustomerService>().Object;
+            var authMock = new Mock<IDBAuthService>();
+            authMock.Setup(a => a.GetDataAuth(It.IsAny<string>()))
+                .ReturnsAsync(new XHDRoleData { authtype = 4, empList = new List<string>() });
+
+            var ctrl = new Report_CustomerController(logger, custSvc, followSvcMock.Object, authMock.Object);
+
+            var httpCtx = new DefaultHttpContext();
+            if (!string.IsNullOrEmpty(queryString))
+            {
+                var qs = queryString.StartsWith("?") ? queryString.Substring(1) : queryString;
+                httpCtx.Request.QueryString = new QueryString($"?{qs}");
+            }
+            httpCtx.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Sid, userId),
+                new Claim(ClaimTypes.Name, "Test User")
+            };
+            httpCtx.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+            ctrl.ControllerContext = new ControllerContext { HttpContext = httpCtx };
+            return ctrl;
         }
     }
 }

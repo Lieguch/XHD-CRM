@@ -14,6 +14,7 @@ using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.Repository;
 using XHD.Core.View.Controllers;
+using XHD.Core.View.Models.Dtos;
 using Xunit;
 
 namespace XHD.Core.Tests
@@ -694,6 +695,101 @@ namespace XHD.Core.Tests
             var obj = JObject.Parse(json);
             Assert.Equal(1, (int)obj["code"]!);
             Assert.Contains("登录状态", (string)obj["msg"]!);
+        }
+
+        // =========================================================
+        // #12 Count 端点（客户总数 KPI）
+        // =========================================================
+
+        private static Mock<ICRM_CustomerService> CreateCountServiceMock(
+            CRM_CustomerRepository repo)
+        {
+            var mock = new Mock<ICRM_CustomerService>();
+            mock.Setup(s => s.CountAsync(It.IsAny<Expression<Func<CRM_Customer, bool>>>()))
+                .Returns((Expression<Func<CRM_Customer, bool>> e) => repo.CountAsync(e));
+            return mock;
+        }
+
+        [Fact]
+        public async Task Controller_Count_NoParams_ReturnsTotalCount()
+        {
+            // Arrange：3 条客户，1 条已删除
+            await InsertAsync(NewCustomer("C1", 0, "客户A", isDelete: 0));
+            await InsertAsync(NewCustomer("C2", 0, "客户B", isDelete: 0));
+            await InsertAsync(NewCustomer("C3", 0, "客户C", isDelete: 0));
+            await InsertAsync(NewCustomer("C4", 0, "已删除", isDelete: 1));
+
+            var svc = CreateCountServiceMock(_custRepo);
+            var auth = CreateFullAccessAuth();
+            var ctrl = CreateController(svc.Object, auth);
+
+            // Act
+            var json = await ctrl.Count(new CustomerCountQuery());
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+            Assert.Equal(3, (int)obj["count"]!);
+        }
+
+        [Fact]
+        public async Task Controller_Count_WithEmpIdFilter_ReturnsFilteredCount()
+        {
+            // Arrange：E1 有 2 条，E2 有 1 条
+            await InsertAsync(NewCustomer("C1", 0, "客户A", empId: "E1"));
+            await InsertAsync(NewCustomer("C2", 0, "客户B", empId: "E1"));
+            await InsertAsync(NewCustomer("C3", 0, "客户C", empId: "E2"));
+
+            var svc = CreateCountServiceMock(_custRepo);
+            var auth = CreateFullAccessAuth();
+            var ctrl = CreateController(svc.Object, auth);
+
+            // Act
+            var json = await ctrl.Count(new CustomerCountQuery { emp_id = "E1" });
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+            Assert.Equal(2, (int)obj["count"]!);
+        }
+
+        [Fact]
+        public async Task Controller_Count_WithIndustryFilter_ReturnsFilteredCount()
+        {
+            // Arrange：3 条客户，2 条行业 A，1 条行业 B
+            await InsertAsync(NewCustomer("C1", 0, "客户A", industryId: "IND1"));
+            await InsertAsync(NewCustomer("C2", 0, "客户B", industryId: "IND1"));
+            await InsertAsync(NewCustomer("C3", 0, "客户C", industryId: "IND2"));
+
+            var svc = CreateCountServiceMock(_custRepo);
+            var auth = CreateFullAccessAuth();
+            var ctrl = CreateController(svc.Object, auth);
+
+            // Act
+            var json = await ctrl.Count(new CustomerCountQuery { industry_val = "IND1" });
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+            Assert.Equal(2, (int)obj["count"]!);
+        }
+
+        [Fact]
+        public async Task Controller_Count_MultiFilter_Intersects()
+        {
+            // Arrange：E1+IND1=2, E1+IND2=1, E2+IND1=1
+            await InsertAsync(NewCustomer("C1", 0, "客户A", empId: "E1", industryId: "IND1"));
+            await InsertAsync(NewCustomer("C2", 0, "客户B", empId: "E1", industryId: "IND1"));
+            await InsertAsync(NewCustomer("C3", 0, "客户C", empId: "E1", industryId: "IND2"));
+            await InsertAsync(NewCustomer("C4", 0, "客户D", empId: "E2", industryId: "IND1"));
+
+            var svc = CreateCountServiceMock(_custRepo);
+            var auth = CreateFullAccessAuth();
+            var ctrl = CreateController(svc.Object, auth);
+
+            // Act
+            var json = await ctrl.Count(new CustomerCountQuery { emp_id = "E1", industry_val = "IND1" });
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+            Assert.Equal(2, (int)obj["count"]!);
         }
     }
 }
