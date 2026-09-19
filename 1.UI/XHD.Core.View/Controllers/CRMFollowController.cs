@@ -244,5 +244,117 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
+        #region Sprint 3 跟进报表端点（#06-#09）
+
+        /// <summary>
+        /// Sprint 3 #06：跟进双月对比（按跟进类型）。
+        /// 对应 A 侧 Server.CRM_follow.Compared_follow。
+        /// </summary>
+        [HttpGet("ComparedFollow")]
+        public async Task<string> ComparedFollow(int year1, int month1, int year2, int month2)
+        {
+            if (month1 < 1 || month1 > 12 || month2 < 1 || month2 > 12)
+            {
+                return XHDResult.Error("月份必须在 1-12 之间").ToString();
+            }
+
+            var arr = await _service.ComparedFollowAsync(year1, month1, year2, month2);
+            return XHDResult.Success(arr).ToString();
+        }
+
+        /// <summary>
+        /// Sprint 3 #07：员工维度双月跟进对比。
+        /// 对应 A 侧 Server.CRM_follow.Compared_empcusfollow。
+        /// idlist 语义变更：A 侧为岗位 ID，B 侧为员工 ID 直传（规避 hr_post 依赖）。
+        /// </summary>
+        [HttpGet("ComparedEmpCusFollow")]
+        public async Task<string> ComparedEmpCusFollow(
+            [FromQuery] string idlist,
+            int year1, int month1, int year2, int month2)
+        {
+            if (month1 < 1 || month1 > 12 || month2 < 1 || month2 > 12)
+            {
+                return XHDResult.Error("月份必须在 1-12 之间").ToString();
+            }
+
+            List<string> empIds = ParseEmpIds(idlist);
+
+            var arr = await _service.ComparedEmpCusFollowAsync(year1, month1, year2, month2, empIds);
+            return XHDResult.Success(arr).ToString();
+        }
+
+        /// <summary>
+        /// Sprint 3 #08：员工月度跟进矩阵（跨月区间）。
+        /// 对应 A 侧 Server.CRM_follow.emp_month_cusfollow。
+        /// </summary>
+        [HttpGet("EmpMonthCusFollow")]
+        public async Task<string> EmpMonthCusFollow(
+            [FromQuery] string idlist,
+            [FromQuery] string sstart,
+            [FromQuery] string sdend)
+        {
+            DateTime start = PageValidate.IsDateTime(sstart) ? DateTime.Parse(sstart) : DateTime.MinValue;
+            DateTime end = PageValidate.IsDateTime(sdend)
+                ? DateTime.Parse(sdend).AddDays(1).AddTicks(-1)
+                : DateTime.MaxValue;
+
+            if (start > end)
+            {
+                return XHDResult.Error("开始时间不能晚于结束时间").ToString();
+            }
+
+            List<string> empIds = ParseEmpIds(idlist);
+
+            var arr = await _service.ReportMonthEmpFollowAsync(start, end, empIds);
+            return XHDResult.Success(arr).ToString();
+        }
+
+        /// <summary>
+        /// Sprint 3 #09：员工年度跟进矩阵。
+        /// 对应 A 侧 Server.CRM_follow.emp_cusfollow。
+        /// </summary>
+        [HttpGet("EmpCusFollow")]
+        public async Task<string> EmpCusFollow(
+            [FromQuery] string idlist,
+            [FromQuery] int syear)
+        {
+            if (syear < 2000 || syear > 2100)
+            {
+                return XHDResult.Error("年份无效").ToString();
+            }
+
+            List<string> empIds = ParseEmpIds(idlist);
+
+            var arr = await _service.ReportEmpFollowAsync(syear, empIds);
+            return XHDResult.Success(arr).ToString();
+        }
+
+        /// <summary>
+        /// 解析 idlist 参数为 empIds 白名单。
+        /// 输入为 ';' 分隔字符串，每个 ID 必须通过 GUID 格式校验（防 SQL 注入）。
+        /// null 或空表示全部员工。
+        /// </summary>
+        private static List<string> ParseEmpIds(string idlist)
+        {
+            if (string.IsNullOrWhiteSpace(idlist))
+            {
+                return null;
+            }
+
+            var raw = idlist.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
+            var valid = new List<string>(raw.Length);
+            foreach (var item in raw)
+            {
+                var trimmed = item.Trim();
+                if (PageValidate.checkID(trimmed))
+                {
+                    valid.Add(trimmed);
+                }
+            }
+
+            return valid.Count > 0 ? valid : null;
+        }
+
+        #endregion
     }
 }

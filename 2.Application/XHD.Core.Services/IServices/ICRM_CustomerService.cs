@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -70,5 +70,12 @@ namespace XHD.Core.IServices
         /// <param name="year">统计年份</param>
         /// <param name="empIds">参与统计的员工 ID 列表；null 或空表示全部员工</param>
         Task<JArray> ComparedEmpCusAddAsync(int? startMonth, int? endMonth, int year, List<string> empIds);
+
+        /// <summary>
+        /// Sprint 3 #12：客户总数 KPI（委托 Repository 执行）
+        /// </summary>
+        /// <param name="expWhere">完整过滤表达式（含 isDelete=0）</param>
+        /// <returns>符合条件的客户总数</returns>
+        Task<int> CountAsync(Expression<Func<CRM_Customer, bool>> expWhere);
     }
 }

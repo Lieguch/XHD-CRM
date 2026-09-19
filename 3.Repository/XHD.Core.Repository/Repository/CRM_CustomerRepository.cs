@@ -652,5 +652,19 @@ namespace XHD.Core.Repository
 
             return arr;
         }
+
+        /// <summary>
+        /// Sprint 3 #12：客户总数 KPI。
+        /// 直接按外部传入的动态表达式统计客户数（表达式必须包含 isDelete=0 基础过滤）。
+        /// </summary>
+        /// <param name="expWhere">完整过滤表达式</param>
+        /// <returns>符合条件的客户总数</returns>
+        public async Task<int> CountAsync(Expression<Func<CRM_Customer, bool>> expWhere)
+        {
+            long total = await _fsql.Select<CRM_Customer>()
+                .Where(expWhere)
+                .CountAsync();
+            return (int)total;
+        }
     }
 }

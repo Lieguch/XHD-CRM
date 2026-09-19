@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq.Expressions;
@@ -143,6 +143,16 @@ namespace XHD.Core.Services
         public async Task<JArray> ComparedEmpCusAddAsync(int? startMonth, int? endMonth, int year, List<string> empIds)
         {
             return await _irepositoryBase.ComparedEmpCusAddAsync(startMonth, endMonth, year, empIds);
+        }
+
+        /// <summary>
+        /// Sprint 3 #12：客户总数 KPI（service 层薄封装，委托 Repository 执行）
+        /// </summary>
+        /// <param name="expWhere">完整过滤表达式（含 isDelete=0）</param>
+        /// <returns>符合条件的客户总数</returns>
+        public async Task<int> CountAsync(Expression<Func<CRM_Customer, bool>> expWhere)
+        {
+            return await _irepositoryBase.CountAsync(expWhere);
         }
     }
 }

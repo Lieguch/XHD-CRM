@@ -113,56 +113,59 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> ReportFollowYear()
         {
-            Expression<Func<CRM_follow, bool>> exp = a => 1 == 1;
-
-            if (!string.IsNullOrWhiteSpace(Request.Query["year"]))
+            // Sprint 3 #10：扩展为支持 items 参数 + DataAuth 过滤，返回 params_name × m1..m12 矩阵。
+            // 保留无参调用入口（向后兼容），参数从 Query 读取。
+            int syear = DateTime.Now.Year;
+            if (!string.IsNullOrWhiteSpace(Request.Query["syear"]))
             {
-                exp = exp.And(a => a.follow_time.Value.Year == Request.Query["year"]);
+                if (int.TryParse(Request.Query["syear"], out var parsedYear) && parsedYear >= 2000 && parsedYear <= 2100)
+                {
+                    syear = parsedYear;
+                }
             }
-            else
+            else if (!string.IsNullOrWhiteSpace(Request.Query["year"]))
             {
-                exp = exp.And(a => a.follow_time.Value.Year == DateTime.Now.Year);
+                if (int.TryParse(Request.Query["year"], out var parsedYear) && parsedYear >= 2000 && parsedYear <= 2100)
+                {
+                    syear = parsedYear;
+                }
             }
 
+            string items = string.IsNullOrWhiteSpace(Request.Query["items"]) ? "Follow_Type" : Request.Query["items"];
+            var allowedItems = new[] { "Follow_Type", "Follow_aim" };
+            if (!allowedItems.Contains(items))
+            {
+                return XHDResult.Error($"items 必须为 {string.Join("/", allowedItems)} 之一（Contact_Type 留到 Sprint 4）").ToString();
+            }
+
+            Expression<Func<CRM_follow, bool>> exp = a => true;
+
+            // DataAuth：非全公司权限按 employee_id 过滤
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4 && roledata.empList != null && roledata.empList.Count > 0)
+            {
+                exp = exp.And(a => roledata.empList.Contains(a.employee_id));
+            }
+            else if (roledata.authtype != 4)
+            {
+                // 无 empList 时拒绝访问（避免绕过）
+                return XHDResult.Error("权限不足！").ToString();
+            }
+
+            // 前端可选按员工过滤
             if (!string.IsNullOrWhiteSpace(Request.Query["emp_id"]))
             {
-                string[] emplist = Request.Query["emp_id"].ToString().Split(',');
-
+                string[] emplist = Request.Query["emp_id"].ToString().Split(',', StringSplitOptions.RemoveEmptyEntries);
                 if (emplist.Length > 0)
                 {
-                    var list = new List<string>();
-
-                    foreach (var emp in emplist)
-                    {
-                        list.Add(emp.ToString());
-                    }
+                    var list = new List<string>(emplist);
                     exp = exp.And(a => list.Contains(a.employee_id));
                 }
             }
 
-            var result = await _followservice.ReportYear(exp);
+            var result = await _followservice.ReportsYearAsync(items, syear, exp);
 
-            JArray arr = new JArray();
-            for (int i = 1; i <= 12; i++)
-            {
-                JObject obj = new JObject();
-                obj.Add("xmonth", i);
-
-                var sdata = result.Where(a => a.Value<int>("xmonth") == i).FirstOrDefault();
-
-                if (sdata == null)
-                {
-                    obj.Add("count", 0);
-                }
-                else
-                {
-                    obj.Add("count", sdata.Value<int>("count"));
-                }
-
-                arr.Add(obj);
-            }
-
-            return arr.ToString();
+            return result.ToString();
         }
 
         public async Task<string> ReportIndustry()

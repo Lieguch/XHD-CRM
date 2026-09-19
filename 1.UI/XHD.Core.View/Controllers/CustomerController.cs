@@ -1,4 +1,4 @@
-using Azure.Core;
+﻿using Azure.Core;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -20,6 +20,7 @@ using XHD.Core.Common;
 using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.View.Configs;
+using XHD.Core.View.Models.Dtos;
 
 namespace XHD.Core.View.Controllers
 {
@@ -490,6 +491,76 @@ namespace XHD.Core.View.Controllers
             });
 
             return XHDResult.Success().ToString();
+        }
+
+        /// <summary>
+        /// Sprint 3 #12：客户总数 KPI。
+        /// 对应 A 侧 Server.CRM_Customer.c_count。
+        /// 所有过滤参数化，返回符合 isDelete=0 且匹配所有非空参数的客户总数。
+        /// </summary>
+        [HttpGet("Count")]
+        public async Task<string> Count([FromQuery] CustomerCountQuery q)
+        {
+            Expression<Func<CRM_Customer, bool>> exp = a => a.isDelete == 0;
+
+            if (!string.IsNullOrWhiteSpace(q.emp_id))
+            {
+                exp = exp.And(a => a.emp_id == q.emp_id);
+            }
+            if (!string.IsNullOrWhiteSpace(q.industry_val))
+            {
+                exp = exp.And(a => a.cus_industry_id == q.industry_val);
+            }
+            if (!string.IsNullOrWhiteSpace(q.cus_type_id))
+            {
+                exp = exp.And(a => a.cus_type_id == q.cus_type_id);
+            }
+            if (!string.IsNullOrWhiteSpace(q.cus_level_id))
+            {
+                exp = exp.And(a => a.cus_level_id == q.cus_level_id);
+            }
+            if (!string.IsNullOrWhiteSpace(q.cus_source_id))
+            {
+                exp = exp.And(a => a.cus_source_id == q.cus_source_id);
+            }
+            if (PageValidate.IsDateTime(q.startdate))
+            {
+                DateTime sd = DateTime.Parse(q.startdate);
+                exp = exp.And(a => a.create_time != null && a.create_time.Value >= sd);
+            }
+            if (PageValidate.IsDateTime(q.enddate))
+            {
+                DateTime ed = DateTime.Parse(q.enddate).AddDays(1).AddTicks(-1);
+                exp = exp.And(a => a.create_time != null && a.create_time.Value <= ed);
+            }
+            if (PageValidate.IsDateTime(q.startfollow))
+            {
+                DateTime sf = DateTime.Parse(q.startfollow);
+                exp = exp.And(a => a.lastfollow != null && a.lastfollow.Value >= sf);
+            }
+            if (PageValidate.IsDateTime(q.endfollow))
+            {
+                DateTime ef = DateTime.Parse(q.endfollow).AddDays(1).AddTicks(-1);
+                exp = exp.And(a => a.lastfollow != null && a.lastfollow.Value <= ef);
+            }
+            if (!string.IsNullOrWhiteSpace(q.Provinces_val))
+            {
+                exp = exp.And(a => a.Provinces_id == q.Provinces_val);
+            }
+            if (!string.IsNullOrWhiteSpace(q.City_val))
+            {
+                exp = exp.And(a => a.City_id == q.City_val);
+            }
+            if (PageValidate.IsNumber(q.isPrivate))
+            {
+                int isPrivate = int.Parse(q.isPrivate);
+                exp = exp.And(a => a.isPrivate == isPrivate);
+            }
+
+            int total = await _service.CountAsync(exp);
+
+            // 返回标准 XHDResult 包装：count 字段承载总数
+            return XHDResult.Result(0, "", new JArray(), total).ToString();
         }
 
         public async Task<ActionResult> Export()
