@@ -699,5 +699,74 @@ namespace XHD.Core.Repository
 
             return rows > 0;
         }
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #01：客户重取（从回收站恢复）。
+        /// 对应 A 侧 Server.CRM_Customer.regain（内部调 AdvanceDelete(id, 0, now)）。
+        /// 与 <see cref="AdvanceDeleteAsync"/> 语义镜像、方向相反：
+        ///   isDelete  1 → 0
+        ///   Delete_time 非空 → null
+        ///   Delete_id 非空 → ""
+        /// 幂等安全：未被预删除的客户再次调用仍返回 true（已处于恢复态，UPDATE 仍匹配到行）。
+        /// 参数化执行（FreeSql 表达式转参数），禁止字符串拼接 SQL。
+        /// </summary>
+        /// <param name="id">客户 ID</param>
+        /// <returns>是否成功（受影响行数 &gt; 0）</returns>
+        public async Task<bool> RegainAsync(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return false;
+            }
+
+            DateTime? nullTime = null;
+
+            int rows = await _fsql.Update<CRM_Customer>()
+                .Set(a => a.isDelete, 0)
+                .Set(a => a.Delete_time, nullTime)
+                .Set(a => a.Delete_id, string.Empty)
+                .Where(a => a.id == id)
+                .ExecuteAffrowsAsync();
+
+            return rows > 0;
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #02：移动端客户更新（简化字段子集）。
+        /// 对应 A 侧 DAL.CRM_Customer.UpdateApp（DAL/CRM_Customer.cs:745-810）：
+        /// 仅更新 15 个业务字段，create_time / sn / isDelete / Delete_time / Delete_id /
+        /// lastfollow / state / x / y 等管理字段保持不变。
+        /// 参数化执行（FreeSql 表达式逐字段转参数），禁止字符串拼接 SQL。
+        /// </summary>
+        /// <param name="model">移动端提交的客户模型（id 必填）</param>
+        /// <returns>是否成功（受影响行数 &gt; 0）</returns>
+        public async Task<bool> UpdateAppAsync(CRM_Customer model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.id))
+            {
+                return false;
+            }
+
+            int rows = await _fsql.Update<CRM_Customer>()
+                .Set(a => a.cus_name, model.cus_name)
+                .Set(a => a.cus_add, model.cus_add)
+                .Set(a => a.cus_tel, model.cus_tel)
+                .Set(a => a.cus_fax, model.cus_fax)
+                .Set(a => a.cus_website, model.cus_website)
+                .Set(a => a.cus_industry_id, model.cus_industry_id)
+                .Set(a => a.Provinces_id, model.Provinces_id)
+                .Set(a => a.City_id, model.City_id)
+                .Set(a => a.cus_type_id, model.cus_type_id)
+                .Set(a => a.cus_level_id, model.cus_level_id)
+                .Set(a => a.cus_source_id, model.cus_source_id)
+                .Set(a => a.DesCripe, model.DesCripe)
+                .Set(a => a.Remarks, model.Remarks)
+                .Set(a => a.emp_id, model.emp_id)
+                .Set(a => a.isPrivate, model.isPrivate)
+                .Where(a => a.id == model.id)
+                .ExecuteAffrowsAsync();
+
+            return rows > 0;
+        }
     }
 }

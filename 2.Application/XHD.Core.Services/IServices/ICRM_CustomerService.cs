@@ -86,5 +86,21 @@ namespace XHD.Core.IServices
         /// <param name="operatorId">删除人 ID</param>
         /// <returns>是否成功</returns>
         Task<bool> AdvanceDeleteAsync(string id, string operatorId);
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #01：客户重取（从回收站恢复），委托 Repository 执行。
+        /// 与 AdvanceDeleteAsync 语义镜像、方向相反。
+        /// </summary>
+        /// <param name="id">客户 ID</param>
+        /// <returns>是否成功</returns>
+        Task<bool> RegainAsync(string id);
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #02：移动端客户更新（简化字段子集），委托 Repository 执行。
+        /// 仅更新 15 个业务字段，管理字段保持不变。
+        /// </summary>
+        /// <param name="model">移动端提交的客户模型（id 必填）</param>
+        /// <returns>是否成功</returns>
+        Task<bool> UpdateAppAsync(CRM_Customer model);
     }
 }

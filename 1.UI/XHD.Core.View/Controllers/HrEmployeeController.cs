@@ -376,5 +376,109 @@ namespace XHD.Core.View.Controllers
 
             return XHDResult.Success("修改成功！").ToString();
         }
+
+        /// <summary>
+        /// 取当前登录用户 ID（ClaimTypes.Sid）。仅用于业务逻辑；
+        /// Sys_log.UserName 场景请使用 User.FindFirst(ClaimTypes.Name)?.Value。
+        /// </summary>
+        private string GetUserId()
+        {
+            return User.FindFirst(ClaimTypes.Sid)?.Value;
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #10：员工唯一性校验。
+        /// 对应 A 侧 Server.hr_employee.Exist：校验 uid / name 是否已被他人占用。
+        /// id 非空时排除自身（编辑场景，A 侧 id&lt;&gt;'{model.id}' 语义）。
+        /// 返回裸字符串 "true"/"false"（与 A 侧契约一致，前端直接比对字符串，不走 XHDResult 包装）。
+        /// 参数化执行（FreeSql 表达式），禁止字符串拼接 SQL。
+        /// </summary>
+        /// <param name="field">校验字段，取值 uid 或 name</param>
+        /// <param name="value">待校验的值</param>
+        /// <param name="id">当前员工 ID（可选）；非空时排除自身</param>
+        /// <returns>"true" 表示已被占用；"false" 表示可用；参数非法时返回 XHDResult 错误 JSON</returns>
+        [HttpGet("Exist")]
+        public async Task<string> Exist(string field, string value, string id = null)
+        {
+            if (string.IsNullOrWhiteSpace(field) || string.IsNullOrWhiteSpace(value))
+            {
+                return XHDResult.Error("field 和 value 不能同时为空").ToString();
+            }
+
+            Expression<Func<hr_employee, bool>> exp;
+
+            if (field == "uid")
+            {
+                exp = a => a.uid == value;
+            }
+            else if (field == "name")
+            {
+                exp = a => a.name == value;
+            }
+            else
+            {
+                return XHDResult.Error("field 只能是 uid 或 name").ToString();
+            }
+
+            if (!string.IsNullOrWhiteSpace(id))
+            {
+                exp = exp.And(a => a.id != id);
+            }
+
+            var count = await _service.ExistsAsync(exp);
+            return count > 0 ? "true" : "false";
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #11：读取当前登录员工的默认城市。
+        /// 对应 A 侧 Server.hr_employee.getDefaultCity。
+        /// 勘误 C3：字段名是 default_city（不是 default_city_id），已存在，无需 schema 补强。
+        /// </summary>
+        /// <returns>标准 XHDResult 字符串，data[0] 承载默认城市值</returns>
+        [HttpGet("getDefaultCity")]
+        public async Task<string> getDefaultCity()
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return XHDResult.Error("登录状态已过期").ToString();
+            }
+
+            var city = await _service.GetDefaultCityAsync(userId);
+            if (city == null)
+            {
+                return XHDResult.Error("员工不存在").ToString();
+            }
+
+            return XHDResult.Success(city).ToString();
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #12：更新员工默认城市。
+        /// 对应 A 侧 Server.hr_employee.updateDefaultCity。
+        /// id 为空时默认更新当前登录员工（保持 A 侧 emp_id=this.emp_id 语义）；
+        /// id 非空时更新指定员工（供管理员代设场景使用）。
+        /// 注意：不用 BaseService.UpdateAsync(model)，因其 IgnoreColumns 明确忽略 default_city 字段。
+        /// </summary>
+        /// <param name="city">目标城市值，不能为空</param>
+        /// <param name="id">目标员工 ID（可选）；为空时使用当前登录用户</param>
+        /// <returns>标准 XHDResult 字符串</returns>
+        [HttpPost("updateDefaultCity")]
+        public async Task<string> updateDefaultCity(string city, string id = null)
+        {
+            if (string.IsNullOrWhiteSpace(city))
+            {
+                return XHDResult.Error("城市不能为空").ToString();
+            }
+
+            var empId = string.IsNullOrWhiteSpace(id) ? GetUserId() : id;
+            if (string.IsNullOrWhiteSpace(empId))
+            {
+                return XHDResult.Error("员工ID无效").ToString();
+            }
+
+            var ok = await _service.UpdateDefaultCityAsync(empId, city);
+            return ok ? XHDResult.Success("更新成功").ToString() : XHDResult.Error("更新失败").ToString();
+        }
     }
 }

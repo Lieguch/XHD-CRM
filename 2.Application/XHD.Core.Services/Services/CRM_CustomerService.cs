@@ -166,5 +166,36 @@ namespace XHD.Core.Services
         {
             return await _irepositoryBase.AdvanceDeleteAsync(id, operatorId);
         }
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #01：客户重取（从回收站恢复），service 层薄封装，委托 Repository 执行。
+        /// Service 只负责业务语义映射，不承担并发/权限判定（与 Claimlist/AbanDon 同一约定）。
+        /// </summary>
+        /// <param name="id">客户 ID</param>
+        /// <returns>是否成功</returns>
+        public async Task<bool> RegainAsync(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return false;
+            }
+
+            return await _irepositoryBase.RegainAsync(id);
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #02：移动端客户更新（简化字段子集），service 层薄封装，委托 Repository 执行。
+        /// </summary>
+        /// <param name="model">移动端提交的客户模型（id 必填）</param>
+        /// <returns>是否成功</returns>
+        public async Task<bool> UpdateAppAsync(CRM_Customer model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.id))
+            {
+                return false;
+            }
+
+            return await _irepositoryBase.UpdateAppAsync(model);
+        }
     }
 }

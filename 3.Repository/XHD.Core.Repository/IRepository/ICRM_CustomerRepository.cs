@@ -90,5 +90,28 @@ namespace XHD.Core.IRepository
         /// <param name="operatorId">删除人 ID</param>
         /// <returns>是否成功（受影响行数 &gt; 0）</returns>
         Task<bool> AdvanceDeleteAsync(string id, string operatorId);
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #01：客户重取（从回收站恢复）。
+        /// 对应 A 侧 Server.CRM_Customer.regain（AdvanceDelete(id, 0, time)）。
+        /// 与 AdvanceDeleteAsync 语义镜像、方向相反：isDelete 置 0，清空 Delete_time / Delete_id。
+        /// 幂等安全：未被预删除的客户再次调用仍返回 true（已处于恢复态）。
+        /// 参数化执行，禁止字符串拼接 SQL。
+        /// </summary>
+        /// <param name="id">客户 ID</param>
+        /// <returns>是否成功（受影响行数 &gt; 0）</returns>
+        Task<bool> RegainAsync(string id);
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #02：移动端客户更新（简化字段子集）。
+        /// 对应 A 侧 DAL.CRM_Customer.UpdateApp（DAL/CRM_Customer.cs:745）：
+        /// 仅更新 cus_name / cus_add / cus_tel / cus_fax / cus_website / cus_industry_id /
+        /// Provinces_id / City_id / cus_type_id / cus_level_id / cus_source_id /
+        /// DesCripe / Remarks / emp_id / isPrivate 共 15 个业务字段；
+        /// create_time / sn / isDelete / Delete_time / Delete_id / lastfollow / state / x / y 等管理字段保持不变。
+        /// </summary>
+        /// <param name="model">移动端提交的客户模型（id 必填）</param>
+        /// <returns>是否成功（受影响行数 &gt; 0）</returns>
+        Task<bool> UpdateAppAsync(CRM_Customer model);
     }
 }

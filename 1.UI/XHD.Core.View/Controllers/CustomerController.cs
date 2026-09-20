@@ -644,6 +644,138 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success("此客户已放入回收站。").ToString();
         }
 
+        /// <summary>
+        /// Sprint 4 Wave 1b #01：客户重取（从回收站恢复）。
+        /// 对应 A 侧 Server.CRM_Customer.regain（A 侧内部调 AdvanceDelete(id, 0, now)）。
+        /// 与 <see cref="AdvanceDelete"/> 语义镜像、方向相反：isDelete 置 0，清空 Delete_time / Delete_id。
+        /// 权限口径：复用 CRM_Customer|del 按钮权限（A 侧用按钮 GUID D2769CAF-8BC2-46D4-9758-7EE5EC4626C6，
+        /// Sprint 3 落地时映射为 CRM_Customer|del，保持业务口径一致）。
+        /// 数据权限：沿用 AdvanceDelete 的 authtype 判定（0 直接拒绝；非 4 且 emp_id 不在 empList 内拒绝）。
+        /// 幂等安全：未预删除的客户再次调用返回成功（已处于恢复态）。
+        /// </summary>
+        /// <param name="id">客户 ID（GUID 格式）</param>
+        /// <returns>标准 XHDResult 字符串</returns>
+        [HttpPost("regain")]
+        public async Task<string> Regain(string id)
+        {
+            // 参数校验
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return XHDResult.Error("系统错误，找不到数据！").ToString();
+            }
+
+            if (!PageValidate.checkID(id))
+            {
+                return XHDResult.Error("系统错误，找不到数据！").ToString();
+            }
+
+            // 按钮权限校验（与 AdvanceDelete 使用同一按钮键）
+            if (!await _dBAuthService.GetAuth(GetUserId(), "CRM_Customer|del"))
+            {
+                return XHDResult.Error("无权限！").ToString();
+            }
+
+            // 数据权限校验（与 AdvanceDelete 保持同一模式）
+            var roledata = await _dBAuthService.GetDataAuth(GetUserId());
+            if (roledata.authtype == 0)
+            {
+                return XHDResult.Error("无权限！").ToString();
+            }
+
+            var customer = (await _service.GridAsync(c => c.id == id, 1, 1)).data.FirstOrDefault();
+            if (customer == null)
+            {
+                return XHDResult.Error("系统错误，找不到数据！").ToString();
+            }
+
+            if (roledata.authtype != 4 && !roledata.empList.Contains(customer.emp_id))
+            {
+                return XHDResult.Error("无权限！").ToString();
+            }
+
+            var ok = await _service.RegainAsync(id);
+            if (!ok)
+            {
+                return XHDResult.Error("恢复失败！").ToString();
+            }
+
+            // 写 Sys_log（参照 AdvanceDelete L623-634，用 DeleteLog 走同一审计通道）
+            _logExt.getEntityText(customer);
+            await _logService.DeleteLog(new Sys_log
+            {
+                id = Guid.NewGuid().ToString(),
+                EventType = "[客户]恢复",
+                EventID = id,
+                cus_id = id,
+                EventTitle = customer.cus_name,
+                UserID = GetUserId(),
+                UserName = User.FindFirst(ClaimTypes.Name)?.Value,
+                IPStreet = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                EventDate = DateTime.Now
+            });
+
+            return XHDResult.Success("恢复成功").ToString();
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #02：移动端客户更新（简化字段子集）。
+        /// 对应 A 侧 BLL.CRM_Customer.UpdateApp（A 侧 DAL/CRM_Customer.cs:745-810）。
+        /// 与 PC 端 <see cref="Save"/> 的区别：仅更新 15 个业务字段
+        /// （cus_name/cus_add/cus_tel/cus_fax/cus_website/cus_industry_id/Provinces_id/City_id/
+        /// cus_type_id/cus_level_id/cus_source_id/DesCripe/Remarks/emp_id/isPrivate），
+        /// create_time/sn/isDelete/Delete_time/Delete_id/lastfollow/state/x/y 等管理字段保持不变。
+        /// 权限口径：CRM_Customer|edit；数据权限：authtype=0 直接拒绝，非 4 且归属人不在 empList 内拒绝。
+        /// </summary>
+        /// <param name="model">移动端提交的客户模型（id 必填）</param>
+        /// <returns>标准 XHDResult 字符串</returns>
+        [HttpPost("UpdateApp")]
+        public async Task<string> UpdateApp([FromBody] CRM_Customer model)
+        {
+            if (model == null || string.IsNullOrWhiteSpace(model.id))
+            {
+                return XHDResult.Error("客户ID无效").ToString();
+            }
+
+            if (!PageValidate.checkID(model.id))
+            {
+                return XHDResult.Error("客户ID无效").ToString();
+            }
+
+            if (!await CheckAuthAsync("edit"))
+            {
+                return XHDResult.Error("无权限！").ToString();
+            }
+
+            // 数据权限校验：只能更新自己有权限访问的客户
+            var roledata = await _dBAuthService.GetDataAuth(GetUserId());
+            if (roledata.authtype == 0)
+            {
+                return XHDResult.Error("无权限更新该客户").ToString();
+            }
+
+            var existing = (await _service.GridAsync(c => c.id == model.id, 1, 1)).data.FirstOrDefault();
+            if (existing == null)
+            {
+                return XHDResult.Error("找不到数据！").ToString();
+            }
+
+            if (roledata.authtype != 4 && !roledata.empList.Contains(existing.emp_id))
+            {
+                return XHDResult.Error("无权限更新该客户").ToString();
+            }
+
+            // 移动端强制归属为当前登录用户，避免客户端伪造 emp_id 抢占他人客户
+            model.emp_id = GetUserId();
+
+            var ok = await _service.UpdateAppAsync(model);
+            if (!ok)
+            {
+                return XHDResult.Error("更新失败").ToString();
+            }
+
+            return XHDResult.Success("更新成功").ToString();
+        }
+
         public async Task<ActionResult> Export()
         {
             // 原有业务逻辑完全保留

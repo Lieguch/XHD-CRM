@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text;
 using System.Linq.Expressions;
@@ -19,9 +19,15 @@ namespace XHD.Core.Services
 {
     internal class hr_employeeService : BaseService<hr_employee>, Ihr_employeeService
     {
+        // BaseService 的 _irepository 字段声明为 IXHDBaseRepository&lt;hr_employee&gt;，
+        // 拿不到 ExistsAsync/GetDefaultCityAsync/UpdateDefaultCityAsync 三个扩展方法，
+        // 因此额外持有一个具体接口引用（与 CRM_CustomerService._irepositoryBase 同一模式）。
+        private readonly Ihr_employeeRepository _irepositoryBase;
+
         public hr_employeeService(Ihr_employeeRepository repository)
         {
             _irepository = repository;
+            _irepositoryBase = repository;
         }
 
         /// <summary>
@@ -136,6 +142,47 @@ namespace XHD.Core.Services
             JObject obj = JObject.Parse(json);
 
             return XHDResult.Success(obj);
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #10：员工唯一性校验计数，service 层薄封装，委托 Repository 执行。
+        /// </summary>
+        /// <param name="expWhere">完整过滤表达式（含 field==value 与可选的 id 排除）</param>
+        /// <returns>符合条件的员工数量</returns>
+        public async Task<int> ExistsAsync(Expression<Func<hr_employee, bool>> expWhere)
+        {
+            return await _irepositoryBase.ExistsAsync(expWhere);
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #11：读取员工默认城市，service 层薄封装，委托 Repository 执行。
+        /// </summary>
+        /// <param name="empId">员工 ID</param>
+        /// <returns>默认城市；员工不存在返回 null，城市为空返回空字符串</returns>
+        public async Task<string> GetDefaultCityAsync(string empId)
+        {
+            if (string.IsNullOrWhiteSpace(empId))
+            {
+                return null;
+            }
+
+            return await _irepositoryBase.GetDefaultCityAsync(empId);
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 1b #12：更新员工默认城市，service 层薄封装，委托 Repository 执行。
+        /// </summary>
+        /// <param name="empId">员工 ID</param>
+        /// <param name="city">目标城市值</param>
+        /// <returns>是否成功</returns>
+        public async Task<bool> UpdateDefaultCityAsync(string empId, string city)
+        {
+            if (string.IsNullOrWhiteSpace(empId) || string.IsNullOrWhiteSpace(city))
+            {
+                return false;
+            }
+
+            return await _irepositoryBase.UpdateDefaultCityAsync(empId, city);
         }
     }
 }
