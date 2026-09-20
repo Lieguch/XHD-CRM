@@ -361,5 +361,34 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
+        /// <summary>
+        /// Sprint 6 Wave 1 #116：参数名唯一性校验。
+        /// 对应 A 侧 Server.Sys_Param.validate：
+        ///   params_name=@name AND params_type=@parentid AND id!=@cid。
+        /// 命中即返回 "false"（重名），否则返回 "true"（唯一可用）。
+        /// 返回值对齐 A 侧：字面量 true/false（不包 XHDResult JSON），前端直接解析。
+        /// </summary>
+        /// <param name="paramName">待校验的参数名（A 侧字段名 T_param_name）</param>
+        /// <param name="parentId">父级参数 id（A 侧字段名 parentid）</param>
+        /// <param name="cid">排除自身的 id（A 侧字段名 T_cid；新增场景可传空，视为 root）</param>
+        /// <returns>字面量 "true" 或 "false"</returns>
+        [HttpPost("validate")]
+        public async Task<string> Validate(
+            [FromQuery] string T_param_name,
+            [FromQuery] string parentid,
+            [FromQuery] string T_cid)
+        {
+            if (string.IsNullOrWhiteSpace(T_param_name))
+            {
+                return "false";
+            }
+
+            var effectiveCid = string.IsNullOrWhiteSpace(T_cid) ? "root" : T_cid;
+
+            var ok = await _service.ValidateNameAsync(T_param_name, parentid ?? string.Empty, effectiveCid);
+
+            return ok ? "true" : "false";
+        }
+
     }
 }

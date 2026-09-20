@@ -224,5 +224,27 @@ namespace XHD.Core.View.Controllers
             }
             return XHDResult.Success(arr).ToString();
         }
+
+        /// <summary>
+        /// Sprint 6 Wave 1 #98：新闻提醒（最新 N 条）。
+        /// 对应 A 侧 Server.Public_news.newsremind：仅按 create_time desc 取前 N 条。
+        /// 与 NoticeRemind 语义相反：不过滤 isRead、不修改已读标记。
+        /// </summary>
+        /// <param name="limit">返回条数上限，默认 5（对齐 A 侧 GetList(5, ...)）</param>
+        /// <returns>标准 XHDResult 字符串，data 承载最新新闻数组</returns>
+        [HttpGet("NewsRemind")]
+        public async Task<string> NewsRemind(int limit = 5)
+        {
+            var list = await _service.NewsRemindAsync(limit);
+            var arr = new JArray();
+            if (list != null)
+            {
+                foreach (var item in list)
+                {
+                    arr.Add(JObject.FromObject(item));
+                }
+            }
+            return XHDResult.Success(arr).ToString();
+        }
     }
 }

@@ -196,5 +196,133 @@ namespace XHD.Core.View.Controllers
 
             return XHDResult.Success(model.id).ToString();
         }
+
+        /// <summary>
+        /// Sprint 6 Wave 1 #93：日历快速更新（拖拽改时间）。
+        /// 对应 A 侧 Server.Personal_Calendar.quickupdate。
+        /// 只做两件事：参数校验 + 当前用户归属校验 + 起止时间四字段更新。
+        /// 不触碰 title / description / allDay，避免"改个时间把标题清掉"。
+        /// </summary>
+        /// <param name="calendarId">日程 id</param>
+        /// <param name="calendarStartTime">开始日期（yyyy-MM-dd）</param>
+        /// <param name="calendarEndTime">结束日期（yyyy-MM-dd）</param>
+        /// <param name="calendarStartTimeHHmm">开始时间（HH:mm，可选）</param>
+        /// <param name="calendarEndTimeHHmm">结束时间（HH:mm，可选）</param>
+        /// <returns>标准 XHDResult 字符串</returns>
+        [HttpPost("quickupdate")]
+        public async Task<string> QuickUpdate(
+            string calendarId,
+            string calendarStartTime,
+            string calendarEndTime,
+            string calendarStartTimeHHmm = null,
+            string calendarEndTimeHHmm = null)
+        {
+            if (string.IsNullOrWhiteSpace(calendarId))
+            {
+                return XHDResult.Error("参数错误！").ToString();
+            }
+
+            var userId = User.FindFirst(ClaimTypes.Sid)?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return XHDResult.Error("登录状态已过期").ToString();
+            }
+
+            // 归属校验：先查一次目标日程是否属于当前用户
+            var existing = await _service.GridAsync(a => a.id == calendarId);
+            if (existing == null || existing.data == null || existing.data.Count == 0)
+            {
+                return XHDResult.Error("系统错误，无数据！").ToString();
+            }
+            if (existing.data[0].emp_id != userId)
+            {
+                return XHDResult.Error("无权限修改他人日程").ToString();
+            }
+
+            // 参数化更新起止时间四字段
+            var rows = await _service.QuickUpdateAsync(
+                calendarId,
+                calendarStartTime ?? string.Empty,
+                calendarStartTimeHHmm ?? string.Empty,
+                calendarEndTime ?? string.Empty,
+                calendarEndTimeHHmm ?? string.Empty);
+
+            if (rows <= 0)
+            {
+                return XHDResult.Error("更新失败").ToString();
+            }
+
+            return XHDResult.Success("更新成功").ToString();
+        }
+
+        /// <summary>
+        /// Sprint 6 Wave 1 #94：日历快速删除。
+        /// 对应 A 侧 Server.Personal_Calendar.quickdel(string calendarId)。
+        /// 归属校验：仅允许删除当前用户的日程。
+        /// </summary>
+        /// <param name="calendarId">日程 id</param>
+        /// <returns>标准 XHDResult 字符串</returns>
+        [HttpPost("quickdel")]
+        public async Task<string> QuickDel(string calendarId)
+        {
+            if (string.IsNullOrWhiteSpace(calendarId))
+            {
+                return XHDResult.Error("参数错误！").ToString();
+            }
+
+            var userId = User.FindFirst(ClaimTypes.Sid)?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return XHDResult.Error("登录状态已过期").ToString();
+            }
+
+            var existing = await _service.GridAsync(a => a.id == calendarId);
+            if (existing == null || existing.data == null || existing.data.Count == 0)
+            {
+                return XHDResult.Error("系统错误，无数据！").ToString();
+            }
+            if (existing.data[0].emp_id != userId)
+            {
+                return XHDResult.Error("无权限删除他人日程").ToString();
+            }
+
+            var rows = await _service.DeleteAsync(calendarId);
+            if (rows <= 0)
+            {
+                return XHDResult.Error("删除失败").ToString();
+            }
+
+            return XHDResult.Success("删除成功").ToString();
+        }
+
+        /// <summary>
+        /// Sprint 6 Wave 1 #95：当日日程查询。
+        /// 对应 A 侧 Server.Personal_Calendar.Today：
+        ///   StartTime &lt;= 今日 23:59:50 AND EndTime &gt;= 今日 00:00:00 AND emp_id=当前用户。
+        /// 按 StartDateTime 降序返回。
+        /// </summary>
+        /// <returns>标准 XHDResult 字符串，data 承载当日日程数组</returns>
+        [HttpGet("Today")]
+        public async Task<string> Today()
+        {
+            var userId = User.FindFirst(ClaimTypes.Sid)?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return XHDResult.Error("登录状态已过期").ToString();
+            }
+
+            var list = await _service.GetTodayAsync(userId);
+
+            var arr = new JArray();
+            if (list != null)
+            {
+                foreach (var item in list)
+                {
+                    arr.Add(JObject.FromObject(item));
+                }
+            }
+
+            return XHDResult.Success(arr).ToString();
+        }
     }
 }
