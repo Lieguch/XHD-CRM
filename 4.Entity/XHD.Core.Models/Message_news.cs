@@ -1,4 +1,4 @@
-
+﻿
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -55,6 +55,20 @@ namespace XHD.Core.Models {
 		/// </summary>
 		[JsonProperty]
 		public Sys_Param NewsType { get; set; }
+
+		/// <summary>
+		/// 是否已读（false 未读 / true 已读）
+		/// Sprint 4 Wave 2 #15 noticeremind 提醒列表依赖
+		/// </summary>
+		[JsonProperty]
+		public bool isRead { get; set; } = false;
+
+		/// <summary>
+		/// 阅读时间
+		/// Sprint 4 Wave 2 #15 noticeremind 提醒列表依赖
+		/// </summary>
+		[JsonProperty]
+		public DateTime? read_time { get; set; }
 
 	}
 

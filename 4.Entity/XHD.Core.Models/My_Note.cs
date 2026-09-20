@@ -62,5 +62,19 @@ namespace XHD.Core.Models
         [JsonProperty]
         public int? zIndex { get; set; }
 
+        /// <summary>
+        /// 是否已读（false 未读 / true 已读）
+        /// Sprint 4 Wave 2 #14 notesremind 提醒列表依赖
+        /// </summary>
+        [JsonProperty]
+        public bool isRead { get; set; } = false;
+
+        /// <summary>
+        /// 阅读时间
+        /// Sprint 4 Wave 2 #14 notesremind 提醒列表依赖
+        /// </summary>
+        [JsonProperty]
+        public DateTime? read_time { get; set; }
+
     }
 }

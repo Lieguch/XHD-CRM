@@ -98,5 +98,35 @@ namespace XHD.Core.View.Controllers
 
             return XHDResult.Success().ToString();
         }
+
+        /// <summary>
+        /// Sprint 4 Wave 2 #14：便签未读提醒（首页弹窗）。
+        /// 对应 A 侧 Server.Personal_notes.notesremind：按 Note_time desc 取前 N 条。
+        /// B 侧扩展：仅返回当前登录员工 isRead=false 的便签，并在返回前批量标记为已读
+        /// （isRead=true，read_time=now），下次调用将不再重复返回同一批便签。
+        /// 勘误 C4：时间字段名是 Note_time（不是 create_time）。
+        /// </summary>
+        /// <param name="limit">返回条数上限，默认 10</param>
+        /// <returns>标准 XHDResult 字符串，data 承载未读便签数组</returns>
+        [HttpGet("Remind")]
+        public async Task<string> Remind(int limit = 10)
+        {
+            var userId = User.FindFirst(ClaimTypes.Sid)?.Value;
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return XHDResult.Error("登录状态已过期").ToString();
+            }
+
+            var list = await _service.RemindAsync(userId, limit);
+            var arr = new JArray();
+            if (list != null)
+            {
+                foreach (var item in list)
+                {
+                    arr.Add(JObject.FromObject(item));
+                }
+            }
+            return XHDResult.Success(arr).ToString();
+        }
     }
 }

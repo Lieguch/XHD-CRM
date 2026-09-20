@@ -140,5 +140,61 @@ namespace XHD.Core.View.Controllers
 
             return XHDResult.Success().ToString();
         }
+
+        /// <summary>
+        /// Sprint 4 Wave 2 #13：日历快速新增（拖拽创建场景）。
+        /// 对应 A 侧 Server.Personal_Calendar.quickadd：只接收最少字段（标题 + 起止时间），
+        /// 自动补齐 emp_id / id，走现有 My_CalendarService.AddAsync 落库。
+        /// 与 Save() 不同，此处不校验 endDate 必填（A 侧同样允许空），
+        /// 也不做全天任务的 00:00-23:59:59 强制展开。
+        /// </summary>
+        /// <param name="model">日程实体（含 title / startDate / startTime / endDate / endTime / description / color / allDay）</param>
+        /// <returns>标准 XHDResult 字符串，成功时 data[0].id 承载新日程 ID</returns>
+        [HttpPost("quickadd")]
+        public async Task<string> QuickAdd(My_Calendar model)
+        {
+            if (model == null)
+            {
+                return XHDResult.Error("请求体无效").ToString();
+            }
+
+            if (string.IsNullOrWhiteSpace(model.title))
+            {
+                return XHDResult.Error("日程标题不能为空").ToString();
+            }
+
+            if (string.IsNullOrWhiteSpace(model.startDate))
+            {
+                return XHDResult.Error("开始日期不能为空").ToString();
+            }
+
+            try
+            {
+                // 校验 startDate 格式（yyyy-MM-dd）；startTime 可选，为空则视为 00:00
+                DateTime.ParseExact(model.startDate.Trim(), "yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
+            }
+            catch (FormatException)
+            {
+                return XHDResult.Error("开始日期格式错误，请使用 yyyy-MM-dd").ToString();
+            }
+
+            // 补齐 endDate：若为空则默认等于 startDate（单天日程）
+            if (string.IsNullOrWhiteSpace(model.endDate))
+            {
+                model.endDate = model.startDate;
+            }
+
+            // 补齐主键与员工归属
+            model.id = UUIDNext.Uuid.NewSequential().ToString();
+            model.emp_id = User.FindFirst(ClaimTypes.Sid).Value;
+
+            int result = await _service.AddAsync(model);
+            if (result <= 0)
+            {
+                return XHDResult.Error("操作失败，系统错误").ToString();
+            }
+
+            return XHDResult.Success(model.id).ToString();
+        }
     }
 }

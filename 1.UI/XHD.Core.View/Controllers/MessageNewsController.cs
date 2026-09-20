@@ -201,5 +201,28 @@ namespace XHD.Core.View.Controllers
 
             return XHDResult.Success().ToString();
         }
+
+        /// <summary>
+        /// Sprint 4 Wave 2 #15：公告未读提醒。
+        /// 对应 A 侧 Server.Public_notice.noticeremind（公告全局可见，按 create_time desc 取前 N 条）。
+        /// B 侧扩展：仅返回 isRead=false 的公告，并在返回前批量标记为已读
+        /// （isRead=true，read_time=now）。勘误 C1：B 侧 Entity 名是 Message_news（不是 Public_notice）。
+        /// </summary>
+        /// <param name="limit">返回条数上限，默认 10</param>
+        /// <returns>标准 XHDResult 字符串，data 承载未读公告数组</returns>
+        [HttpGet("NoticeRemind")]
+        public async Task<string> NoticeRemind(int limit = 10)
+        {
+            var list = await _service.NoticeRemindAsync(limit);
+            var arr = new JArray();
+            if (list != null)
+            {
+                foreach (var item in list)
+                {
+                    arr.Add(JObject.FromObject(item));
+                }
+            }
+            return XHDResult.Success(arr).ToString();
+        }
     }
 }
