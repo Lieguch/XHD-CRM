@@ -68,6 +68,9 @@ namespace XHD.Core.Tests
             fsql.CodeFirst.SyncStructure<My_Note>();
             fsql.CodeFirst.SyncStructure<Jobs>();
             fsql.CodeFirst.SyncStructure<Jobs_follow>();
+            // Sprint 5 Wave 1 新增
+            fsql.CodeFirst.SyncStructure<hr_post>();
+            fsql.CodeFirst.SyncStructure<Sys_role_emp>();
         }
     }
 

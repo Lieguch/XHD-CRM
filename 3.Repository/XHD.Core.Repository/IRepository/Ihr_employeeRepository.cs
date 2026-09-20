@@ -38,5 +38,16 @@ namespace XHD.Core.IRepository
         /// <param name="city">目标城市值</param>
         /// <returns>是否成功（受影响行数 &gt; 0）</returns>
         Task<bool> UpdateDefaultCityAsync(string empId, string city);
+
+        /// <summary>
+        /// Sprint 5 Wave 1 #27：变更员工岗位三元组（dep_id / post_id / position_id）。
+        /// 对应 A 侧 BLL.hr_employee.UpdatePost。
+        /// </summary>
+        /// <param name="empId">员工 ID</param>
+        /// <param name="depId">目标部门 ID</param>
+        /// <param name="postId">目标岗位 ID</param>
+        /// <param name="positionId">目标职务级别 ID</param>
+        /// <returns>是否成功（受影响行数 &gt; 0）</returns>
+        Task<bool> UpdatePostAsync(string empId, string depId, string postId, string positionId);
     }
 }

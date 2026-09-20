@@ -184,5 +184,18 @@ namespace XHD.Core.Services
 
             return await _irepositoryBase.UpdateDefaultCityAsync(empId, city);
         }
+
+        /// <summary>
+        /// Sprint 5 Wave 1 #27：变更员工岗位三元组，service 层薄封装。
+        /// </summary>
+        public async Task<bool> UpdatePostAsync(string empId, string depId, string postId, string positionId)
+        {
+            if (string.IsNullOrWhiteSpace(empId))
+            {
+                return false;
+            }
+
+            return await _irepositoryBase.UpdatePostAsync(empId, depId, postId, positionId);
+        }
     }
 }

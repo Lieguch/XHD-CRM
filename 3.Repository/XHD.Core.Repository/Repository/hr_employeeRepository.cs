@@ -205,5 +205,27 @@ namespace XHD.Core.Repository
 
             return rows > 0;
         }
+
+        /// <summary>
+        /// Sprint 5 Wave 1 #27：变更员工岗位三元组（dep_id / post_id / position_id）。
+        /// 注意：不用 BaseRepository.UpdateAsync(model)，因为 IgnoreColumns 会忽略部分列，
+        /// 且我们只关心这 3 个字段的原子更新（对齐 A 侧 UPDATE 语义）。
+        /// </summary>
+        public async Task<bool> UpdatePostAsync(string empId, string depId, string postId, string positionId)
+        {
+            if (string.IsNullOrWhiteSpace(empId))
+            {
+                return false;
+            }
+
+            int rows = await _fsql.Update<hr_employee>()
+                .Set(a => a.dep_id, depId ?? string.Empty)
+                .Set(a => a.post_id, postId ?? string.Empty)
+                .Set(a => a.position_id, positionId ?? string.Empty)
+                .Where(a => a.id == empId)
+                .ExecuteAffrowsAsync();
+
+            return rows > 0;
+        }
     }
 }
