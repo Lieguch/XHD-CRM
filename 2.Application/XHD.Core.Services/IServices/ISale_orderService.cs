@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
@@ -28,5 +28,20 @@ namespace XHD.Core.IServices
         Task<JArray> ReportPayType(Expression<Func<Sale_order, bool>> expWhere);
 
         Task<JArray> ReportYearSum(Expression<Func<Sale_order, bool>> expWhere);
+
+        /// <summary>
+        /// Sprint 4 #07：员工双月订单对比。
+        /// </summary>
+        Task<JArray> ComparedEmpCusOrderAsync(int year1, int month1, int year2, int month2, List<string> empIds);
+
+        /// <summary>
+        /// Sprint 4 #08：员工月度订单矩阵（跨月区间）。
+        /// </summary>
+        Task<JArray> ReportMonthEmpOrderAsync(DateTime start, DateTime end, List<string> empIds);
+
+        /// <summary>
+        /// Sprint 4 #09：员工年度订单矩阵。
+        /// </summary>
+        Task<JArray> ReportEmpOrderAsync(int year, List<string> empIds);
     }
 }

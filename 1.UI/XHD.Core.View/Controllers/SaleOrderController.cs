@@ -304,5 +304,130 @@ namespace XHD.Core.View.Controllers
 
             return XHDResult.Success().ToString();
         }
+
+        #region Sprint 4 Wave 1a：销售订单报表端点（#03 #07 #08 #09）
+
+        /// <summary>
+        /// Sprint 4 #03：按客户查询订单（客户详情页）。
+        /// 对应 A 侧 Server.Sale_order.gridbycustomerid。
+        /// </summary>
+        /// <param name="customerid">客户 ID（必须为 GUID）</param>
+        /// <param name="page">页码，默认 1</param>
+        /// <param name="limit">每页条数，默认 30</param>
+        [HttpGet("gridbycustomerid")]
+        public async Task<string> GridByCustomerId(string customerid, int page = 1, int limit = 30)
+        {
+            if (!PageValidate.checkID(customerid))
+            {
+                return XHDResult.Error("客户ID无效").ToString();
+            }
+
+            Expression<Func<Sale_order, bool>> exp = a => a.customer_id == customerid;
+
+            // 数据权限过滤：参考 CRMFollowController.Grid 模式
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
+            }
+
+            var result = await _service.GridAsync(exp, page, limit, "a.Order_date desc");
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Sprint 4 #07：员工双月订单对比。
+        /// 对应 A 侧 Server.Sale_order.Compared_empcusorder。
+        /// idlist 语义变更：A 侧为岗位 ID，B 侧为员工 ID 直传（规避 hr_post 依赖）。
+        /// </summary>
+        [HttpGet("Compared_empcusorder")]
+        public async Task<string> ComparedEmpCusOrder(
+            [FromQuery] string idlist,
+            int year1, int month1, int year2, int month2)
+        {
+            if (month1 < 1 || month1 > 12 || month2 < 1 || month2 > 12)
+            {
+                return XHDResult.Error("月份必须在 1-12 之间").ToString();
+            }
+
+            List<string> empIds = ParseEmpIds(idlist);
+
+            var arr = await _service.ComparedEmpCusOrderAsync(year1, month1, year2, month2, empIds);
+            return XHDResult.Success(arr).ToString();
+        }
+
+        /// <summary>
+        /// Sprint 4 #08：员工月度订单矩阵（跨月区间）。
+        /// 对应 A 侧 Server.Sale_order.emp_month_cusorder。
+        /// </summary>
+        [HttpGet("emp_month_cusorder")]
+        public async Task<string> EmpMonthCusOrder(
+            [FromQuery] string idlist,
+            [FromQuery] string sstart,
+            [FromQuery] string sdend)
+        {
+            DateTime start = PageValidate.IsDateTime(sstart) ? DateTime.Parse(sstart) : DateTime.MinValue;
+            DateTime end = PageValidate.IsDateTime(sdend)
+                ? DateTime.Parse(sdend).AddDays(1).AddTicks(-1)
+                : DateTime.MaxValue;
+
+            if (start > end)
+            {
+                return XHDResult.Error("开始时间不能晚于结束时间").ToString();
+            }
+
+            List<string> empIds = ParseEmpIds(idlist);
+
+            var arr = await _service.ReportMonthEmpOrderAsync(start, end, empIds);
+            return XHDResult.Success(arr).ToString();
+        }
+
+        /// <summary>
+        /// Sprint 4 #09：员工年度订单矩阵。
+        /// 对应 A 侧 Server.Sale_order.emp_cusorder。
+        /// </summary>
+        [HttpGet("emp_cusorder")]
+        public async Task<string> EmpCusOrder(
+            [FromQuery] string idlist,
+            [FromQuery] int syear)
+        {
+            if (syear < 2000 || syear > 2100)
+            {
+                return XHDResult.Error("年份无效").ToString();
+            }
+
+            List<string> empIds = ParseEmpIds(idlist);
+
+            var arr = await _service.ReportEmpOrderAsync(syear, empIds);
+            return XHDResult.Success(arr).ToString();
+        }
+
+        /// <summary>
+        /// 解析 idlist 参数为 empIds 白名单。
+        /// 输入为 ';' 分隔字符串，每个 ID 必须通过 GUID 格式校验（防 SQL 注入）。
+        /// null 或空表示全部员工。
+        /// </summary>
+        private static List<string> ParseEmpIds(string idlist)
+        {
+            if (string.IsNullOrWhiteSpace(idlist))
+            {
+                return null;
+            }
+
+            var raw = idlist.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries);
+            var valid = new List<string>(raw.Length);
+            foreach (var item in raw)
+            {
+                var trimmed = item.Trim();
+                if (PageValidate.checkID(trimmed))
+                {
+                    valid.Add(trimmed);
+                }
+            }
+
+            return valid.Count > 0 ? valid : null;
+        }
+
+        #endregion
     }
 }

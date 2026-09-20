@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -335,6 +336,132 @@ namespace XHD.Core.Repository
                 .ExecuteAffrowsAsync();
 
             return rows > 0;
+        }
+
+        // ============ Sprint 4 Wave 1a：销售订单报表 ============
+
+        /// <summary>
+        /// Sprint 4 #07：员工双月订单对比。
+        /// 对应 A 侧 DAL.Sale_order.Compared_empcusorder。
+        /// 输出：[{ yy=员工名, dt1, dt2 }]；dt1 = year1-month1 订单数，dt2 = year2-month2 订单数。
+        /// empIds 为 null 表示不过滤（统计全部员工）。
+        /// </summary>
+        public async Task<JArray> ComparedEmpCusOrderAsync(int year1, int month1, int year2, int month2, List<string> empIds)
+        {
+            bool hasEmpIds = empIds != null && empIds.Count > 0;
+
+            // 先取员工列表（与 A 侧 hr_employee 全量遍历语义对齐，保持行序稳定）
+            var employees = await _fsql.Select<hr_employee>()
+                .WhereIf(hasEmpIds, e => empIds.Contains(e.id))
+                .ToListAsync();
+
+            // 取两个月的订单明细
+            var rows = await _fsql.Select<Sale_order>()
+                .Where(a => a.Order_date != null)
+                .Where(a => (a.Order_date.Value.Year == year1 && a.Order_date.Value.Month == month1)
+                          || (a.Order_date.Value.Year == year2 && a.Order_date.Value.Month == month2))
+                .WhereIf(hasEmpIds, a => empIds.Contains(a.emp_id))
+                .ToListAsync(a => new
+                {
+                    eid = a.emp_id,
+                    y = a.Order_date.Value.Year,
+                    m = a.Order_date.Value.Month
+                });
+
+            JArray arr = new JArray();
+            foreach (var emp in employees)
+            {
+                int dt1 = rows.Count(r => r.eid == emp.id && r.y == year1 && r.m == month1);
+                int dt2 = rows.Count(r => r.eid == emp.id && r.y == year2 && r.m == month2);
+                arr.Add(new JObject
+                {
+                    ["yy"] = emp.name,
+                    ["dt1"] = dt1,
+                    ["dt2"] = dt2
+                });
+            }
+
+            return arr;
+        }
+
+        /// <summary>
+        /// Sprint 4 #08：员工月度订单矩阵（跨月区间）。
+        /// 对应 A 侧 DAL.Sale_order.report_month_emporder。
+        /// 输出：[{ name=员工名, yy=起始年, m1..m12 }]；无订单月份填 0。
+        /// </summary>
+        public async Task<JArray> ReportMonthEmpOrderAsync(DateTime start, DateTime end, List<string> empIds)
+        {
+            bool hasEmpIds = empIds != null && empIds.Count > 0;
+
+            if (start > end)
+                throw new ArgumentException("开始时间不能晚于结束时间", nameof(start));
+
+            var employees = await _fsql.Select<hr_employee>()
+                .WhereIf(hasEmpIds, e => empIds.Contains(e.id))
+                .ToListAsync();
+
+            var rows = await _fsql.Select<Sale_order>()
+                .Where(a => a.Order_date != null)
+                .Where(a => a.Order_date.Value >= start)
+                .Where(a => a.Order_date.Value <= end)
+                .WhereIf(hasEmpIds, a => empIds.Contains(a.emp_id))
+                .ToListAsync(a => new
+                {
+                    eid = a.emp_id,
+                    m = a.Order_date.Value.Month
+                });
+
+            JArray arr = new JArray();
+            foreach (var emp in employees)
+            {
+                var empRows = rows.Where(r => r.eid == emp.id).ToList();
+                JObject obj = new JObject { ["name"] = emp.name, ["yy"] = start.Year };
+                for (int m = 1; m <= 12; m++)
+                {
+                    obj[$"m{m}"] = empRows.Count(r => r.m == m);
+                }
+                arr.Add(obj);
+            }
+
+            return arr;
+        }
+
+        /// <summary>
+        /// Sprint 4 #09：员工年度订单矩阵。
+        /// 对应 A 侧 DAL.Sale_order.report_emporder。
+        /// 输出：[{ name=员工名, yy=年份, m1..m12 }]；无订单月份填 0。
+        /// </summary>
+        public async Task<JArray> ReportEmpOrderAsync(int year, List<string> empIds)
+        {
+            bool hasEmpIds = empIds != null && empIds.Count > 0;
+
+            var employees = await _fsql.Select<hr_employee>()
+                .WhereIf(hasEmpIds, e => empIds.Contains(e.id))
+                .ToListAsync();
+
+            var rows = await _fsql.Select<Sale_order>()
+                .Where(a => a.Order_date != null)
+                .Where(a => a.Order_date.Value.Year == year)
+                .WhereIf(hasEmpIds, a => empIds.Contains(a.emp_id))
+                .ToListAsync(a => new
+                {
+                    eid = a.emp_id,
+                    m = a.Order_date.Value.Month
+                });
+
+            JArray arr = new JArray();
+            foreach (var emp in employees)
+            {
+                var empRows = rows.Where(r => r.eid == emp.id).ToList();
+                JObject obj = new JObject { ["name"] = emp.name, ["yy"] = year };
+                for (int m = 1; m <= 12; m++)
+                {
+                    obj[$"m{m}"] = empRows.Count(r => r.m == m);
+                }
+                arr.Add(obj);
+            }
+
+            return arr;
         }
     }
 }

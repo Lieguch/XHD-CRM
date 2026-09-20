@@ -71,5 +71,20 @@ namespace XHD.Core.Services
         {
             return await repositorySelf.ReportYearSum(expWhere);
         }
+
+        public async Task<JArray> ComparedEmpCusOrderAsync(int year1, int month1, int year2, int month2, List<string> empIds)
+        {
+            return await repositorySelf.ComparedEmpCusOrderAsync(year1, month1, year2, month2, empIds);
+        }
+
+        public async Task<JArray> ReportMonthEmpOrderAsync(DateTime start, DateTime end, List<string> empIds)
+        {
+            return await repositorySelf.ReportMonthEmpOrderAsync(start, end, empIds);
+        }
+
+        public async Task<JArray> ReportEmpOrderAsync(int year, List<string> empIds)
+        {
+            return await repositorySelf.ReportEmpOrderAsync(year, empIds);
+        }
     }
 }
