@@ -8,6 +8,7 @@ using XHD.Core.IServices;
 using XHD.Core.IRepository;
 using XHD.Core.Models;
 using XHD.Core.Common;
+using XHD.Core.Common.Excel;
 
 using Newtonsoft;
 using Newtonsoft.Json;
@@ -196,6 +197,26 @@ namespace XHD.Core.Services
             }
 
             return await _irepositoryBase.UpdateAppAsync(model);
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 3 #04：批量导入客户（service 层薄封装，委托 Repository 执行）。
+        /// </summary>
+        /// <param name="models">待插入的客户列表</param>
+        /// <returns>批量导入结果</returns>
+        public async Task<ExcelImportResult> ImportAsync(List<CRM_Customer> models)
+        {
+            return await _irepositoryBase.ImportRangeAsync(models);
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 3 #06：管理员批量 upsert 客户（service 层薄封装，委托 Repository 执行）。
+        /// </summary>
+        /// <param name="models">待 upsert 的客户列表</param>
+        /// <returns>批量导入结果</returns>
+        public async Task<ExcelImportResult> AdminImportAsync(List<CRM_Customer> models)
+        {
+            return await _irepositoryBase.AdminImportRangeAsync(models);
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using Azure.Core;
+using FreeSql;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using MiniExcelLibs;
@@ -17,9 +19,11 @@ using System.Linq.Expressions;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using XHD.Core.Common;
+using XHD.Core.Common.Excel;
 using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.View.Configs;
+using XHD.Core.View.Helpers;
 using XHD.Core.View.Models.Dtos;
 
 namespace XHD.Core.View.Controllers
@@ -37,6 +41,7 @@ namespace XHD.Core.View.Controllers
         private readonly ISys_Param_ProvincesService _provincesService;
         private readonly ISys_logService _logService;
         private readonly ISys_infoService _infoService;
+        private readonly IFreeSql _fsql;
         private readonly SysLogExt<CRM_Customer> _logExt = new();
 
         public CustomerController(
@@ -49,7 +54,8 @@ namespace XHD.Core.View.Controllers
             ISys_ParamService paramService,
             ISys_Param_ProvincesService provincesService,
             ISys_logService logService,
-            ISys_infoService infoService)
+            ISys_infoService infoService,
+            IFreeSql fsql = null)
         {
             _service = service;
             _contactService = contactService;
@@ -61,6 +67,7 @@ namespace XHD.Core.View.Controllers
             _provincesService = provincesService;
             _logService = logService;
             _infoService = infoService;
+            _fsql = fsql;
         }
 
         public IActionResult Info()
@@ -856,6 +863,206 @@ namespace XHD.Core.View.Controllers
             );
         }
 
+        // ========== Sprint 4 Wave 3：Excel 导入（#04 / #06） ==========
+
+        /// <summary>
+        /// Sprint 4 Wave 3 #04：Excel 客户导入（普通用户）。
+        /// 对应 A 侧 Server.CRM_Customer.import（ext_rar2018/Server/CRM_Customer.cs:1339）。
+        /// A 侧走 NPOI + XML 模板，B 侧统一用 MiniExcel 反向读取。
+        /// 列名与 A 侧 Customer.xml 模板 100% 对齐，并兼容 B 侧 Export 输出的中文列名。
+        /// 逐行校验必填（客户名）、CodeKey 值合法性（省份/城市/行业/类型/级别/来源/员工），
+        /// 数据库去重（同名未删除客户视为冲突，跳过并计入失败）。
+        /// 权限：CRM_Customer|import。
+        /// 请求体：multipart/form-data，字段名 file（.xls/.xlsx 均支持）。
+        /// </summary>
+        /// <param name="file">Excel 文件（≤ 10 MB）</param>
+        /// <returns>XHDResult JSON 字符串（含 success/update/error/message 字段）</returns>
+        [HttpPost("import")]
+        [RequestSizeLimit(11 * 1024 * 1024)]
+        public async Task<string> Import(IFormFile file)
+        {
+            // 1. 权限校验
+            if (!await CheckAuthAsync("import"))
+            {
+                return XHDResult.Error("无权限！").ToString();
+            }
+
+            // 2. 文件校验
+            if (file == null || file.Length == 0)
+            {
+                return XHDResult.Error("请选择要导入的文件").ToString();
+            }
+            if (file.Length > ExcelImportHelper.MaxFileSizeBytes)
+            {
+                return XHDResult.Error("文件大小不能超过10MB").ToString();
+            }
+
+            var userId = GetUserId();
+            var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "";
+
+            // 3. 加载代码表（一次性查询，避免逐行打 DB）
+            var tables = await ExcelImportHelper.LoadCodeTablesAsync(_fsql);
+
+            // 4. 读取 Excel + 构建实体
+            var models = new List<CRM_Customer>();
+            var result = new ExcelImportResult();
+            int rowNum = 0;
+            try
+            {
+                using var stream = file.OpenReadStream();
+                var rows = await ExcelImportHelper.ReadRowsAsync(stream);
+                foreach (var row in rows)
+                {
+                    rowNum++;
+                    // 跳过完全空行
+                    if (IsRowEmpty(row)) continue;
+
+                    var entity = ExcelImportHelper.BuildCustomer(row, userId, tables, rowNum, result);
+                    if (entity != null) models.Add(entity);
+                }
+            }
+            catch (Exception ex)
+            {
+                return XHDResult.Error($"Excel 解析失败：{ex.Message}").ToString();
+            }
+
+            // 5. 批量入库（去重 + 插入）
+            var importResult = await _service.ImportAsync(models);
+            // 合并两阶段的结果（构建阶段失败 + 入库阶段失败）
+            MergeResult(result, importResult);
+
+            // 6. 写日志
+            await WriteImportLogAsync(userId, userName, "客户导入", file.FileName, importResult, result);
+
+            // 7. 返回
+            if (result.Error > 0 && models.Count == 0)
+            {
+                return XHDResult.Error(result.ToJson()).ToString();
+            }
+            return XHDResult.Success(result.ToJson()).ToString();
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 3 #06：Excel 客户导入（管理员，覆盖模式）。
+        /// 对应 A 侧 Server.CRM_Customer.adminimport（ext_rar2018/Server/CRM_Customer.cs:1379）。
+        /// 与 #04 的区别：
+        ///   - 权限键为 CRM_Customer|adminimport（管理员专用）
+        ///   - 已存在客户按 cus_name 覆盖业务字段（保留 id / create_time / sn / isDelete 等管理字段）
+        ///   - 结果区分 Success（新增）与 Update（覆盖），Error 计数不变
+        /// </summary>
+        /// <param name="file">Excel 文件（≤ 10 MB）</param>
+        /// <returns>XHDResult JSON 字符串</returns>
+        [HttpPost("adminimport")]
+        [RequestSizeLimit(11 * 1024 * 1024)]
+        public async Task<string> AdminImport(IFormFile file)
+        {
+            if (!await CheckAuthAsync("adminimport"))
+            {
+                return XHDResult.Error("无权限！").ToString();
+            }
+
+            if (file == null || file.Length == 0)
+            {
+                return XHDResult.Error("请选择要导入的文件").ToString();
+            }
+            if (file.Length > ExcelImportHelper.MaxFileSizeBytes)
+            {
+                return XHDResult.Error("文件大小不能超过10MB").ToString();
+            }
+
+            var userId = GetUserId();
+            var userName = User.FindFirst(ClaimTypes.Name)?.Value ?? "";
+
+            var tables = await ExcelImportHelper.LoadCodeTablesAsync(_fsql);
+
+            var models = new List<CRM_Customer>();
+            var result = new ExcelImportResult();
+            int rowNum = 0;
+            try
+            {
+                using var stream = file.OpenReadStream();
+                var rows = await ExcelImportHelper.ReadRowsAsync(stream);
+                foreach (var row in rows)
+                {
+                    rowNum++;
+                    if (IsRowEmpty(row)) continue;
+
+                    var entity = ExcelImportHelper.BuildCustomer(row, userId, tables, rowNum, result);
+                    if (entity != null) models.Add(entity);
+                }
+            }
+            catch (Exception ex)
+            {
+                return XHDResult.Error($"Excel 解析失败：{ex.Message}").ToString();
+            }
+
+            var importResult = await _service.AdminImportAsync(models);
+            MergeResult(result, importResult);
+
+            await WriteImportLogAsync(userId, userName, "客户覆盖导入", file.FileName, importResult, result);
+
+            return XHDResult.Success(result.ToJson()).ToString();
+        }
+
+        /// <summary>
+        /// 合并两段导入结果（构建阶段的失败 + 入库阶段的失败）。
+        /// </summary>
+        private static void MergeResult(ExcelImportResult baseR, ExcelImportResult extra)
+        {
+            if (extra == null) return;
+            baseR.Success += extra.Success;
+            baseR.Update += extra.Update;
+            baseR.Error += extra.Error;
+            if (!string.IsNullOrWhiteSpace(extra.Message))
+            {
+                baseR.Message = string.IsNullOrWhiteSpace(baseR.Message)
+                    ? extra.Message
+                    : baseR.Message + "；" + extra.Message;
+            }
+        }
+
+        /// <summary>
+        /// 判断 Excel 一行是否完全为空（所有单元格都是 null 或空字符串）。
+        /// </summary>
+        private static bool IsRowEmpty(Dictionary<string, object>? row)
+        {
+            if (row == null || row.Count == 0) return true;
+            foreach (var v in row.Values)
+            {
+                if (v != null && !string.IsNullOrWhiteSpace(v.ToString()))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// 写 Excel 导入 Sys_log 日志（复用 Sprint 2 已落地的 DeleteLog 通道，事件类型区分）。
+        /// </summary>
+        private async Task WriteImportLogAsync(string userId, string userName, string eventType, string fileName, ExcelImportResult importResult, ExcelImportResult combined)
+        {
+            try
+            {
+                var log = new Sys_log
+                {
+                    id = UUIDNext.Uuid.NewSequential().ToString(),
+                    EventType = $"Excel{eventType}",
+                    EventTitle = $"【{userName}】{eventType}",
+                    EventID = userId,
+                    UserID = userId,
+                    UserName = userName,
+                    IPStreet = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "",
+                    EventDate = DateTime.Now,
+                    Log_Content = $"文件：{fileName}；{combined.ToJson()}"
+                };
+                await _logService.DeleteLog(log);
+            }
+            catch
+            {
+                // 日志写失败不应阻塞主流程
+            }
+        }
 
         // ========== 私有辅助方法 ==========
 

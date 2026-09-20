@@ -24,10 +24,12 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using UUIDNext;
 using XHD.Core.Common;
+using XHD.Core.Common.Excel;
 using XHD.Core.IRepository;
 using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.View.Configs;
+using XHD.Core.View.Helpers;
 
 
 namespace XHD.Core.View.Controllers
@@ -40,6 +42,7 @@ namespace XHD.Core.View.Controllers
         private readonly ICRM_followService _followservice;
         private readonly ISys_logService _LogService;
         private readonly IDBAuthService _dBAuthService;
+        private readonly IFreeSql _fsql;
         private readonly SysLogExt<CRM_Contact> logext = new SysLogExt<CRM_Contact>();
        
 
@@ -48,7 +51,8 @@ namespace XHD.Core.View.Controllers
             ICRM_ContactService service, 
             ICRM_followService followservice, 
             ISys_logService LogService, 
-            IDBAuthService dBAuthService
+            IDBAuthService dBAuthService,
+            IFreeSql fsql = null
             )
         {
             _service = service;
@@ -57,6 +61,7 @@ namespace XHD.Core.View.Controllers
 
             _LogService = LogService;
             _dBAuthService = dBAuthService;
+            _fsql = fsql;
         }
 
         public IActionResult Index()
@@ -376,6 +381,125 @@ namespace XHD.Core.View.Controllers
             );
         }
 
+        // ========== Sprint 4 Wave 3 #05：Excel 联系人导入 ==========
 
+        /// <summary>
+        /// Sprint 4 Wave 3 #05：Excel 联系人导入。
+        /// 对应 A 侧 Server.CRM_Contact.import（ext_rar2018/Server/CRM_Contact.cs:290）。
+        /// 列名与 A 侧 contact.xml 模板 100% 对齐，并兼容 B 侧 Export 输出的中文列名。
+        /// 必填字段：姓名（C_name）、客户归属（可通过"客户名字/客户名称"列解析）。
+        /// 权限：CRM_Contact|import。
+        /// </summary>
+        /// <param name="file">Excel 文件（≤ 10 MB）</param>
+        /// <returns>XHDResult JSON 字符串（含 success/error/message 字段）</returns>
+        [HttpPost("import")]
+        [RequestSizeLimit(11 * 1024 * 1024)]
+        public async Task<string> Import(IFormFile file)
+        {
+            // 1. 权限
+            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "CRM_Contact|import");
+            if (!authbtn)
+            {
+                return XHDResult.Error("无权限！").ToString();
+            }
+
+            // 2. 文件校验
+            if (file == null || file.Length == 0)
+            {
+                return XHDResult.Error("请选择要导入的文件").ToString();
+            }
+            if (file.Length > ExcelImportHelper.MaxFileSizeBytes)
+            {
+                return XHDResult.Error("文件大小不能超过10MB").ToString();
+            }
+
+            var userId = User.FindFirst(ClaimTypes.Sid).Value;
+            var userName = User.FindFirst(ClaimTypes.Name).Value;
+
+            // 3. 加载代码表（客户名 → ID 映射）
+            var tables = await ExcelImportHelper.LoadCodeTablesAsync(_fsql);
+
+            // 4. 读取 Excel + 构建实体
+            var models = new List<CRM_Contact>();
+            var result = new ExcelImportResult();
+            int rowNum = 0;
+            try
+            {
+                using var stream = file.OpenReadStream();
+                var rows = await ExcelImportHelper.ReadRowsAsync(stream);
+                foreach (var row in rows)
+                {
+                    rowNum++;
+                    if (IsRowEmpty(row)) continue;
+
+                    var entity = ExcelImportHelper.BuildContact(row, userId, tables, rowNum, result);
+                    if (entity != null) models.Add(entity);
+                }
+            }
+            catch (Exception ex)
+            {
+                return XHDResult.Error($"Excel 解析失败：{ex.Message}").ToString();
+            }
+
+            // 5. 批量入库
+            var importResult = await _service.ImportAsync(models);
+            MergeResult(result, importResult);
+
+            // 6. 写日志
+            try
+            {
+                var log = new Sys_log
+                {
+                    id = UUIDNext.Uuid.NewSequential().ToString(),
+                    EventType = "Excel联系人导入",
+                    EventTitle = $"【{userName}】联系人导入",
+                    EventID = userId,
+                    UserID = userId,
+                    UserName = userName,
+                    IPStreet = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "",
+                    EventDate = DateTime.Now,
+                    Log_Content = $"文件：{file.FileName}；{result.ToJson()}"
+                };
+                await _LogService.DeleteLog(log);
+            }
+            catch
+            {
+                // 日志写失败不阻塞主流程
+            }
+
+            // 7. 返回
+            if (result.Error > 0 && models.Count == 0)
+            {
+                return XHDResult.Error(result.ToJson()).ToString();
+            }
+            return XHDResult.Success(result.ToJson()).ToString();
+        }
+
+        private static bool IsRowEmpty(Dictionary<string, object>? row)
+        {
+            if (row == null || row.Count == 0) return true;
+            foreach (var v in row.Values)
+            {
+                if (v != null && !string.IsNullOrWhiteSpace(v.ToString()))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static void MergeResult(ExcelImportResult baseR, ExcelImportResult extra)
+        {
+            if (extra == null) return;
+            baseR.Success += extra.Success;
+            baseR.Update += extra.Update;
+            baseR.Error += extra.Error;
+            if (!string.IsNullOrWhiteSpace(extra.Message))
+            {
+                baseR.Message = string.IsNullOrWhiteSpace(baseR.Message)
+                    ? extra.Message
+                    : baseR.Message + "；" + extra.Message;
+            }
+        }
     }
 }

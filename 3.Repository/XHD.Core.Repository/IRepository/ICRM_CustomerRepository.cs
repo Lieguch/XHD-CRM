@@ -7,6 +7,7 @@ using System.Linq.Expressions;
 using FreeSql;
 using XHD.Core.Models;
 using XHD.Core.Common;
+using XHD.Core.Common.Excel;
 
 using Newtonsoft;
 using Newtonsoft.Json;
@@ -113,5 +114,23 @@ namespace XHD.Core.IRepository
         /// <param name="model">移动端提交的客户模型（id 必填）</param>
         /// <returns>是否成功（受影响行数 &gt; 0）</returns>
         Task<bool> UpdateAppAsync(CRM_Customer model);
+
+        /// <summary>
+        /// Sprint 4 Wave 3 #04：批量插入客户（普通导入）。
+        /// 逐条检查 cus_name 唯一性；已存在则跳过并记入失败。
+        /// 已插入的行会在下一次循环中被识别为重复（同一次导入内部去重）。
+        /// </summary>
+        /// <param name="models">待插入的客户列表</param>
+        /// <returns>批量导入结果（Success=成功新增数，Error=跳过/失败数）</returns>
+        Task<ExcelImportResult> ImportRangeAsync(List<CRM_Customer> models);
+
+        /// <summary>
+        /// Sprint 4 Wave 3 #06：管理员批量 upsert 客户（按 cus_name 覆盖）。
+        /// 若 cus_name 已存在 → 用模型覆盖业务字段（保留 id / create_time / isDelete / Delete_* / lastfollow / state / sn）
+        /// 若不存在 → 直接插入。
+        /// </summary>
+        /// <param name="models">待 upsert 的客户列表</param>
+        /// <returns>批量导入结果（Success=新增数，Update=覆盖数，Error=失败数）</returns>
+        Task<ExcelImportResult> AdminImportRangeAsync(List<CRM_Customer> models);
     }
 }

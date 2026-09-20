@@ -5,6 +5,7 @@ using System.Collections.Generic;
 
 using XHD.Core.Models;
 using XHD.Core.Common;
+using XHD.Core.Common.Excel;
 
 using Newtonsoft;
 using Newtonsoft.Json;
@@ -102,5 +103,21 @@ namespace XHD.Core.IServices
         /// <param name="model">移动端提交的客户模型（id 必填）</param>
         /// <returns>是否成功</returns>
         Task<bool> UpdateAppAsync(CRM_Customer model);
+
+        /// <summary>
+        /// Sprint 4 Wave 3 #04：批量导入客户（普通用户）。
+        /// 逐条 cus_name 去重；已存在则跳过。
+        /// </summary>
+        /// <param name="models">待插入的客户列表（已构建完成，含校验结果）</param>
+        /// <returns>批量导入结果</returns>
+        Task<ExcelImportResult> ImportAsync(List<CRM_Customer> models);
+
+        /// <summary>
+        /// Sprint 4 Wave 3 #06：管理员批量 upsert 客户（按 cus_name 覆盖）。
+        /// 已存在 → 覆盖业务字段；不存在 → 新增。
+        /// </summary>
+        /// <param name="models">待 upsert 的客户列表</param>
+        /// <returns>批量导入结果</returns>
+        Task<ExcelImportResult> AdminImportAsync(List<CRM_Customer> models);
     }
 }

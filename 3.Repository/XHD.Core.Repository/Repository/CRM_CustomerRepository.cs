@@ -8,6 +8,7 @@ using FreeSql;
 using XHD.Core.IRepository;
 using XHD.Core.Models;
 using XHD.Core.Common;
+using XHD.Core.Common.Excel;
 using System.Linq;
 
 using Newtonsoft;
@@ -767,6 +768,150 @@ namespace XHD.Core.Repository
                 .ExecuteAffrowsAsync();
 
             return rows > 0;
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 3 #04：批量插入客户（普通导入）。
+        /// 逐条检查 cus_name 唯一性（未删除），已存在则跳过并记入失败。
+        /// 同一次调用内插入的行也参与去重（用 HashSet 缓存已成功插入的 cus_name）。
+        /// 参数化执行（FreeSql 表达式转参数），禁止字符串拼接 SQL。
+        /// </summary>
+        /// <param name="models">待插入的客户列表（不能为 null；可空列表）</param>
+        /// <returns>批量导入结果（Success=成功新增数，Error=跳过/失败数，Message=错误详情）</returns>
+        public async Task<ExcelImportResult> ImportRangeAsync(List<CRM_Customer> models)
+        {
+            var result = new ExcelImportResult();
+            if (models == null || models.Count == 0)
+            {
+                result.Message = "导入数据为空";
+                return result;
+            }
+
+            // 缓存同批次内已成功插入的 cus_name，避免同一次导入内部重复
+            var seenNames = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            int rowNum = 0;
+            foreach (var model in models)
+            {
+                rowNum++;
+                if (model == null || string.IsNullOrWhiteSpace(model.cus_name))
+                {
+                    result.Fail(rowNum, "客户名不能为空");
+                    continue;
+                }
+
+                // 同批次内去重
+                if (seenNames.Contains(model.cus_name))
+                {
+                    result.Fail(rowNum, $"客户【{model.cus_name}】在本批次中重复");
+                    continue;
+                }
+
+                // 数据库去重（不删除的记录中是否存在同名客户）
+                var existingCount = await _fsql.Select<CRM_Customer>()
+                    .Where(c => c.cus_name == model.cus_name && c.isDelete != 1)
+                    .CountAsync();
+
+                if (existingCount > 0)
+                {
+                    result.Fail(rowNum, $"客户【{model.cus_name}】已存在，跳过");
+                    continue;
+                }
+
+                // 参数化插入
+                var rows = await _fsql.Insert(model).ExecuteAffrowsAsync();
+                if (rows > 0)
+                {
+                    result.Add();
+                    seenNames.Add(model.cus_name);
+                }
+                else
+                {
+                    result.Fail(rowNum, $"客户【{model.cus_name}】插入失败");
+                }
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Sprint 4 Wave 3 #06：管理员批量 upsert 客户（按 cus_name 覆盖）。
+        /// 覆盖时保留 id / create_time / sn / isDelete / Delete_time / Delete_id /
+        /// lastfollow / state 等管理字段不变，仅更新业务字段（与 UpdateApp 同一子集 + isPrivate）。
+        /// </summary>
+        /// <param name="models">待 upsert 的客户列表</param>
+        /// <returns>批量导入结果（Success=新增数，Update=覆盖数，Error=失败数）</returns>
+        public async Task<ExcelImportResult> AdminImportRangeAsync(List<CRM_Customer> models)
+        {
+            var result = new ExcelImportResult();
+            if (models == null || models.Count == 0)
+            {
+                result.Message = "导入数据为空";
+                return result;
+            }
+
+            int rowNum = 0;
+            foreach (var model in models)
+            {
+                rowNum++;
+                if (model == null || string.IsNullOrWhiteSpace(model.cus_name))
+                {
+                    result.Fail(rowNum, "客户名不能为空");
+                    continue;
+                }
+
+                // 查找是否已存在同名客户（未删除）
+                var existing = await _fsql.Select<CRM_Customer>()
+                    .Where(c => c.cus_name == model.cus_name && c.isDelete != 1)
+                    .FirstAsync();
+
+                if (existing != null)
+                {
+                    // 覆盖更新：只更新业务字段，管理字段保持不变
+                    int rows = await _fsql.Update<CRM_Customer>()
+                        .Set(a => a.cus_name, model.cus_name)
+                        .Set(a => a.cus_add, model.cus_add)
+                        .Set(a => a.cus_tel, model.cus_tel)
+                        .Set(a => a.cus_fax, model.cus_fax)
+                        .Set(a => a.cus_website, model.cus_website)
+                        .Set(a => a.cus_industry_id, model.cus_industry_id)
+                        .Set(a => a.Provinces_id, model.Provinces_id)
+                        .Set(a => a.City_id, model.City_id)
+                        .Set(a => a.cus_type_id, model.cus_type_id)
+                        .Set(a => a.cus_level_id, model.cus_level_id)
+                        .Set(a => a.cus_source_id, model.cus_source_id)
+                        .Set(a => a.DesCripe, model.DesCripe)
+                        .Set(a => a.Remarks, model.Remarks)
+                        .Set(a => a.emp_id, model.emp_id)
+                        .Set(a => a.isPrivate, model.isPrivate)
+                        .Where(a => a.id == existing.id)
+                        .ExecuteAffrowsAsync();
+
+                    if (rows > 0)
+                    {
+                        result.AddUpdate();
+                    }
+                    else
+                    {
+                        result.Fail(rowNum, $"客户【{model.cus_name}】覆盖更新失败");
+                    }
+                }
+                else
+                {
+                    // 不存在 → 直接插入
+                    var rows = await _fsql.Insert(model).ExecuteAffrowsAsync();
+                    if (rows > 0)
+                    {
+                        result.Add();
+                    }
+                    else
+                    {
+                        result.Fail(rowNum, $"客户【{model.cus_name}】插入失败");
+                    }
+                }
+            }
+
+            return result;
         }
     }
 }
