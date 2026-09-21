@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using XHD.Core.Models;
 using XHD.Core.Common;
 using XHD.Core.Common.DEncrypt;
@@ -20,15 +21,18 @@ namespace XHD.Core.Services
         private readonly ISMSRepository _smsRepo;
         private readonly ISys_infoService _infoService;
         private readonly ISMSHelper _helper;
+        private readonly Microsoft.Extensions.Logging.ILogger<SMSService> _logger;
 
         public SMSService(
             ISMSRepository smsRepo,
             ISys_infoService infoService,
-            ISMSHelper helper)
+            ISMSHelper helper,
+            Microsoft.Extensions.Logging.ILogger<SMSService> logger = null)
         {
             _smsRepo = smsRepo;
             _infoService = infoService;
             _helper = helper;
+            _logger = logger;
         }
 
         /// <summary>
@@ -112,6 +116,49 @@ namespace XHD.Core.Services
             catch (Exception)
             {
                 return 0;
+            }
+        }
+
+        /// <summary>
+        /// Sprint 8 #157 getReport：查询短信状态报告。
+        /// 未配置 SMS 或异常时返回空 JArray（不抛异常）。
+        /// </summary>
+        public async Task<JArray> QueryStatusAsync()
+        {
+            var result = new JArray();
+
+            var (serialNo, key) = await LoadSmsCredentialsAsync();
+            if (string.IsNullOrWhiteSpace(serialNo) || string.IsNullOrWhiteSpace(key))
+            {
+                return result;
+            }
+
+            try
+            {
+                var list = await _helper.QueryStatusAsync(serialNo, key);
+                if (list == null)
+                {
+                    return result;
+                }
+
+                foreach (var r in list)
+                {
+                    var obj = new JObject
+                    {
+                        { "phone", r.Phone },
+                        { "smscontent", r.SmsContent },
+                        { "smsstatus", r.SmsStatus },
+                        { "err", r.Err }
+                    };
+                    result.Add(obj);
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError("SMS QueryStatus 异常：{Msg}", ex.Message);
+                return result;
             }
         }
 

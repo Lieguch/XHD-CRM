@@ -13,6 +13,7 @@ namespace XHD.Core.View.Controllers
     /// <summary>
     /// SMS 短信控制器
     /// Sprint 7 新增：#124 SMS.send / #125 SMS_Helper.getBalance。
+    /// Sprint 8 新增：#157 SMS_Helper.getReport → QueryStatus。
     /// </summary>
     [Authorize]
     public class SMSController : Controller
@@ -57,6 +58,18 @@ namespace XHD.Core.View.Controllers
             var balance = await _service.GetBalanceAsync();
             var obj = new JObject { { "balance", balance } };
             return XHDResult.Success(obj).ToString();
+        }
+
+        /// <summary>
+        /// Sprint 8 #157 SMS_Helper.getReport：查询短信状态报告（回执）。
+        /// 未配置 SMS 或异常时返回空 JArray。
+        /// 对应 A 侧 SMS/SMSHelper.cs:167 getReport。
+        /// </summary>
+        [HttpGet("queryStatus")]
+        public async Task<string> QueryStatus()
+        {
+            var arr = await _service.QueryStatusAsync();
+            return XHDResult.Success(arr).ToString();
         }
 
         private string GetUserId()

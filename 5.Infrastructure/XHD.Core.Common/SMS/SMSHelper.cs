@@ -80,6 +80,66 @@ namespace XHD.Core.Common.SMS
         }
 
         /// <summary>
+        /// #157 getReport 调用：查询短信状态报告。
+        /// POST JSON { SerialNo, Key } → { List: [ { phone, smscontent, smsstatus, err } ] }
+        /// 未配置或异常时返回空列表（不抛异常）。
+        /// </summary>
+        public async Task<System.Collections.Generic.List<SMSStatusReport>> QueryStatusAsync(string softwareSerialNo, string key)
+        {
+            var list = new System.Collections.Generic.List<SMSStatusReport>();
+
+            if (string.IsNullOrWhiteSpace(_endpoint))
+            {
+                _logger?.LogWarning("SMS Endpoint 未配置，QueryStatus 返回空列表");
+                return list;
+            }
+
+            try
+            {
+                var url = _endpoint.TrimEnd('/') + "/getReport";
+                var body = new JObject
+                {
+                    { "SerialNo", softwareSerialNo },
+                    { "Key", key }
+                };
+                var content = new StringContent(body.ToString(), Encoding.UTF8, "application/json");
+                using var resp = await _http.PostAsync(url, content);
+                var text = await resp.Content.ReadAsStringAsync();
+                if (!resp.IsSuccessStatusCode)
+                {
+                    _logger?.LogWarning("SMS getReport 非 2xx 响应：{Status}", (int)resp.StatusCode);
+                    return list;
+                }
+
+                var j = JObject.Parse(text);
+                var arr = j["List"] as JArray ?? j["list"] as JArray ?? j["data"] as JArray ?? j["Data"] as JArray;
+                if (arr == null)
+                {
+                    return list;
+                }
+
+                foreach (var token in arr)
+                {
+                    var obj = token as JObject;
+                    if (obj == null) continue;
+                    string phone = (string)obj["phone"] ?? (string)obj["Phone"] ?? string.Empty;
+                    string smsContent = (string)obj["smscontent"] ?? (string)obj["SmsContent"] ?? (string)obj["content"] ?? string.Empty;
+                    var statusToken = obj["smsstatus"] ?? obj["SmsStatus"] ?? obj["status"];
+                    int status = statusToken == null ? 0 : (statusToken.Type == JTokenType.Null ? 0 : (int)statusToken);
+                    string err = (string)obj["err"] ?? (string)obj["Err"] ?? string.Empty;
+                    list.Add(new SMSStatusReport(phone ?? string.Empty, smsContent ?? string.Empty, status, err ?? string.Empty));
+                }
+
+                return list;
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError("SMS getReport 调用异常：{Msg}", ex.Message);
+                return list;
+            }
+        }
+
+        /// <summary>
         /// 通用 POST 调用。网络/配置异常统一返回 -3（网络错误），不抛异常。
         /// </summary>
         private async Task<int> PostAsync(JObject body, string relativePath)

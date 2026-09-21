@@ -42,6 +42,14 @@ namespace XHD.Core.Common.SMS
         double GetBalance(string softwareSerialNo, string key);
 
         /// <summary>
+        /// 查询短信状态报告（#157 getReport 调用）。
+        /// </summary>
+        /// <param name="softwareSerialNo">软件序列号</param>
+        /// <param name="key">密钥</param>
+        /// <returns>状态报告列表；异常/未配置时返回空数组（不抛异常）</returns>
+        Task<System.Collections.Generic.List<SMSStatusReport>> QueryStatusAsync(string softwareSerialNo, string key);
+
+        /// <summary>
         /// 错误码转中文消息（静态工具，无外部调用）。
         /// </summary>
         /// <param name="code">错误码</param>

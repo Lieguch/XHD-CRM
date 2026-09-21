@@ -363,6 +363,81 @@ namespace XHD.Core.View.Controllers
         }
 
         /// <summary>
+        /// Sprint 8 #137a m_receivable.list：移动端应收列表（分页 + 可选客户过滤）。
+        /// 对应 A 侧 Server/m_receivable.list（Server/m_receivable.cs:40）。
+        /// P34：A 侧源码有 SQL 拼接 bug（CRM_Customer.id 应为 join 客户表），
+        /// B 侧沿用**语义修正版**：按 Finance_Receivable.Order.customer.id 过滤。
+        /// </summary>
+        [HttpGet("Mobile/list")]
+        public async Task<string> MobileList(
+            int pageindex = 1,
+            int pagesize = 10,
+            string sortname = null,
+            string sortorder = null,
+            string customer_id = null)
+        {
+            if (pageindex < 1) pageindex = 1;
+            if (pagesize < 1 || pagesize > 100) pagesize = 10;
+
+            Expression<Func<Finance_Receivable, bool>> exp = a => a.isDelete == 0;
+
+            if (!string.IsNullOrWhiteSpace(customer_id))
+            {
+                exp = exp.And(a => a.Order.customer.id == customer_id);
+            }
+
+            string orderby;
+            if (!string.IsNullOrWhiteSpace(sortname))
+            {
+                var order = string.IsNullOrWhiteSpace(sortorder) ? "desc" : sortorder;
+                orderby = $"a.{sortname} {order}";
+            }
+            else
+            {
+                orderby = "a.create_time desc";
+            }
+
+            var result = await _service.GridAsync(exp, pageindex, pagesize, orderby);
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Sprint 8 #137b m_receivable.form：移动端应收表单（单条查询）。
+        /// 对应 A 侧 Server/m_receivable.form（Server/m_receivable.cs:72）。
+        /// id 校验走 PageValidate.checkID（GUID 格式）；无数据返回空对象。
+        /// </summary>
+        [HttpGet("Mobile/form")]
+        public async Task<string> MobileForm(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id) || !PageValidate.checkID(id))
+            {
+                return XHDResult.Success(new JObject()).ToString();
+            }
+
+            Expression<Func<Finance_Receivable, bool>> exp = a => a.id == id && a.isDelete == 0;
+            var data = await _service.GridAsync(exp);
+
+            if (data.count == 0 || data.data == null || data.data.Count == 0)
+            {
+                return XHDResult.Success(new JObject()).ToString();
+            }
+
+            var arr = new JArray();
+            foreach (var item in data.data)
+            {
+                arr.Add(JObject.FromObject(item));
+            }
+
+            var obj = new JObject
+            {
+                { "data", arr },
+                { "count", 1 }
+            };
+
+            return XHDResult.Success(obj).ToString();
+        }
+
+        /// <summary>
         /// 触发收款重算
         /// 根据订单下所有应收单的已收金额，重算订单收款状态
         /// </summary>

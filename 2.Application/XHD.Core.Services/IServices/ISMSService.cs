@@ -25,5 +25,11 @@ namespace XHD.Core.IServices
         /// </summary>
         /// <returns>余额（未配置或异常时返回 0）</returns>
         Task<double> GetBalanceAsync();
+
+        /// <summary>
+        /// Sprint 8 #157 getReport：查询短信状态报告。
+        /// </summary>
+        /// <returns>状态报告 JArray（未配置或异常时返回空 JArray）</returns>
+        Task<JArray> QueryStatusAsync();
     }
 }

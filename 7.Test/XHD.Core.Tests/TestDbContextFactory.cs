@@ -74,6 +74,9 @@ namespace XHD.Core.Tests
             // Sprint 7 新增
             fsql.CodeFirst.SyncStructure<Sys_online>();
             fsql.CodeFirst.SyncStructure<SMS>();
+            // Sprint 8 新增
+            fsql.CodeFirst.SyncStructure<Task_follow>();
+            fsql.CodeFirst.SyncStructure<Sys_log_Err>();
         }
     }
 
