@@ -18,6 +18,9 @@
     <PackageReference Include="FreeSql" Version="3.5.310" />
     <PackageReference Include="FreeSql.Provider.Sqlite" Version="3.5.310" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.6" />
+    <!-- Sprint 9: MailHelper 测试需要 MimeKit -->
+    <PackageReference Include="MimeKit" Version="4.4.0" />
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
   </ItemGroup>
 
   <ItemGroup>

@@ -28,7 +28,12 @@ using System.Threading;
 using System.Threading.Tasks;
 using XHD.Core.Common;
 using XHD.Core.Common.SMS;
+using XHD.Core.Common.CDKEY;
+using XHD.Core.Common.Mail;
+using XHD.Core.Common.RSA;
+using XHD.Core.Common.Cache;
 using XHD.Core.View.Configs;
+using Microsoft.Extensions.Logging;
 
 namespace XHD.Core.View
 {
@@ -60,6 +65,25 @@ namespace XHD.Core.View
             // Sprint 7 新增：ISMSHelper → SMSHelper（HttpClient 调用外部短信服务商）
             services.AddHttpClient<SMSHelper>(client => { });
             services.AddScoped<ISMSHelper, SMSHelper>();
+
+            // Sprint 9 新增：5 个 Common 工具类（#144 ECBC_CDKEY / #145 Verify / #147 MailSender / #148 RSACryption / #158 DataCache）
+            services.AddScoped<ICDKEYHelper, CDKEYHelper>();
+            services.AddScoped<IRSACryptionHelper, RSACryptionHelper>();
+            services.AddMemoryCache();
+            services.AddScoped<IDataCacheHelper, DataCacheHelper>();
+            services.AddScoped<IMailHelper>(sp =>
+            {
+                var cfg = Configuration.GetSection("Mail");
+                var logger = sp.GetRequiredService<ILogger<MailHelper>>();
+                return new MailHelper(
+                    host: cfg["Host"] ?? "localhost",
+                    port: int.TryParse(cfg["Port"], out int p) ? p : 587,
+                    useTls: bool.TryParse(cfg["UseTls"], out bool tls) ? tls : true,
+                    fromAddress: cfg["FromAddress"] ?? string.Empty,
+                    username: cfg["Username"] ?? string.Empty,
+                    password: cfg["Password"] ?? string.Empty,
+                    logger: logger);
+            });
 
             services.AddSession();
             services.AddDb(_env);

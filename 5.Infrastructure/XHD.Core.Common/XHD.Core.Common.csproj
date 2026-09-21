@@ -6,13 +6,19 @@
 
   <ItemGroup>
     <PackageReference Include="FreeSql" Version="3.5.310" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options" Version="5.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="5.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="8.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="UUIDNext" Version="4.1.2" />
+    <!-- Sprint 9: #147 MailSender 迁移；使用 MailKit 替代 A 侧 SmtpClient + OpenSmtp.Mail -->
+    <PackageReference Include="MailKit" Version="4.4.0" />
+    <PackageReference Include="MimeKit" Version="4.4.0" />
+    <!-- Sprint 9: #158 DataCache 迁移；替换 A 侧 HttpRuntime.Cache -->
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
+    <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.0" />
   </ItemGroup>
 
 </Project>
