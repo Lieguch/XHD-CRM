@@ -71,6 +71,9 @@ namespace XHD.Core.Tests
             // Sprint 5 Wave 1 新增
             fsql.CodeFirst.SyncStructure<hr_post>();
             fsql.CodeFirst.SyncStructure<Sys_role_emp>();
+            // Sprint 7 新增
+            fsql.CodeFirst.SyncStructure<Sys_online>();
+            fsql.CodeFirst.SyncStructure<SMS>();
         }
     }
 

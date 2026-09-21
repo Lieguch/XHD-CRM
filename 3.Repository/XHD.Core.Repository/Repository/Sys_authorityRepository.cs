@@ -116,5 +116,20 @@ namespace XHD.Core.Repository
 
             return data;
         }
+
+        /// <summary>
+        /// Sprint 7 #100 GetSysApp：按角色 + 权限类型取权限记录。
+        /// </summary>
+        public async Task<List<Sys_authority>> GetByRoleAndTypeAsync(string roleId, int authType)
+        {
+            if (string.IsNullOrWhiteSpace(roleId))
+            {
+                return new List<Sys_authority>();
+            }
+            return await _fsql.Select<Sys_authority>()
+                .Where(a => a.Role_id == roleId)
+                .Where(a => a.Auth_type == authType)
+                .ToListAsync();
+        }
     }
 }

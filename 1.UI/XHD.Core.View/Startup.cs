@@ -14,6 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Options;
+using XHD.Core.Common;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -26,6 +27,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using XHD.Core.Common;
+using XHD.Core.Common.SMS;
 using XHD.Core.View.Configs;
 
 namespace XHD.Core.View
@@ -54,6 +56,10 @@ namespace XHD.Core.View
 
             services.AddService();
             services.AddRepository();
+
+            // Sprint 7 新增：ISMSHelper → SMSHelper（HttpClient 调用外部短信服务商）
+            services.AddHttpClient<SMSHelper>(client => { });
+            services.AddScoped<ISMSHelper, SMSHelper>();
 
             services.AddSession();
             services.AddDb(_env);

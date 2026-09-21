@@ -17,5 +17,15 @@ namespace XHD.Core.Repository
         {
             _fsql = freesql;
         }
+
+        /// <summary>
+        /// Sprint 7 #101 getUserTree：取全部部门（按 dep_order 排序）。
+        /// </summary>
+        public async Task<List<hr_department>> GetAllAsync()
+        {
+            return await _fsql.Select<hr_department>()
+                .OrderBy(a => a.dep_order)
+                .ToListAsync();
+        }
     }
 }

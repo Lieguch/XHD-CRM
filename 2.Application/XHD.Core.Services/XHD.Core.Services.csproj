@@ -19,4 +19,9 @@
     <ProjectReference Include="..\..\5.Infrastructure\XHD.Core.Common\XHD.Core.Common.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!-- Sprint 7: 允许测试程序集访问 internal class（如 Sys_infoService） -->
+    <InternalsVisibleTo Include="XHD.Core.Tests" />
+  </ItemGroup>
+
 </Project>

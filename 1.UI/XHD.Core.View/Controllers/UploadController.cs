@@ -1,6 +1,7 @@
 ﻿
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Hosting.Internal;
@@ -14,6 +15,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using XHD.Core.IServices;
 using XHD.Core.Models;
+using XHD.Core.Common;
 
 namespace XHD.Core.View.Controllers
 {
@@ -173,6 +175,72 @@ namespace XHD.Core.View.Controllers
             Response.Headers.TryAdd(HeaderNames.ContentDisposition, contentDisposition.ToString());
 
             return File(fileStream, contentType, enableRangeProcessing: true); // enableRangeProcessing 支持断点续传
+        }
+
+        /// <summary>
+        /// Sprint 7 #119 upload.cus_import：客户 Excel 导入上传。
+        /// 对应 A 侧 Server.upload.cus_import（Server/upload.cs:90-99）：
+        /// 保存到 ~/file/customer/Customer.xls（覆盖固定文件名），返回 "Customer.xls"。
+        /// </summary>
+        /// <param name="file">上传的客户 Excel 文件（IFormFile）</param>
+        /// <returns>标准 XHDResult 字符串（msg 为落盘文件名）</returns>
+        [DisableRequestSizeLimit]
+        [HttpPost("cus_import")]
+        public async Task<string> CusImport(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return XHDResult.Error("未选择文件").ToString();
+            }
+
+            var nowfileName = "Customer.xls";
+            var relDir = "wwwroot/file/customer";
+            var fullDir = Path.Combine(Directory.GetCurrentDirectory(), relDir);
+            if (!Directory.Exists(fullDir))
+            {
+                Directory.CreateDirectory(fullDir);
+            }
+            var fullPath = Path.Combine(fullDir, nowfileName);
+
+            using (var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write))
+            {
+                await file.CopyToAsync(fs);
+            }
+
+            return XHDResult.Success(nowfileName).ToString();
+        }
+
+        /// <summary>
+        /// Sprint 7 #120 upload.contact_import：联系人 Excel 导入上传。
+        /// 对应 A 侧 Server.upload.contact_import（Server/upload.cs:100-109）：
+        /// 保存到 ~/file/contact/contact.xls（覆盖固定文件名），返回 "contact.xls"。
+        /// </summary>
+        /// <param name="file">上传的联系人 Excel 文件（IFormFile）</param>
+        /// <returns>标准 XHDResult 字符串（msg 为落盘文件名）</returns>
+        [DisableRequestSizeLimit]
+        [HttpPost("contact_import")]
+        public async Task<string> ContactImport(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return XHDResult.Error("未选择文件").ToString();
+            }
+
+            var nowfileName = "contact.xls";
+            var relDir = "wwwroot/file/contact";
+            var fullDir = Path.Combine(Directory.GetCurrentDirectory(), relDir);
+            if (!Directory.Exists(fullDir))
+            {
+                Directory.CreateDirectory(fullDir);
+            }
+            var fullPath = Path.Combine(fullDir, nowfileName);
+
+            using (var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write))
+            {
+                await file.CopyToAsync(fs);
+            }
+
+            return XHDResult.Success(nowfileName).ToString();
         }
     }
 }

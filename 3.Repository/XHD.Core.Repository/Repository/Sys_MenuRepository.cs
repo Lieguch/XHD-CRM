@@ -28,5 +28,20 @@ namespace XHD.Core.Repository
 
             return menulist;
         }
+
+        /// <summary>
+        /// Sprint 7 #100 GetSysApp：按 App_id 取全部菜单。
+        /// </summary>
+        public async Task<List<Sys_Menu>> GetAllByAppAsync(string appid)
+        {
+            if (string.IsNullOrWhiteSpace(appid))
+            {
+                return new List<Sys_Menu>();
+            }
+            return await _fsql.Select<Sys_Menu>()
+                .Where(a => a.App_id == appid)
+                .OrderBy(a => a.Menu_order)
+                .ToListAsync();
+        }
     }
 }
