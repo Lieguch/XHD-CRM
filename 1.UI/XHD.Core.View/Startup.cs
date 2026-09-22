@@ -3,6 +3,7 @@
 using FreeSql;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -86,6 +87,17 @@ namespace XHD.Core.View
             });
 
             services.AddSession();
+
+            // Sprint 10.10 (2026-09-22): 持久化 DataProtection 密钥到 /app/Data 命名卷
+            // 根因：ASP.NET Core 默认使用 EphemeralXmlRepository（进程内内存），
+            // 容器重启 → 密钥丢失 → 旧 session cookie 无法解密
+            // → CryptographicException: The key {guid} was not found in the key ring
+            // → HttpContext.Session 里存的 AES_Key 丢失 → 登录时 AesDecrypt(pwd, null) 失败
+            // 修复：把 DataProtection 密钥写到 /app/Data（已在 xhd-crm-data 命名卷 + chown 1001:1001）
+            // 同时保护：session、cookie auth、 antiforgery、.NET encryption token 全都共享这一套密钥环
+            services.AddDataProtection()
+                .PersistKeysToFileSystem(new System.IO.DirectoryInfo("/app/Data"));
+
             services.AddDb(_env);
             // Sprint 0 修复 (2026-09-18): 补 AddHsts() 注册
             // 原代码只调 app.UseHsts() 但未 services.AddHsts()，导致 HstsOptions 未注册，
