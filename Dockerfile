@@ -59,7 +59,8 @@ WORKDIR /app
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
         curl ca-certificates \
-        fonts-dejavu-core fontconfig && \
+        fonts-dejavu-core fontconfig \
+        tini gosu && \
     rm -rf /var/lib/apt/lists/* && \
     fc-cache -f && \
     mkdir -p /app/Data /app/Uploads /app/Logs && \
@@ -76,7 +77,12 @@ ENV ASPNETCORE_URLS=http://+:5001 \
 
 EXPOSE 5001
 
-# 7) 非 root 用户运行（uid 1001，与上面 chown 一致）
+# 7) 容器入口先以 root 修正命名卷目录 owner，再降权到 1001 运行。
+# 根因：compose 命名卷会覆盖镜像内 /app/Data 的 chown 结果；
+# 若卷初始 owner 是 root:root，UID 1001 写 DataProtection key/tmp 会 Permission denied。
+COPY --chown=1001:1001 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 USER 1001:1001
 
 # 8) Healthcheck（30s 间隔，40s 启动宽限期）
@@ -84,4 +90,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -fsS http://localhost:5001/ >/dev/null || exit 1
 
 # 9) 启动
-ENTRYPOINT ["dotnet", "XHD.Core.View.dll"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
