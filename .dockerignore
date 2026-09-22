@@ -27,8 +27,9 @@ packages/
 **/packages/
 *.nupkg
 
-# ===== 测试项目（不进生产镜像） =====
-7.Test/
+# ===== 测试项目（csproj 需进入构建上下文供 restore，但 bin/obj 已全局排除） =====
+# 注意：不要排除整个 7.Test/ 目录，否则 dotnet restore 会报 MSB3202
+# 测试源码和 bin/obj 不会进入 runtime 镜像（publish 只输出 View 项目）
 
 # ===== 文档 / 部署相关（不进入镜像，仅本机用） =====
 docker-compose.yml
