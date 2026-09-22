@@ -296,8 +296,9 @@ namespace XHD.Core.View.Controllers
                     {
                         var rectColor = GetRandomColor();
                         image.Mutate(ctx => ctx.Draw(
-                            new SolidBrush(rectColor),
-                            new Rectangle(i * 30 + 2, 8, 26, 28)));
+                            new SixLabors.ImageSharp.Drawing.Brushes.SolidBrush(rectColor),
+                            new SixLabors.ImageSharp.Drawing.Drawing.Drawables.Rectangle(
+                                i * 30 + 2, 8, 26, 28)));
                     }
                 }
                 else
