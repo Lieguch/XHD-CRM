@@ -35,12 +35,13 @@ RUN dotnet restore ./XHDCRM3.sln --verbosity minimal
 COPY . .
 
 # 4) Publish（Release，输出 dll 而非 apphost，因容器内已有 dotnet runtime）
+#    ⚠️ SatelliteResourceLanguages 值含分号，必须用引号包裹，否则被 sh 当命令分隔符
 RUN dotnet publish ./1.UI/XHD.Core.View/XHD.Core.View.csproj \
     -c Release \
     -o /app/publish \
     --no-restore \
     /p:UseAppHost=false \
-    /p:SatelliteResourceLanguages=zh-Hans;en \
+    "/p:SatelliteResourceLanguages=zh-Hans;en" \
     -v minimal
 
 ########################################
