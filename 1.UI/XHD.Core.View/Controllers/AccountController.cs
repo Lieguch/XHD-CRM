@@ -175,15 +175,32 @@ namespace XHD.Core.View.Controllers
             // } catch {
             //     return XHDResult.Error(-9, "验证码已过期！").ToString();
             // }
-            var AES_Key = HttpContext.Session.GetString("AES_Key");
-            try
+
+            // [Sprint 10.11] 根因修复：AES_Key 改从 hidden form field 读取，不再依赖 session
+            // 原设计缺陷：Index() 生成密钥写入 session + ViewBag，客户端用 ViewBag 密钥加密，
+            // 但 Login() 从 session 读回密钥 → 容器重启/会话超时/清cookie 时 session 丢失 → 登录必崩。
+            // 密钥是每次页面加载的临时值，本应随表单回传（hidden field），与 CSRF token 同模式。
+            // 兼容：session 作为兜底（旧页面或 AJAX 回退时仍能工作）。
+            var AES_Key = Request.Form["aes_key"].ToString();
+            if (string.IsNullOrWhiteSpace(AES_Key))
+                AES_Key = HttpContext.Session.GetString("AES_Key");
+            if (string.IsNullOrWhiteSpace(AES_Key))
             {
-                var depwd = AESEncrypt.AesDecrypt(model.pwd, AES_Key);
-                model.pwd = depwd;
+                // 密钥缺失时不抛异常，直接透传密码（仅本地开发/无 HTTPS 时可能用到）
+                // 生产环境必须走 HTTPS，密码在传输层已加密
+                model.pwd = model.pwd ?? string.Empty;
             }
-            catch
+            else
             {
-                return XHDResult.Error(-9, "系统错误！").ToString();
+                try
+                {
+                    var depwd = AESEncrypt.AesDecrypt(model.pwd, AES_Key);
+                    model.pwd = depwd;
+                }
+                catch
+                {
+                    return XHDResult.Error(-9, "系统错误！").ToString();
+                }
             }
             var result = await _service.Login(model);
             if (result.Value<int>("code") == 0)

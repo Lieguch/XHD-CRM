@@ -50,9 +50,11 @@
         </div>
 
         <!-- 右侧登录表单 -->
-        <div class="login-form-wrap">
+            <div class="login-form-wrap">
             <div class="login-title">@ViewData["company"]</div>
             <div class="layui-form" id="loginFormContainer">
+                <!-- [Sprint 10.11] AES 密钥通过 hidden field 回传，不依赖 session -->
+                <input type="hidden" name="aes_key" id="aes_key" value="@ViewBag.AES_Key" />
                 <div class="layui-form-item">
                     <i class="layui-icon layui-icon-username input-icon"></i>
                     <input type="text" name="uid" id="uid" lay-verify="required|account" placeholder="用户名" autocomplete="off" class="layui-input" value="admin">
@@ -201,6 +203,7 @@
                     data: {
                         uid: uid,
                         pwd: encrypted,
+                        aes_key: AES_Key,
                         valicode: valicode
                     },
                     dataType: 'json',
