@@ -287,23 +287,26 @@ namespace XHD.Core.View.Controllers
                 var families = SystemFonts.Families;
                 if (!families.Any())
                 {
-                    // 字体缺失兜底：画装饰性色块（不依赖任何字体，确保不出 500）
-                    // 生产环境应在 Dockerfile 装 fonts-dejavu-core + fontconfig
+                    // 字体缺失兜底：直接用 image[x,y] 设像素画色块
+                    // 完全绕开 SixLabors.Drawing API，避免 2.x 命名空间冲突
+                    // （Drawing.SolidBrush 与 Processing.SolidBrush 同名，编译器选错重载）
                     Console.WriteLine("[WARN] SystemFonts.Families is empty. " +
                         "Install fonts-dejavu-core in Docker image to render captcha text.");
-                    // 用随机颜色的矩形代表每个字符位置（装饰性，用户看不到具体字符）
                     for (int i = 0; i < code.Length; i++)
                     {
                         var rectColor = GetRandomColor();
-                        image.Mutate(ctx => ctx.Draw(
-                            new SixLabors.ImageSharp.Drawing.Brushes.SolidBrush(rectColor),
-                            new SixLabors.ImageSharp.Drawing.Drawing.Drawables.Rectangle(
-                                i * 30 + 2, 8, 26, 28)));
+                        int x0 = i * 30 + 2;
+                        int y0 = 8;
+                        int w = 26;
+                        int h = 28;
+                        for (int x = x0; x < x0 + w && x < width; x++)
+                            for (int y = y0; y < y0 + h && y < height; y++)
+                                image[x, y] = rectColor;
                     }
                 }
                 else
                 {
-                    // 绘制验证码字符
+                    // 绘制验证码字符（有字体时走正常路径）
                     var fontFamily = families.First();
                     for (int i = 0; i < code.Length; i++)
                     {
