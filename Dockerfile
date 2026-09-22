@@ -35,13 +35,14 @@ RUN dotnet restore ./XHDCRM3.sln --verbosity minimal
 COPY . .
 
 # 4) Publish（Release，输出 dll 而非 apphost，因容器内已有 dotnet runtime）
-#    ⚠️ SatelliteResourceLanguages 值含分号，必须用引号包裹，否则被 sh 当命令分隔符
+#    ⚠️ 不用 /p:SatelliteResourceLanguages —— MSBuild 命令行 /p: 值不支持 `;` 列表分隔符，
+#       会被当命令行 switch 拆掉（报 "Switch: en" / MSB1006）。默认保留所有卫星资源
+#       （含 zh-Hans），中文 CRM 必需。镜像大小差异 ~几百 KB，无关紧要。
 RUN dotnet publish ./1.UI/XHD.Core.View/XHD.Core.View.csproj \
     -c Release \
     -o /app/publish \
     --no-restore \
     /p:UseAppHost=false \
-    "/p:SatelliteResourceLanguages=zh-Hans;en" \
     -v minimal
 
 ########################################
