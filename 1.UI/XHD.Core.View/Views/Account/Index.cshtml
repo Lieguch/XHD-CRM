@@ -65,7 +65,7 @@
                     <div class="captcha-wrap">
                         <div style="position: relative;flex:1">
                             <i class="layui-icon layui-icon-vercode input-icon"></i>
-                            <input type="text" name="valicode" id="valicode" lay-verify="required|captcha" placeholder="图形验证码" autocomplete="off" class="layui-input">
+                            <input type="text" name="valicode" id="valicode" placeholder="图形验证码（可选）" autocomplete="off" class="layui-input">
                         </div>
                         <div class="captcha-img">
                             <img id="captchaPic" src="~/Account/ValiCode" onclick="refreshCaptcha(this)" alt="验证码">
@@ -130,7 +130,7 @@
             var form = layui.form,
                 layer = layui.layer;
 
-            // 验证规则
+            // 验证规则（验证码已改为可选，不再强制校验）
             form.verify({
                 account: function(value) {
                     if (value.trim() === '') return '用户名不能为空';
@@ -139,18 +139,13 @@
                 password: function(value) {
                     if (value.trim() === '') return '密码不能为空';
                     if (value.length < 3) return '密码长度不能小于3位';
-                },
-                captcha: function(value) {
-                    if (value.trim() === '') return '图形验证码不能为空';
-                    if (value.length < 4) return '验证码格式错误';
                 }
             });
 
             // 表单验证
             function validateLoginForm() {
                 var uid = $('#uid').val(),
-                    pwd = $('#pwd').val(),
-                    valicode = $('#valicode').val();
+                    pwd = $('#pwd').val();
                 if (!uid) return {
                     success: false,
                     msg: '用户名不能为空'
@@ -158,10 +153,6 @@
                 if (!pwd) return {
                     success: false,
                     msg: '密码不能为空'
-                };
-                if (!valicode) return {
-                    success: false,
-                    msg: '验证码不能为空'
                 };
                 return {
                     success: true

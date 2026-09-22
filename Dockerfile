@@ -51,10 +51,17 @@ RUN dotnet publish ./1.UI/XHD.Core.View/XHD.Core.View.csproj \
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
-# 装 curl 供 healthcheck 用（精简安装，Debian 12 基础）
+# 装 curl（healthcheck 用）+ fonts（验证码图片生成用）
+# ⚠️ fonts-dejavu-core + fontconfig 是 SystemFonts.Families 能返回非空的必要前提
+#    .NET 8 的 SixLabors.Fonts SystemFonts 在 Linux 上从 /usr/share/fonts 读字体，
+#    官方 aspnet 镜像默认没字体 → CreateImageAsync 里 SystemFonts.Families.FirstOrDefault() 返回 null
+#    → fontFamily.CreateFont() 抛 NullReferenceException → 验证码 img 404 / 空白
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends curl ca-certificates && \
+    apt-get install -y --no-install-recommends \
+        curl ca-certificates \
+        fonts-dejavu-core fontconfig && \
     rm -rf /var/lib/apt/lists/* && \
+    fc-cache -f && \
     mkdir -p /app/Data /app/Uploads /app/Logs && \
     chown -R 1001:1001 /app
 

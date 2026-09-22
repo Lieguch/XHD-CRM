@@ -166,18 +166,15 @@ namespace XHD.Core.View.Controllers
         }
         public async Task<string> Login(hr_employee model)
         {
-            try
-            {
-                var valicode_session = HttpContext.Session.GetString(CaptchaCodeSessionName);
-                if (valicode_session.ToLower() != Request.Form["valicode"].ToString().ToLower())
-                {
-                    return XHDResult.Error("验证码错误！").ToString();
-                }
-            }
-            catch
-            {
-                return XHDResult.Error(-9, "验证码已过期！").ToString();
-            }
+            // [Sprint 10.6] 已移除验证码强制校验 —— Linux Docker 无字体时验证码生成会抛 FontException
+            // 如需恢复，取消下面注释并加装 fonts-dejavu-core 到 Dockerfile：
+            // try {
+            //     var valicode_session = HttpContext.Session.GetString(CaptchaCodeSessionName);
+            //     if (valicode_session?.ToLower() != Request.Form["valicode"]?.ToString().ToLower())
+            //         return XHDResult.Error("验证码错误！").ToString();
+            // } catch {
+            //     return XHDResult.Error(-9, "验证码已过期！").ToString();
+            // }
             var AES_Key = HttpContext.Session.GetString("AES_Key");
             try
             {
@@ -282,21 +279,42 @@ namespace XHD.Core.View.Controllers
                         .Build();
                     image.Mutate(ctx => ctx.Draw(pen, path));
                 }
-                // 加载字体（需要准备字体文件）
+                // 加载字体（准备字体文件）
                 var fontCollection = new FontCollection();
-                // 获取系统默认字体
-                var fontFamily = SystemFonts.Families.FirstOrDefault();
-                // 绘制验证码字符
-                for (int i = 0; i < code.Length; i++)
+                // 获取系统默认字体 —— Linux Docker 必须预装 fonts-dejavu-core，否则 Families 为空
+                // ⚠️ FontFamily 是 struct，FirstOrDefault() 返回 default(FontFamily) 而非 null
+                //    必须用 Any() 判断，不能用 == null
+                var families = SystemFonts.Families;
+                if (!families.Any())
                 {
-                    var font = fontFamily.CreateFont(28, FontStyle.Bold);
-                    var brush = new SolidBrush(GetRandomColor());
-                    int y = (i + 1) % 2 == 0 ? 2 : 4;
-                    image.Mutate(ctx => ctx.DrawText(
-                        code[i].ToString(),
-                        font,
-                        brush,
-                        new PointF(i * 30, y + 10)));
+                    // 字体缺失兜底：画装饰性色块（不依赖任何字体，确保不出 500）
+                    // 生产环境应在 Dockerfile 装 fonts-dejavu-core + fontconfig
+                    Console.WriteLine("[WARN] SystemFonts.Families is empty. " +
+                        "Install fonts-dejavu-core in Docker image to render captcha text.");
+                    // 用随机颜色的矩形代表每个字符位置（装饰性，用户看不到具体字符）
+                    for (int i = 0; i < code.Length; i++)
+                    {
+                        var rectColor = GetRandomColor();
+                        image.Mutate(ctx => ctx.Draw(
+                            new SolidBrush(rectColor),
+                            new Rectangle(i * 30 + 2, 8, 26, 28)));
+                    }
+                }
+                else
+                {
+                    // 绘制验证码字符
+                    var fontFamily = families.First();
+                    for (int i = 0; i < code.Length; i++)
+                    {
+                        var font = fontFamily.CreateFont(28, FontStyle.Bold);
+                        var brush = new SolidBrush(GetRandomColor());
+                        int y = (i + 1) % 2 == 0 ? 2 : 4;
+                        image.Mutate(ctx => ctx.DrawText(
+                            code[i].ToString(),
+                            font,
+                            brush,
+                            new PointF(i * 30, y + 10)));
+                    }
                 }
                 // 转换为byte数组
                 using (var ms = new MemoryStream())
