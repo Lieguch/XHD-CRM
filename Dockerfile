@@ -90,4 +90,8 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
     CMD curl -fsS http://localhost:5001/ >/dev/null || exit 1
 
 # 9) 启动
+# ⚠️ ENTRYPOINT 负责修正命名卷权限并降权；CMD 才是实际应用命令。
+#    若缺少 CMD，docker compose up 会执行 entrypoint 但 "$@" 为空，
+#    表现为容器立即退出并被 restart: unless-stopped 无限重启。
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+CMD ["dotnet", "XHD.Core.View.dll"]
