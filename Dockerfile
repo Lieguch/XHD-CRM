@@ -16,15 +16,18 @@ FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 WORKDIR /src
 
 # 1) 先复制 sln 和所有 csproj —— 最大化 NuGet restore 层缓存
+#    ⚠️ 必须与 XHDCRM3.sln 引用的 7 个项目完全一致，否则 dotnet restore 报 MSB3202
 COPY ["XHDCRM3.sln", "./"]
 COPY ["NuGet.config", "./"]
-COPY ["1.UI/XHD.Core.View/XHD.Core.View.csproj",        "1.UI/XHD.Core.View/"]
-COPY ["2.Application/XHD.Core.Services/XHD.Core.Services.csproj", "2.Application/XHD.Core.Services/"]
-COPY ["3.Repository/XHD.Core.Repository/XHD.Core.Repository.csproj", "3.Repository/XHD.Core.Repository/"]
-COPY ["4.Entity/XHD.Core.Models/XHD.Core.Models.csproj",     "4.Entity/XHD.Core.Models/"]
-COPY ["5.Infrastructure/XHD.Core.Common/XHD.Core.Common.csproj",   "5.Infrastructure/XHD.Core.Common/"]
+COPY ["1.UI/XHD.Core.View/XHD.Core.View.csproj",                     "1.UI/XHD.Core.View/"]
+COPY ["2.Application/XHD.Core.Services/XHD.Core.Services.csproj",     "2.Application/XHD.Core.Services/"]
+COPY ["3.Repository/XHD.Core.Repository/XHD.Core.Repository.csproj",  "3.Repository/XHD.Core.Repository/"]
+COPY ["4.Entity/XHD.Core.Models/XHD.Core.Models.csproj",              "4.Entity/XHD.Core.Models/"]
+COPY ["5.Infrastructure/XHD.Core.Common/XHD.Core.Common.csproj",      "5.Infrastructure/XHD.Core.Common/"]
+COPY ["5.Infrastructure/CodeGenerator/CodeGenerator.csproj",          "5.Infrastructure/CodeGenerator/"]
+COPY ["7.Test/XHD.Core.Tests/XHD.Core.Tests.csproj",                  "7.Test/XHD.Core.Tests/"]
 
-# 2) Restore（跳过测试项目，减少镜像依赖）
+# 2) Restore（完整 restore sln；测试项目的 xunit 等依赖只在 build 层，不进 runtime 镜像）
 RUN dotnet restore "./XHDCRM3.sln" --verbosity minimal
 
 # 3) 复制所有源码
