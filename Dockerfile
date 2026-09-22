@@ -17,24 +17,25 @@ WORKDIR /src
 
 # 1) 先复制 sln 和所有 csproj —— 最大化 NuGet restore 层缓存
 #    ⚠️ 必须与 XHDCRM3.sln 引用的 7 个项目完全一致，否则 dotnet restore 报 MSB3202
-COPY ["XHDCRM3.sln", "./"]
-COPY ["NuGet.config", "./"]
-COPY ["1.UI/XHD.Core.View/XHD.Core.View.csproj",                     "1.UI/XHD.Core.View/"]
-COPY ["2.Application/XHD.Core.Services/XHD.Core.Services.csproj",     "2.Application/XHD.Core.Services/"]
-COPY ["3.Repository/XHD.Core.Repository/XHD.Core.Repository.csproj",  "3.Repository/XHD.Core.Repository/"]
-COPY ["4.Entity/XHD.Core.Models/XHD.Core.Models.csproj",              "4.Entity/XHD.Core.Models/"]
-COPY ["5.Infrastructure/XHD.Core.Common/XHD.Core.Common.csproj",      "5.Infrastructure/XHD.Core.Common/"]
-COPY ["5.Infrastructure/CodeGenerator/CodeGenerator.csproj",          "5.Infrastructure/CodeGenerator/"]
-COPY ["7.Test/XHD.Core.Tests/XHD.Core.Tests.csproj",                  "7.Test/XHD.Core.Tests/"]
+#    ⚠️ 使用 shell 形式 COPY（非 JSON 数组），避免 BuildKit 对数字开头路径的解析问题
+COPY XHDCRM3.sln ./
+COPY NuGet.config ./
+COPY 1.UI/XHD.Core.View/XHD.Core.View.csproj 1.UI/XHD.Core.View/
+COPY 2.Application/XHD.Core.Services/XHD.Core.Services.csproj 2.Application/XHD.Core.Services/
+COPY 3.Repository/XHD.Core.Repository/XHD.Core.Repository.csproj 3.Repository/XHD.Core.Repository/
+COPY 4.Entity/XHD.Core.Models/XHD.Core.Models.csproj 4.Entity/XHD.Core.Models/
+COPY 5.Infrastructure/XHD.Core.Common/XHD.Core.Common.csproj 5.Infrastructure/XHD.Core.Common/
+COPY 5.Infrastructure/CodeGenerator/CodeGenerator.csproj 5.Infrastructure/CodeGenerator/
+COPY 7.Test/XHD.Core.Tests/XHD.Core.Tests.csproj 7.Test/XHD.Core.Tests/
 
 # 2) Restore（完整 restore sln；测试项目的 xunit 等依赖只在 build 层，不进 runtime 镜像）
-RUN dotnet restore "./XHDCRM3.sln" --verbosity minimal
+RUN dotnet restore ./XHDCRM3.sln --verbosity minimal
 
 # 3) 复制所有源码
 COPY . .
 
 # 4) Publish（Release，输出 dll 而非 apphost，因容器内已有 dotnet runtime）
-RUN dotnet publish "./1.UI/XHD.Core.View/XHD.Core.View.csproj" \
+RUN dotnet publish ./1.UI/XHD.Core.View/XHD.Core.View.csproj \
     -c Release \
     -o /app/publish \
     --no-restore \
