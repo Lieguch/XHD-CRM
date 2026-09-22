@@ -1,0 +1,59 @@
+# ===== 构建产物 / 缓存 =====
+**/bin/
+**/obj/
+**/publish/
+**/.vs/
+**/.vscode/
+
+# ===== Git / VCS =====
+.git/
+.gitignore
+.gitattributes
+
+# ===== IDE / OS 生成文件 =====
+*.user
+*.suo
+*.userprefs
+.idea/
+.DS_Store
+Thumbs.db
+
+# ===== Node 依赖 (wwwroot 已内置前端) =====
+node_modules/
+package-lock.json
+
+# ===== 包管理器缓存 =====
+packages/
+**/packages/
+*.nupkg
+
+# ===== 测试项目（不进生产镜像） =====
+7.Test/
+
+# ===== 文档 / 部署相关（不进入镜像，仅本机用） =====
+docker-compose.yml
+docker-compose.override.yml
+Dockerfile
+.dockerignore
+DEPLOY.md
+A-vs-B-对照报告.md
+*.md
+!README.md
+
+# ===== 数据卷 / 上传目录 =====
+**/Data/
+**/Uploads/
+**/Logs/
+*.db
+*.sqlite
+*.sqlite3
+
+# ===== 日志 =====
+*.log
+**/logs/
+
+# ===== 本地开发临时文件 =====
+*.tmp
+*.bak
+*.bak-*
+**/appsettings.Development.json

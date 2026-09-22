@@ -1,0 +1,95 @@
+# ==========================================================================
+# XHD CRM 3.1 - docker-compose.yml
+# ==========================================================================
+# 使用:
+#   默认 (Sqlite, 单机快速部署):
+#     docker compose up -d --build
+#     # 访问 http://localhost:5001
+#
+#   切 MySql (推荐生产):
+#     1. 取消下方 mysql 服务的注释
+#     2. 修改 web.environment 的 DB_TYPE / DB_CONNECTION
+#     3. docker compose up -d --build
+#
+# 持久化:
+#   - /app/Data    -> Sqlite 数据库文件 xhdcrm3db.db
+#   - /app/Uploads -> 用户上传文件（附件、头像等）
+#   - /app/Logs    -> 应用日志
+#
+# 生产建议:
+#   - 反代 (Nginx/Caddy) 挂在 80/443，把 / 转到 web:5001
+#   - appsettings.json 覆盖：改 DB 类型 / 连接串 / AllowedHosts
+# ==========================================================================
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: xhd-crm:3.1
+    container_name: xhd-crm-web
+    restart: unless-stopped
+    ports:
+      - "5001:5001"
+    environment:
+      ASPNETCORE_ENVIRONMENT: "Production"
+      ASPNETCORE_URLS: "http://+:5001"
+      TZ: "Asia/Shanghai"
+      # --- 数据库配置 (默认 Sqlite，走 appsettings.json 里预设的连接串) ---
+      # 如需覆盖，取消注释并调整：
+      # DB_TYPE: "MySql"
+      # DB_CONNECTION: "Server=mysql;Port=3306;Database=xhdcrm;Uid=root;Pwd=your_pwd;Charset=utf8mb4;Pooling=true;Min Pool Size=1"
+    volumes:
+      - xhd-crm-data:/app/Data
+      - xhd-crm-uploads:/app/Uploads
+      - xhd-crm-logs:/app/Logs
+      # 如需外部挂载自定义 appsettings.json（覆盖 DB 配置），取消注释：
+      # - ./appsettings.override.json:/app/appsettings.json:ro
+    depends_on:
+      # mysql:
+      #   condition: service_healthy
+    networks:
+      - xhd-crm-net
+
+  # ==== 可选：MySQL 服务（生产推荐；默认 Sqlite 时保持注释） ====
+  # mysql:
+  #   image: mysql:8.0
+  #   container_name: xhd-crm-mysql
+  #   restart: unless-stopped
+  #   environment:
+  #     MYSQL_ROOT_PASSWORD: "your_pwd"
+  #     MYSQL_DATABASE: "xhdcrm"
+  #     MYSQL_USER: "xhdcrm"
+  #     MYSQL_PASSWORD: "xhdcrm_pwd"
+  #     TZ: "Asia/Shanghai"
+  #   command:
+  #     - --character-set-server=utf8mb4
+  #     - --collation-server=utf8mb4_unicode_ci
+  #     - --default-authentication-plugin=mysql_native_password
+  #   volumes:
+  #     - xhd-crm-mysql-data:/var/lib/mysql
+  #   ports:
+  #     - "3306:3306"
+  #   healthcheck:
+  #     test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-pyour_pwd"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
+  #     start_period: 30s
+  #   networks:
+  #     - xhd-crm-net
+
+volumes:
+  xhd-crm-data:
+    name: xhd-crm-data
+  xhd-crm-uploads:
+    name: xhd-crm-uploads
+  xhd-crm-logs:
+    name: xhd-crm-logs
+  # xhd-crm-mysql-data:
+  #   name: xhd-crm-mysql-data
+
+networks:
+  xhd-crm-net:
+    name: xhd-crm-net
+    driver: bridge
