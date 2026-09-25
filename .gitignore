@@ -1,9 +1,6 @@
 bin/
 obj/
-.vs/
-.idea/
-*.user
-*.suo
-TestResults/
+node_modules/
 packages/
-artifacts/
+*.trx
+.vs/
