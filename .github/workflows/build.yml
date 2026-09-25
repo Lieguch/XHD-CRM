@@ -1,22 +1,26 @@
 name: build-and-test
 
-on:
+'on':
   push:
-    branches: [main]
-  workflow_dispatch:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 env:
-  DOTNET_CLI_TELEMETRY_OPTOUT: "1"
-  DOTNET_NOLOGO: "1"
+  DOTNET_CLI_TELEMETRY_OPTOUT: '1'
+  DOTNET_NOLOGO: '1'
 
 jobs:
   build:
+    name: build-and-test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-dotnet@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: 8.0.x
+          dotnet-version: '8.0.x'
       - name: dotnet --version
         run: dotnet --version
       - name: dotnet restore
@@ -30,4 +34,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: test-results
-          path: **/*.trx
+          path: '**/*.trx'
+          if-no-files-found: ignore
