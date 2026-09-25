@@ -184,6 +184,22 @@
     "Menu_order": 30
   },
   {
+    "id": "Report_Employee",
+    "Menu_name": "员工报表",
+    "Menu_url": "Report_Employee/Index",    
+    "Menu_icon": "fa-users",    
+    "parentid": "ReportManager",
+    "Menu_order": 40
+  },
+  {
+    "id": "Report_Compared",
+    "Menu_name": "对比报表",
+    "Menu_url": "Report_Compared/Index",    
+    "Menu_icon": "fa-balance-scale",    
+    "parentid": "ReportManager",
+    "Menu_order": 50
+  },
+  {
     "id": "Sys_Manager",
     "Menu_name": "系统管理",
     "Menu_url": "",    

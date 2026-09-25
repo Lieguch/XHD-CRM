@@ -1,0 +1,203 @@
+@{
+    ViewData["Title"] = "员工报表";
+}
+
+<div class="layuimini-main">
+
+    <div class="layui-row layui-col-space15">
+        <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">员工</label>
+                    <div class="layui-input-inline">
+                        <input type="text" id="employee" autocomplete="off" class="layui-input" lay-verify="required">
+                        <input type="text" name="empIds" id="empIds" style="display:none;">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">年度</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="year" id="year" autocomplete="off" class="layui-input" lay-verify="required">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">开始</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="start" id="start" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">结束</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="end" id="end" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon"></i> 搜 索</button>
+                    <button type="reset" class="layui-btn layui-btn-primary" id="btn_reset"><i class="layui-icon"></i> 重置</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-xs12 layui-col-md6">
+            <div id="echarts-empcus-year" style="background-color:#ffffff;min-height:300px;padding: 10px"></div>
+        </div>
+        <div class="layui-col-xs12 layui-col-md6">
+            <div id="echarts-empfollow-year" style="background-color:#ffffff;min-height:300px;padding: 10px"></div>
+        </div>
+    </div>
+
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-xs12 layui-col-md6">
+            <div id="echarts-emporder-year" style="background-color:#ffffff;min-height:300px;padding: 10px"></div>
+        </div>
+        <div class="layui-col-xs12 layui-col-md6">
+            <div id="echarts-empcus-month" style="background-color:#ffffff;min-height:300px;padding: 10px"></div>
+        </div>
+    </div>
+
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-xs12 layui-col-md6">
+            <div id="echarts-empfollow-month" style="background-color:#ffffff;min-height:300px;padding: 10px"></div>
+        </div>
+        <div class="layui-col-xs12 layui-col-md6">
+            <div id="echarts-emporder-month" style="background-color:#ffffff;min-height:300px;padding: 10px"></div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" src="/js/home/echarts.min.js"></script>
+<script>
+layui.use(['table', 'treetable', 'form', 'tableSelect', 'laydate'], function () {
+    var $ = layui.jquery;
+    var form = layui.form;
+    var tableSelect = layui.tableSelect;
+    var laydate = layui.laydate;
+
+    laydate.render({ elem: '#year', type: 'year' });
+    laydate.render({ elem: '#start', type: 'date' });
+    laydate.render({ elem: '#end', type: 'date' });
+
+    tableSelect.render({
+        elem: '#employee',
+        checkedKey: 'id',
+        table: {
+            url: '/HrEmployee/grid',
+            cols: [[
+                { type: 'checkbox' },
+                { field: 'name', width: 150, title: '员工姓名' },
+                { field: 'dep_name', width: 150, title: '部门', templet: function (t) {
+                    return t.department ? t.department.dep_name : '';
+                } }
+            ]],
+            limit: 100
+        },
+        done: function (elem, data) {
+            var names = [], ids = [];
+            layui.each(data.data, function (i, item) {
+                names.push(item.name);
+                ids.push(item.id);
+            });
+            elem.val(names.join(","));
+            $("#empIds").val(ids.join(','));
+        }
+    });
+
+    form.on('submit(data-search-btn)', function (data) {
+        // 年度客户新增
+        $.ajax({
+            url: "/Report_Customer/ReportEmpCus",
+            data: { year: data.field.year, empIds: data.field.empIds },
+            type: "get", dataType: "json",
+            success: function (res) { barChart('echarts-empcus-year', '员工年度客户新增', res); }
+        });
+        // 年度跟进
+        $.ajax({
+            url: "/Report_Customer/ReportEmpFollowYear",
+            data: { year: data.field.year, empIds: data.field.empIds },
+            type: "get", dataType: "json",
+            success: function (res) { barChart('echarts-empfollow-year', '员工年度跟进统计', res); }
+        });
+        // 年度订单
+        $.ajax({
+            url: "/Report_Order/ReportEmpOrder",
+            data: { year: data.field.year, empIds: data.field.empIds },
+            type: "get", dataType: "json",
+            success: function (res) { barChart('echarts-emporder-year', '员工年度订单统计', res); }
+        });
+        // 月度客户新增
+        $.ajax({
+            url: "/Report_Customer/ReportMonthEmpCus",
+            data: { start: data.field.start, end: data.field.end, empIds: data.field.empIds },
+            type: "get", dataType: "json",
+            success: function (res) { barChart('echarts-empcus-month', '员工月度客户新增', res); }
+        });
+        // 月度跟进
+        $.ajax({
+            url: "/Report_Customer/ReportMonthEmpFollow",
+            data: { start: data.field.start, end: data.field.end, empIds: data.field.empIds },
+            type: "get", dataType: "json",
+            success: function (res) { barChart('echarts-empfollow-month', '员工月度跟进统计', res); }
+        });
+        // 月度订单
+        $.ajax({
+            url: "/Report_Order/ReportMonthEmpOrder",
+            data: { start: data.field.start, end: data.field.end, empIds: data.field.empIds },
+            type: "get", dataType: "json",
+            success: function (res) { barChart('echarts-emporder-month', '员工月度订单统计', res); }
+        });
+        return false;
+    });
+
+    function barChart(domId, title, data) {
+        var myChart = echarts.init(document.getElementById(domId));
+        var months = ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'];
+        var colorList = ['#5470c6','#91cc75','#fac858','#ee6666','#73c0de','#3ba272','#fc8452','#9a60b4','#ea7ccc','#3ba272','#fc8452','#9a60b4'];
+
+        // 处理数据：按员工分组，每个员工一条series
+        var series = [];
+        var legendData = [];
+        if (data && data.length > 0) {
+            // 按员工名分组
+            var empMap = {};
+            for (var i = 0; i < data.length; i++) {
+                var d = data[i];
+                var empName = d.name || d.emp_name || d.employee_name || ('员工' + (i + 1));
+                if (!empMap[empName]) { empMap[empName] = []; legendData.push(empName); }
+                for (var m = 1; m <= 12; m++) {
+                    var monthData = null;
+                    for (var j = 0; j < data.length; j++) {
+                        if ((data[j].name || data[j].emp_name || '') === empName && data[j].xmonth === m) {
+                            monthData = data[j]; break;
+                        }
+                    }
+                    var val = monthData ? (monthData.count || monthData.value || 0) : 0;
+                    empMap[empName].push(val);
+                }
+            }
+            for (var empName2 in empMap) {
+                series.push({
+                    name: empName2, type: 'bar', stack: 'total',
+                    data: empMap[empName2],
+                    itemStyle: { color: colorList[legendData.indexOf(empName2) % colorList.length] }
+                });
+            }
+        }
+
+        option = {
+            color: colorList,
+            title: { text: title, left: 'center' },
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            legend: { data: legendData, bottom: 0, type: 'scroll' },
+            grid: { left: '3%', right: '4%', bottom: '12%', containLabel: true },
+            xAxis: { type: 'category', data: months },
+            yAxis: { type: 'value' },
+            series: series
+        };
+        myChart.setOption(option);
+        window.addEventListener("resize", function () { myChart.resize(); });
+    }
+});
+</script>

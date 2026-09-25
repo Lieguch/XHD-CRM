@@ -1,0 +1,246 @@
+@{
+    ViewData["Title"] = "对比报表";
+}
+
+<div class="layuimini-main">
+
+    <div class="layui-row layui-col-space15">
+        <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">对比年份</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="year" id="year" autocomplete="off" class="layui-input" lay-verify="required">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">起始月</label>
+                    <div class="layui-input-inline">
+                        <select name="startMonth" id="startMonth" lay-filter="startMonth">
+                            <option value="1">1月</option><option value="2">2月</option>
+                            <option value="3">3月</option><option value="4">4月</option>
+                            <option value="5">5月</option><option value="6">6月</option>
+                            <option value="7">7月</option><option value="8">8月</option>
+                            <option value="9">9月</option><option value="10">10月</option>
+                            <option value="11">11月</option><option value="12">12月</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">结束月</label>
+                    <div class="layui-input-inline">
+                        <select name="endMonth" id="endMonth" lay-filter="endMonth">
+                            <option value="1">1月</option><option value="2">2月</option>
+                            <option value="3">3月</option><option value="4">4月</option>
+                            <option value="5">5月</option><option value="6">6月</option>
+                            <option value="7">7月</option><option value="8">8月</option>
+                            <option value="9">9月</option><option value="10">10月</option>
+                            <option value="11">11月</option><option value="12" selected>12月</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">员工</label>
+                    <div class="layui-input-inline">
+                        <input type="text" id="employee" autocomplete="off" class="layui-input">
+                        <input type="text" name="empIds" id="empIds" style="display:none;">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon"></i> 搜 索</button>
+                    <button type="reset" class="layui-btn layui-btn-primary"><i class="layui-icon"></i> 重置</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-xs12 layui-col-md6">
+            <div class="layui-card">
+                <div class="layui-card-header">客户新增对比</div>
+                <div class="layui-card-body">
+                    <table id="table-cus-add" class="layui-table layui-table-hide"></table>
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-xs12 layui-col-md6">
+            <div class="layui-card">
+                <div class="layui-card-header">跟进对比</div>
+                <div class="layui-card-body">
+                    <table id="table-follow" class="layui-table layui-table-hide"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-xs12 layui-col-md12">
+            <div class="layui-card">
+                <div class="layui-card-header">订单对比</div>
+                <div class="layui-card-body">
+                    <table id="table-order" class="layui-table layui-table-hide"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/javascript" src="/js/home/echarts.min.js"></script>
+<script>
+layui.use(['table', 'treetable', 'form', 'tableSelect', 'laydate'], function () {
+    var $ = layui.jquery;
+    var table = layui.table;
+    var form = layui.form;
+    var tableSelect = layui.tableSelect;
+    var laydate = layui.laydate;
+
+    laydate.render({ elem: '#year', type: 'year' });
+
+    tableSelect.render({
+        elem: '#employee',
+        checkedKey: 'id',
+        table: {
+            url: '/HrEmployee/grid',
+            cols: [[
+                { type: 'checkbox' },
+                { field: 'name', width: 150, title: '员工姓名' }
+            ]],
+            limit: 100
+        },
+        done: function (elem, data) {
+            var names = [], ids = [];
+            layui.each(data.data, function (i, item) {
+                names.push(item.name);
+                ids.push(item.id);
+            });
+            elem.val(names.join(","));
+            $("#empIds").val(ids.join(','));
+        }
+    });
+
+    function growthCell(dt1, dt2) {
+        if (dt1 === undefined || dt1 === null) dt1 = 0;
+        if (dt2 === undefined || dt2 === null) dt2 = 0;
+        var diff = dt2 - dt1;
+        if (diff > 0) return '<span style="color:#16b77a">↑ +' + diff + '</span>';
+        else if (diff < 0) return '<span style="color:#ff5722">↓ ' + diff + '</span>';
+        else return '<span style="color:#999">— 0</span>';
+    }
+
+    function rateCell(dt1, dt2) {
+        if (dt1 === undefined || dt1 === null) dt1 = 0;
+        if (dt2 === undefined || dt2 === null) dt2 = 0;
+        if (dt1 === 0 && dt2 === 0) return '0%';
+        if (dt1 === 0) return '100%';
+        var rate = ((dt2 - dt1) / dt1 * 100).toFixed(1);
+        return rate + '%';
+    }
+
+    form.on('submit(data-search-btn)', function (data) {
+        var fields = data.field;
+
+        // 客户新增对比
+        $.ajax({
+            url: "/Report_Customer/ComparedEmpCusAdd",
+            data: fields,
+            type: "get", dataType: "json",
+            success: function (res) {
+                var rows = [];
+                if (res && res.length > 0) {
+                    for (var i = 0; i < res.length; i++) {
+                        var d = res[i];
+                        rows.push({
+                            name: d.name || d.emp_name || '未分类',
+                            dt1: d.dt1 || d.m1 || 0,
+                            dt2: d.dt2 || d.m2 || 0,
+                            diff: d.m3 || d.diff || 0,
+                            rate: d.m4 || d.rate || 0
+                        });
+                    }
+                }
+                table.render({
+                    elem: '#table-cus-add',
+                    cols: [[
+                        { field: 'name', title: '员工', width: 120 },
+                        { field: 'dt1', title: '起始月数', width: 100 },
+                        { field: 'dt2', title: '结束月数', width: 100 },
+                        { title: '增幅', width: 100, templet: function (d) { return growthCell(d.dt1, d.dt2); } },
+                        { title: '增幅率', width: 100, templet: function (d) { return rateCell(d.dt1, d.dt2); } }
+                    ]],
+                    data: rows,
+                    page: false,
+                    skin: 'line'
+                });
+            }
+        });
+
+        // 跟进对比
+        $.ajax({
+            url: "/Report_Customer/ComparedFollow",
+            data: fields,
+            type: "get", dataType: "json",
+            success: function (res) {
+                var rows = [];
+                if (res && res.length > 0) {
+                    for (var i = 0; i < res.length; i++) {
+                        var d = res[i];
+                        rows.push({
+                            name: d.name || d.xmonth || '总计',
+                            dt1: d.dt1 || d.m1 || 0,
+                            dt2: d.dt2 || d.m2 || 0
+                        });
+                    }
+                }
+                table.render({
+                    elem: '#table-follow',
+                    cols: [[
+                        { field: 'name', title: '项目', width: 150 },
+                        { field: 'dt1', title: '起始月数', width: 100 },
+                        { field: 'dt2', title: '结束月数', width: 100 },
+                        { title: '增幅', width: 100, templet: function (d) { return growthCell(d.dt1, d.dt2); } },
+                        { title: '增幅率', width: 100, templet: function (d) { return rateCell(d.dt1, d.dt2); } }
+                    ]],
+                    data: rows,
+                    page: false,
+                    skin: 'line'
+                });
+            }
+        });
+
+        // 订单对比
+        $.ajax({
+            url: "/Report_Order/ComparedEmpCusOrder",
+            data: fields,
+            type: "get", dataType: "json",
+            success: function (res) {
+                var rows = [];
+                if (res && res.length > 0) {
+                    for (var i = 0; i < res.length; i++) {
+                        var d = res[i];
+                        rows.push({
+                            name: d.name || d.emp_name || '未分类',
+                            dt1: d.dt1 || d.m1 || 0,
+                            dt2: d.dt2 || d.m2 || 0
+                        });
+                    }
+                }
+                table.render({
+                    elem: '#table-order',
+                    cols: [[
+                        { field: 'name', title: '员工', width: 120 },
+                        { field: 'dt1', title: '起始月数', width: 100 },
+                        { field: 'dt2', title: '结束月数', width: 100 },
+                        { title: '增幅', width: 100, templet: function (d) { return growthCell(d.dt1, d.dt2); } },
+                        { title: '增幅率', width: 100, templet: function (d) { return rateCell(d.dt1, d.dt2); } }
+                    ]],
+                    data: rows,
+                    page: false,
+                    skin: 'line'
+                });
+            }
+        });
+
+        return false;
+    });
+});
+</script>

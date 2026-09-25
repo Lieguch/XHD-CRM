@@ -518,5 +518,53 @@ namespace XHD.Core.View.Controllers
             return data.ToString();
         }
 
+        /// <summary>
+        /// 员工年度跟进报表：按年份 × 12 个月 × 员工维度输出跟进次数
+        /// </summary>
+        /// <param name="year">统计年份，缺省为当前年份</param>
+        /// <param name="empIds">参与统计的员工 ID 列表，逗号分隔</param>
+        [HttpGet("ReportEmpFollowYear")]
+        public async Task<string> ReportEmpFollowYear(int? year, [FromQuery] List<string> empIds = null)
+        {
+            int y = year ?? DateTime.Now.Year;
+            var data = await _followservice.ReportEmpFollowAsync(y, empIds);
+            return data.ToString();
+        }
+
+        /// <summary>
+        /// 员工月度跟进报表：按时间区间 × 12 个月 × 员工维度输出跟进次数
+        /// </summary>
+        /// <param name="start">起始时间（含），例如 2024-01-01</param>
+        /// <param name="end">结束时间（含），例如 2024-12-31</param>
+        /// <param name="empIds">参与统计的员工 ID 列表，逗号分隔</param>
+        [HttpGet("ReportMonthEmpFollow")]
+        public async Task<string> ReportMonthEmpFollow(
+            DateTime? start,
+            DateTime? end,
+            [FromQuery] List<string> empIds = null)
+        {
+            var data = await _followservice.ReportMonthEmpFollowAsync(start ?? DateTime.Now.AddMonths(-1), end ?? DateTime.Now, empIds);
+            return data.ToString();
+        }
+
+        /// <summary>
+        /// 跟进双月对比：输出 startMonth 与 endMonth 的跟进数及差值
+        /// </summary>
+        /// <param name="year">统计年份，缺省为当前年份</param>
+        /// <param name="startMonth">起始月份（1-12），缺省取年首（1 月）</param>
+        /// <param name="endMonth">结束月份（1-12），缺省取年末（12 月）</param>
+        [HttpGet("ComparedFollow")]
+        public async Task<string> ComparedFollow(
+            int? year,
+            int? startMonth,
+            int? endMonth)
+        {
+            int y = year ?? DateTime.Now.Year;
+            int sm = (startMonth ?? 1);
+            int em = (endMonth ?? 12);
+            var data = await _followservice.ComparedFollowAsync(y, sm, y, em);
+            return data.ToString();
+        }
+
     }
 }

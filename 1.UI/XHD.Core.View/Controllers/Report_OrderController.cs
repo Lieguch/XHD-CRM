@@ -259,5 +259,55 @@ namespace XHD.Core.View.Controllers
 
             return arr.ToString();
         }
+
+        /// <summary>
+        /// 员工年度订单报表：按年份 × 12 个月 × 员工维度输出订单数
+        /// </summary>
+        /// <param name="year">统计年份，缺省为当前年份</param>
+        /// <param name="empIds">参与统计的员工 ID 列表，逗号分隔</param>
+        [HttpGet("ReportEmpOrder")]
+        public async Task<string> ReportEmpOrder(int? year, [FromQuery] List<string> empIds = null)
+        {
+            int y = year ?? DateTime.Now.Year;
+            var data = await _service.ReportEmpOrderAsync(y, empIds);
+            return data.ToString();
+        }
+
+        /// <summary>
+        /// 员工月度订单报表：按时间区间 × 12 个月 × 员工维度输出订单数
+        /// </summary>
+        /// <param name="start">起始时间（含），例如 2024-01-01</param>
+        /// <param name="end">结束时间（含），例如 2024-12-31</param>
+        /// <param name="empIds">参与统计的员工 ID 列表，逗号分隔</param>
+        [HttpGet("ReportMonthEmpOrder")]
+        public async Task<string> ReportMonthEmpOrder(
+            DateTime? start,
+            DateTime? end,
+            [FromQuery] List<string> empIds = null)
+        {
+            var data = await _service.ReportMonthEmpOrderAsync(start ?? DateTime.Now.AddMonths(-1), end ?? DateTime.Now, empIds);
+            return data.ToString();
+        }
+
+        /// <summary>
+        /// 员工维度双月订单对比：输出每员工 startMonth 与 endMonth 的订单数及差值
+        /// </summary>
+        /// <param name="year">统计年份，缺省为当前年份</param>
+        /// <param name="startMonth">起始月份（1-12），缺省取年首（1 月）</param>
+        /// <param name="endMonth">结束月份（1-12），缺省取年末（12 月）</param>
+        /// <param name="empIds">参与统计的员工 ID 列表，逗号分隔</param>
+        [HttpGet("ComparedEmpCusOrder")]
+        public async Task<string> ComparedEmpCusOrder(
+            int? year,
+            int? startMonth,
+            int? endMonth,
+            [FromQuery] List<string> empIds = null)
+        {
+            int y = year ?? DateTime.Now.Year;
+            int sm = (startMonth ?? 1);
+            int em = (endMonth ?? 12);
+            var data = await _service.ComparedEmpCusOrderAsync(y, sm, y, em, empIds);
+            return data.ToString();
+        }
     }
 }

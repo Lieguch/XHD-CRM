@@ -25,8 +25,8 @@
                 </div>
 
                 <div class="layui-inline">
-                    <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn" id="btn_serch"><i class="layui-icon"></i> 搜 索</button>
-                    <button type="reset" class="layui-btn layui-btn-primary" id="btn_reset"><i class="layui-icon"></i> 重置</button>
+                    <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn" id="btn_serch"><i class="layui-icon"></i> 搜 索</button>
+                    <button type="reset" class="layui-btn layui-btn-primary" id="btn_reset"><i class="layui-icon"></i> 重置</button>
                 </div>
             </div>
         </form>
@@ -52,6 +52,17 @@
         </div>
         <div class="layui-col-xs12 layui-col-md3">
             <div id="echarts-source" style="background-color:#ffffff;min-height:300px;padding: 10px"></div>
+        </div>
+    </div>
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-xs12 layui-col-md3">
+            <div id="echarts-provinces" style="background-color:#ffffff;min-height:300px;padding: 10px"></div>
+        </div>
+        <div class="layui-col-xs12 layui-col-md3">
+            <div id="echarts-city" style="background-color:#ffffff;min-height:300px;padding: 10px"></div>
+        </div>
+        <div class="layui-col-xs12 layui-col-md6">
+            <div id="echarts-funnel" style="background-color:#ffffff;min-height:300px;padding: 10px"></div>
         </div>
     </div>
 </div>
@@ -174,6 +185,36 @@ layui.use(['table', 'treetable','form', 'tableSelect', 'laydate'], function () {
             dataType: "json",
             success: function (data) {
                 echarts_6(data);
+            },
+        });
+
+        $.ajax({
+            url: "ReportProvinces",
+            data:data.field,
+            type: "get",
+            dataType: "json",
+            success: function (data) {
+                echarts_7(data);
+            },
+        });
+
+        $.ajax({
+            url: "ReportCity",
+            data:data.field,
+            type: "get",
+            dataType: "json",
+            success: function (data) {
+                echarts_8(data);
+            },
+        });
+
+        $.ajax({
+            url: "Funnel",
+            data:data.field,
+            type: "get",
+            dataType: "json",
+            success: function (data) {
+                echarts_9(data);
             },
         });
 
@@ -302,7 +343,7 @@ layui.use(['table', 'treetable','form', 'tableSelect', 'laydate'], function () {
         // 基于准备好的dom，初始化echarts实例
         var myChart = echarts.init(document.getElementById('echarts-industry'));
             option = {
-                    color: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],  // 添加这一行
+                    color: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],
                 title: {
                     text: '客户行业分析',
                     subtext: $("#year").val()+'年度',
@@ -348,7 +389,7 @@ layui.use(['table', 'treetable','form', 'tableSelect', 'laydate'], function () {
         // 基于准备好的dom，初始化echarts实例
         var myChart = echarts.init(document.getElementById('echarts-type'));
             option = {
-                    color: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],  // 添加这一行
+                    color: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],
                 title: {
                     text: '客户类型分析',
                     subtext: $("#year").val()+'年度',
@@ -395,7 +436,7 @@ layui.use(['table', 'treetable','form', 'tableSelect', 'laydate'], function () {
         // 基于准备好的dom，初始化echarts实例
         var myChart = echarts.init(document.getElementById('echarts-level'));
             option = {
-                    color: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],  // 添加这一行
+                    color: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],
                 title: {
                     text: '客户级别分析',
                     subtext: $("#year").val()+'年度',
@@ -442,7 +483,7 @@ layui.use(['table', 'treetable','form', 'tableSelect', 'laydate'], function () {
         // 基于准备好的dom，初始化echarts实例
         var myChart = echarts.init(document.getElementById('echarts-source'));
             option = {
-                    color: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],  // 添加这一行
+                    color: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],
                 title: {
                     text: '客户来源分析',
                     subtext: $("#year").val()+'年度',
@@ -482,6 +523,166 @@ layui.use(['table', 'treetable','form', 'tableSelect', 'laydate'], function () {
             window.addEventListener("resize", function () {
                 myChart.resize();
             });
+    }
+
+    function echarts_7(data) {
+
+        // 基于准备好的dom，初始化echarts实例
+        var myChart = echarts.init(document.getElementById('echarts-provinces'));
+            option = {
+                    color: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],
+                title: {
+                    text: '客户省份分析',
+                    subtext: $("#year").val()+'年度',
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'item'
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'right'
+                },
+                series: [
+                    {
+                        name: '客户省份',
+                        type: 'pie',
+                        radius: ['30%', '70%'],
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        data: data,
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        }
+                    }
+                ]
+            };
+
+            // 使用刚指定的配置项和数据显示图表。
+            myChart.setOption(option);
+            window.addEventListener("resize", function () {
+                myChart.resize();
+            });
+    }
+
+    function echarts_8(data) {
+
+        // 基于准备好的dom，初始化echarts实例
+        var myChart = echarts.init(document.getElementById('echarts-city'));
+            option = {
+                    color: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],
+                title: {
+                    text: '客户城市分析',
+                    subtext: $("#year").val()+'年度',
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'item'
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'right'
+                },
+                series: [
+                    {
+                        name: '客户城市',
+                        type: 'pie',
+                        radius: ['30%', '70%'],
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        data: data,
+                        emphasis: {
+                            itemStyle: {
+                                shadowBlur: 10,
+                                shadowOffsetX: 0,
+                                shadowColor: 'rgba(0, 0, 0, 0.5)'
+                            }
+                        }
+                    }
+                ]
+            };
+
+            // 使用刚指定的配置项和数据显示图表。
+            myChart.setOption(option);
+            window.addEventListener("resize", function () {
+                myChart.resize();
+            });
+    }
+
+    function echarts_9(data) {
+
+        // 基于准备好的dom，初始化echarts实例
+        var myChart = echarts.init(document.getElementById('echarts-funnel'));
+
+        // 将数据从升序排列，漏斗图需要升序
+        var funnelData = [];
+        for (var i = 0; i < data.length; i++) {
+            funnelData.push({
+                value: data[i].value || data[i].count || 0,
+                name: data[i].name || data[i].xmonth || ''
+            });
+        }
+
+        option = {
+            color: ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de', '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc'],
+            title: {
+                text: '客户转化漏斗',
+                subtext: $("#year").val() + '年度',
+                left: 'center'
+            },
+            tooltip: {
+                trigger: 'item',
+                formatter: '{a} <br/>{b} : {c} ({d}%)'
+            },
+            series: [
+                {
+                    name: '客户转化',
+                    type: 'funnel',
+                    left: '10%',
+                    top: 60,
+                    bottom: 20,
+                    width: '80%',
+                    min: 0,
+                    max: 100,
+                    minSize: '0%',
+                    maxSize: '100%',
+                    sort: 'descending',
+                    gap: 2,
+                    label: {
+                        show: true,
+                        position: 'inside'
+                    },
+                    labelLine: {
+                        length: 10,
+                        lineStyle: {
+                            width: 1,
+                            type: 'solid'
+                        }
+                    },
+                    itemStyle: {
+                        borderColor: '#fff',
+                        borderWidth: 1
+                    },
+                    data: funnelData
+                }
+            ]
+        };
+
+        // 使用刚指定的配置项和数据显示图表。
+        myChart.setOption(option);
+        window.addEventListener("resize", function () {
+            myChart.resize();
+        });
     }
 });
 </script>
