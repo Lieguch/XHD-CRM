@@ -1,4 +1,4 @@
-﻿using Azure.Core;
+using Azure.Core;
 using FreeSql;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -104,6 +104,137 @@ namespace XHD.Core.View.Controllers
             var mapKey = _infoService.Grid(i => i.sys_key == "map_key").data.FirstOrDefault()?.sys_value;
             ViewData["map_key"] = mapKey;
             return View();
+        }
+
+        /// <summary>
+        /// 客户公海列表页面（state=1）。与 Index 同参数字典供前端下拉渲染使用。
+        /// </summary>
+        public IActionResult Pool()
+        {
+            FillCustomerViewData();
+            return View();
+        }
+
+        /// <summary>
+        /// 意向客户列表页面（state=3）。
+        /// </summary>
+        public IActionResult Intention()
+        {
+            FillCustomerViewData();
+            return View();
+        }
+
+        /// <summary>
+        /// 高意向客户列表页面（state=2）。
+        /// </summary>
+        public IActionResult HighIntention()
+        {
+            FillCustomerViewData();
+            return View();
+        }
+
+        /// <summary>
+        /// 批量设置意向状态（state 在 2 与 3 之间互切）。
+        /// 用于「设为高意向」「降级意向」按钮。
+        /// </summary>
+        /// <param name="payload">请求体 JSON：{ ids: string[], state: int }</param>
+        /// <returns>JObject { code, msg, data }</returns>
+        [HttpPost]
+        public async Task<string> SetIntention([FromBody] JObject payload)
+        {
+            var resp = new JObject();
+            if (payload == null)
+            {
+                resp["code"] = 1; resp["msg"] = "参数为空"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            var idsToken = payload["ids"] as JArray;
+            if (idsToken == null || idsToken.Count == 0)
+            {
+                resp["code"] = 1; resp["msg"] = "参数为空"; resp["data"] = null;
+                return resp.ToString();
+            }
+            if (!payload["state"]?.HasValue ?? true)
+            {
+                resp["code"] = 1; resp["msg"] = "参数为空"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            int targetState;
+            if (!int.TryParse(payload["state"].ToString(), out targetState) ||
+                (targetState != 2 && targetState != 3))
+            {
+                resp["code"] = 1; resp["msg"] = "目标状态非法"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            var ids = new List<string>(idsToken.Count);
+            foreach (var t in idsToken)
+            {
+                var s = t?.ToString();
+                if (!string.IsNullOrWhiteSpace(s)) ids.Add(s);
+            }
+            if (ids.Count == 0)
+            {
+                resp["code"] = 1; resp["msg"] = "参数为空"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            // 按钮权限：复用 CRM_Customer|edit
+            if (!await _dBAuthService.GetAuth(GetUserId(), "CRM_Customer|edit"))
+            {
+                resp["code"] = 1; resp["msg"] = "无权限！"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            var roledata = await _dBAuthService.GetDataAuth(GetUserId());
+            if (roledata.authtype == 0)
+            {
+                resp["code"] = 1; resp["msg"] = "无权限！"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            int updated = 0;
+            foreach (var id in ids)
+            {
+                var c = (await _service.GridAsync(x => x.id == id, 1, 1)).data.FirstOrDefault();
+                if (c == null) continue;
+                if (roledata.authtype != 4 && !roledata.empList.Contains(c.emp_id))
+                {
+                    resp["code"] = 1; resp["msg"] = "无权限！"; resp["data"] = null;
+                    return resp.ToString();
+                }
+                // 仅允许意向(3)↔高意向(2) 之间切换
+                int current = c.state ?? 0;
+                if (current != 2 && current != 3) continue;
+                c.state = targetState;
+                if (await _service.UpdateAppAsync(c)) updated++;
+            }
+
+            resp["code"] = 0;
+            resp["msg"] = "操作成功";
+            resp["data"] = updated;
+            return resp.ToString();
+        }
+
+        /// <summary>
+        /// 为 Index/Pool/Intention/HighIntention 页面填充参数字典 ViewData。
+        /// </summary>
+        private void FillCustomerViewData()
+        {
+            var allParams = _paramService.Grid(p => true).data;
+            var cus_industry = allParams.Where(p => p.params_type == "cus_industry").ToDictionary(p => p.id, p => p.params_name);
+            var cus_type = allParams.Where(p => p.params_type == "cus_type").ToDictionary(p => p.id, p => p.params_name);
+            var cus_level = allParams.Where(p => p.params_type == "cus_level").ToDictionary(p => p.id, p => p.params_name);
+            var cus_source = allParams.Where(p => p.params_type == "cus_source").ToDictionary(p => p.id, p => p.params_name);
+            var provinces = _provincesService.Grid(p => true).data.ToDictionary(p => p.id, p => p.Provinces);
+
+            ViewData["cus_industry"] = cus_industry;
+            ViewData["cus_type"] = cus_type;
+            ViewData["cus_level"] = cus_level;
+            ViewData["cus_source"] = cus_source;
+            ViewData["Province"] = provinces;
         }
 
         public IActionResult mapmark()
