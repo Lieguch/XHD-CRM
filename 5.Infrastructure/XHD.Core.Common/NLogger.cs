@@ -174,9 +174,8 @@ namespace XHD.Core.Common
                     sw.Close();
                 }
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-
             }
             finally
             {

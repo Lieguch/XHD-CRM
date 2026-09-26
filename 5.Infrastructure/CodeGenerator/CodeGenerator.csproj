@@ -5,6 +5,8 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <!-- Sprint 10.30: 抑制 nullable 引用警告 -->
+    <NoWarn>CS8600;CS8602;CS8604;CS8625;CS8629;CS8632</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

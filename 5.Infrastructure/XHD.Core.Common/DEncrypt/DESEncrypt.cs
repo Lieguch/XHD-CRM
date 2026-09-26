@@ -11,7 +11,7 @@ namespace XHD.Core.Common.DEncrypt
     /// </summary>
     public static class DESEncrypt
     {
-        #region ========加密======== 
+        #region ========加密========
 
         /// <summary>
         ///     加密
@@ -31,29 +31,34 @@ namespace XHD.Core.Common.DEncrypt
         /// <returns></returns>
         public static string Encrypt(string Text, string sKey)
         {
-            var des = new DESCryptoServiceProvider();
-            byte[] inputByteArray;
-            inputByteArray = Encoding.Default.GetBytes(Text);
-
-            string md5SKey = MD5Comm.Get32MD5One(sKey).Substring(0, 8);
-
-            des.Key =Encoding.ASCII.GetBytes(md5SKey);
-            des.IV =Encoding.ASCII.GetBytes(md5SKey);
-            var ms = new MemoryStream();
-            var cs = new CryptoStream(ms, des.CreateEncryptor(), CryptoStreamMode.Write);
-            cs.Write(inputByteArray, 0, inputByteArray.Length);
-            cs.FlushFinalBlock();
-            var ret = new StringBuilder();
-            foreach (byte b in ms.ToArray())
+            // Sprint 10.30: SYSLIB0021 — DESCryptoServiceProvider → DES.Create()
+            using (var des = DES.Create())
             {
-                ret.AppendFormat("{0:X2}", b);
+                byte[] inputByteArray;
+                inputByteArray = Encoding.Default.GetBytes(Text);
+
+                string md5SKey = MD5Comm.Get32MD5One(sKey).Substring(0, 8);
+
+                des.Key = Encoding.ASCII.GetBytes(md5SKey);
+                des.IV = Encoding.ASCII.GetBytes(md5SKey);
+                var ms = new MemoryStream();
+                using (var cs = new CryptoStream(ms, des.CreateEncryptor(), CryptoStreamMode.Write))
+                {
+                    cs.Write(inputByteArray, 0, inputByteArray.Length);
+                    cs.FlushFinalBlock();
+                }
+                var ret = new StringBuilder();
+                foreach (byte b in ms.ToArray())
+                {
+                    ret.AppendFormat("{0:X2}", b);
+                }
+                return ret.ToString();
             }
-            return ret.ToString();
         }
 
         #endregion
 
-        #region ========解密======== 
+        #region ========解密========
 
         /// <summary>
         ///     解密
@@ -73,26 +78,31 @@ namespace XHD.Core.Common.DEncrypt
         /// <returns></returns>
         public static string Decrypt(string Text, string sKey)
         {
-            var des = new DESCryptoServiceProvider();
-            int len;
-            len = Text.Length/2;
-            var inputByteArray = new byte[len];
-            int x, i;
-            for (x = 0; x < len; x++)
+            // Sprint 10.30: SYSLIB0021 — DESCryptoServiceProvider → DES.Create()
+            using (var des = DES.Create())
             {
-                i = Convert.ToInt32(Text.Substring(x*2, 2), 16);
-                inputByteArray[x] = (byte) i;
+                int len;
+                len = Text.Length / 2;
+                var inputByteArray = new byte[len];
+                int x, i;
+                for (x = 0; x < len; x++)
+                {
+                    i = Convert.ToInt32(Text.Substring(x * 2, 2), 16);
+                    inputByteArray[x] = (byte)i;
+                }
+
+                string md5SKey = MD5Comm.Get32MD5One(sKey).Substring(0, 8);
+
+                des.Key = Encoding.ASCII.GetBytes(md5SKey);
+                des.IV = Encoding.ASCII.GetBytes(md5SKey);
+                var ms = new MemoryStream();
+                using (var cs = new CryptoStream(ms, des.CreateDecryptor(), CryptoStreamMode.Write))
+                {
+                    cs.Write(inputByteArray, 0, inputByteArray.Length);
+                    cs.FlushFinalBlock();
+                }
+                return Encoding.Default.GetString(ms.ToArray());
             }
-
-            string md5SKey = MD5Comm.Get32MD5One(sKey).Substring(0, 8);
-
-            des.Key =Encoding.ASCII.GetBytes(md5SKey);
-            des.IV =Encoding.ASCII.GetBytes(md5SKey);
-            var ms = new MemoryStream();
-            var cs = new CryptoStream(ms, des.CreateDecryptor(), CryptoStreamMode.Write);
-            cs.Write(inputByteArray, 0, inputByteArray.Length);
-            cs.FlushFinalBlock();
-            return Encoding.Default.GetString(ms.ToArray());
         }
 
         #endregion

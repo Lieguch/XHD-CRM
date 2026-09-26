@@ -40,8 +40,11 @@ namespace XHD.Core.Common.DEncrypt
             byte[] Value;
             var Code = new UnicodeEncoding();
             byte[] Message = Code.GetBytes(Security);
-            var Arithmetic = new SHA512Managed();
-            Value = Arithmetic.ComputeHash(Message);
+            // Sprint 10.30: SYSLIB0021 — SHA512Managed → SHA512.Create()
+            using (var Arithmetic = SHA512.Create())
+            {
+                Value = Arithmetic.ComputeHash(Message);
+            }
             Security = "";
             foreach (byte o in Value)
             {

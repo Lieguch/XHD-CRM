@@ -20,17 +20,19 @@ namespace XHD.Core.Common.DEncrypt
             if (string.IsNullOrEmpty(str)) return null;
             Byte[] toEncryptArray = Encoding.UTF8.GetBytes(str);
 
-            System.Security.Cryptography.RijndaelManaged rm = new System.Security.Cryptography.RijndaelManaged
+            // Sprint 10.30: SYSLIB0022 — RijndaelManaged → Aes.Create()（保留 ECB/PKCS7 语义）
+            using (Aes aes = Aes.Create())
             {
-                Key = Encoding.UTF8.GetBytes(key),
-                Mode = System.Security.Cryptography.CipherMode.ECB,
-                Padding = System.Security.Cryptography.PaddingMode.PKCS7
-            };
+                aes.Key = Encoding.UTF8.GetBytes(key);
+                aes.Mode = CipherMode.ECB;
+                aes.Padding = PaddingMode.PKCS7;
 
-            System.Security.Cryptography.ICryptoTransform cTransform = rm.CreateEncryptor();
-            Byte[] resultArray = cTransform.TransformFinalBlock(toEncryptArray, 0, toEncryptArray.Length);
-
-            return Convert.ToBase64String(resultArray, 0, resultArray.Length);
+                using (var cTransform = aes.CreateEncryptor())
+                {
+                    Byte[] resultArray = cTransform.TransformFinalBlock(toEncryptArray, 0, toEncryptArray.Length);
+                    return Convert.ToBase64String(resultArray, 0, resultArray.Length);
+                }
+            }
         }
 
         /// <summary>
@@ -44,17 +46,19 @@ namespace XHD.Core.Common.DEncrypt
             if (string.IsNullOrEmpty(str)) return null;
             Byte[] toEncryptArray = Convert.FromBase64String(str);
 
-            System.Security.Cryptography.RijndaelManaged rm = new System.Security.Cryptography.RijndaelManaged
+            // Sprint 10.30: SYSLIB0022 — RijndaelManaged → Aes.Create()
+            using (Aes aes = Aes.Create())
             {
-                Key = Encoding.UTF8.GetBytes(key),
-                Mode = System.Security.Cryptography.CipherMode.ECB,
-                Padding = System.Security.Cryptography.PaddingMode.PKCS7
-            };
+                aes.Key = Encoding.UTF8.GetBytes(key);
+                aes.Mode = CipherMode.ECB;
+                aes.Padding = PaddingMode.PKCS7;
 
-            System.Security.Cryptography.ICryptoTransform cTransform = rm.CreateDecryptor();
-            Byte[] resultArray = cTransform.TransformFinalBlock(toEncryptArray, 0, toEncryptArray.Length);
-
-            return Encoding.UTF8.GetString(resultArray);
+                using (var cTransform = aes.CreateDecryptor())
+                {
+                    Byte[] resultArray = cTransform.TransformFinalBlock(toEncryptArray, 0, toEncryptArray.Length);
+                    return Encoding.UTF8.GetString(resultArray);
+                }
+            }
         }
     }
 }

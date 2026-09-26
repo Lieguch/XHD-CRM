@@ -248,6 +248,7 @@ namespace XHD.Core.Services
         /// </summary>
         public async Task<JArray> GetIconsAsync(string iconRoot)
         {
+            await Task.CompletedTask; // Sprint 10.30: 保留 async 签名以匹配接口；主体为同步目录读取
             var result = new JArray();
             try
             {

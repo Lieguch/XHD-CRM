@@ -133,6 +133,7 @@ static void GeneratorRepository(string classname)
 /// <summary>
 /// 生成Repository
 /// </summary>
+#pragma warning disable CS8321 // Sprint 10.30: 保留 GeneratorViewModels 作为 ViewModel 生成模板，供未来扩展调用
 static void GeneratorViewModels(string classname)
 {
     var basedir = Path.GetFullPath("../../../../../");
@@ -149,6 +150,7 @@ static void GeneratorViewModels(string classname)
     //生成文件
     WriteAndSave(iServicesPath, content);
 }
+#pragma warning restore CS8321
 
 /// <summary>
 /// 从代码模板中读取内容

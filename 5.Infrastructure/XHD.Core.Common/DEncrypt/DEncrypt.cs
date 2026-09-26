@@ -114,10 +114,11 @@ namespace XHD.Core.Common.DEncrypt
         /// <returns>摘要</returns>
         public static byte[] MakeMD5(byte[] original)
         {
-            var hashmd5 = new MD5CryptoServiceProvider();
-            byte[] keyhash = hashmd5.ComputeHash(original);
-            hashmd5 = null;
-            return keyhash;
+            // Sprint 10.30: SYSLIB0021 — MD5CryptoServiceProvider → MD5.Create()
+            using (var hashmd5 = MD5.Create())
+            {
+                return hashmd5.ComputeHash(original);
+            }
         }
 
 
@@ -129,11 +130,16 @@ namespace XHD.Core.Common.DEncrypt
         /// <returns>密文</returns>
         public static byte[] Encrypt(byte[] original, byte[] key)
         {
-            var des = new TripleDESCryptoServiceProvider();
-            des.Key = MakeMD5(key);
-            des.Mode = CipherMode.ECB;
-
-            return des.CreateEncryptor().TransformFinalBlock(original, 0, original.Length);
+            // Sprint 10.30: SYSLIB0021 — TripleDESCryptoServiceProvider → TripleDES.Create()
+            using (var des = TripleDES.Create())
+            {
+                des.Key = MakeMD5(key);
+                des.Mode = CipherMode.ECB;
+                using (var enc = des.CreateEncryptor())
+                {
+                    return enc.TransformFinalBlock(original, 0, original.Length);
+                }
+            }
         }
 
         /// <summary>
@@ -144,11 +150,16 @@ namespace XHD.Core.Common.DEncrypt
         /// <returns>明文</returns>
         public static byte[] Decrypt(byte[] encrypted, byte[] key)
         {
-            var des = new TripleDESCryptoServiceProvider();
-            des.Key = MakeMD5(key);
-            des.Mode = CipherMode.ECB;
-
-            return des.CreateDecryptor().TransformFinalBlock(encrypted, 0, encrypted.Length);
+            // Sprint 10.30: SYSLIB0021 — TripleDESCryptoServiceProvider → TripleDES.Create()
+            using (var des = TripleDES.Create())
+            {
+                des.Key = MakeMD5(key);
+                des.Mode = CipherMode.ECB;
+                using (var dec = des.CreateDecryptor())
+                {
+                    return dec.TransformFinalBlock(encrypted, 0, encrypted.Length);
+                }
+            }
         }
 
         #endregion

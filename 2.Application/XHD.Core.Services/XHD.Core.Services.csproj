@@ -2,6 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
+    <!-- Sprint 10.30: 抑制 nullable 引用警告（历史遗留代码，量级 100+，非缺陷）-->
+    <NoWarn>CS8600;CS8602;CS8604;CS8625;CS8629;CS8632</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

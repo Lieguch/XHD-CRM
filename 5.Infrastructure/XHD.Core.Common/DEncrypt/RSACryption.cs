@@ -105,9 +105,12 @@ namespace XHD.Core.Common.DEncrypt
         {
             //从字符串中取得Hash描述 
             byte[] Buffer;
-            HashAlgorithm MD5 = HashAlgorithm.Create("MD5");
-            Buffer = Encoding.GetEncoding("GB2312").GetBytes(m_strSource);
-            HashData = MD5.ComputeHash(Buffer);
+            // Sprint 10.30: SYSLIB0045 — HashAlgorithm.Create("MD5") → MD5.Create()
+            using (var md5 = MD5.Create())
+            {
+                Buffer = Encoding.GetEncoding("GB2312").GetBytes(m_strSource);
+                HashData = md5.ComputeHash(Buffer);
+            }
 
             return true;
         }
@@ -118,9 +121,12 @@ namespace XHD.Core.Common.DEncrypt
             //从字符串中取得Hash描述 
             byte[] Buffer;
             byte[] HashData;
-            HashAlgorithm MD5 = HashAlgorithm.Create("MD5");
-            Buffer = Encoding.GetEncoding("GB2312").GetBytes(m_strSource);
-            HashData = MD5.ComputeHash(Buffer);
+            // Sprint 10.30: SYSLIB0045 — HashAlgorithm.Create("MD5") → MD5.Create()
+            using (var md5 = MD5.Create())
+            {
+                Buffer = Encoding.GetEncoding("GB2312").GetBytes(m_strSource);
+                HashData = md5.ComputeHash(Buffer);
+            }
 
             strHashData = Convert.ToBase64String(HashData);
             return true;
@@ -130,8 +136,11 @@ namespace XHD.Core.Common.DEncrypt
         public bool GetHash(FileStream objFile, ref byte[] HashData)
         {
             //从文件中取得Hash描述 
-            HashAlgorithm MD5 = HashAlgorithm.Create("MD5");
-            HashData = MD5.ComputeHash(objFile);
+            // Sprint 10.30: SYSLIB0045 — HashAlgorithm.Create("MD5") → MD5.Create()
+            using (var md5 = MD5.Create())
+            {
+                HashData = md5.ComputeHash(objFile);
+            }
             objFile.Close();
 
             return true;
@@ -142,8 +151,11 @@ namespace XHD.Core.Common.DEncrypt
         {
             //从文件中取得Hash描述 
             byte[] HashData;
-            HashAlgorithm MD5 = HashAlgorithm.Create("MD5");
-            HashData = MD5.ComputeHash(objFile);
+            // Sprint 10.30: SYSLIB0045 — HashAlgorithm.Create("MD5") → MD5.Create()
+            using (var md5 = MD5.Create())
+            {
+                HashData = md5.ComputeHash(objFile);
+            }
             objFile.Close();
 
             strHashData = Convert.ToBase64String(HashData);

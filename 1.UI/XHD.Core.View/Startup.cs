@@ -27,7 +27,6 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
-using XHD.Core.Common;
 using XHD.Core.Common.SMS;
 using XHD.Core.Common.CDKEY;
 using XHD.Core.Common.Mail;

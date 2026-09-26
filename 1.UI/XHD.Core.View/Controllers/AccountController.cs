@@ -250,7 +250,7 @@ namespace XHD.Core.View.Controllers
         /// 登出
         /// </summary>
         /// <returns></returns>
-        public string SignOut()
+        public new string SignOut()
         {
             _ = HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return XHDResult.Success().ToString();

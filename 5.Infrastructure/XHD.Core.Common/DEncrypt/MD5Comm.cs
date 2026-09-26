@@ -68,14 +68,17 @@ namespace XHD.Core.Common.DEncrypt
         /// <returns>返回32位加密结果，该结果取32位加密结果的第9位到25位</returns>
         public static string Get32MD5Two(string source)
         {
-            System.Security.Cryptography.MD5 md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
-            //获取密文字节数组
-            byte[] bytResult = md5.ComputeHash(System.Text.Encoding.Default.GetBytes(source));
-            //转换成字符串，32位
-            string strResult = BitConverter.ToString(bytResult);
-            //BitConverter转换出来的字符串会在每个字符中间产生一个分隔符，需要去除掉
-            strResult = strResult.Replace("-", "");
-            return strResult.ToUpper();
+            // Sprint 10.30: SYSLIB0021 — MD5CryptoServiceProvider → MD5.Create()
+            using (System.Security.Cryptography.MD5 md5 = MD5.Create())
+            {
+                //获取密文字节数组
+                byte[] bytResult = md5.ComputeHash(System.Text.Encoding.Default.GetBytes(source));
+                //转换成字符串，32位
+                string strResult = BitConverter.ToString(bytResult);
+                //BitConverter转换出来的字符串会在每个字符中间产生一个分隔符，需要去除掉
+                strResult = strResult.Replace("-", "");
+                return strResult.ToUpper();
+            }
         }
         //// <summary>
         /// </summary>
@@ -83,14 +86,17 @@ namespace XHD.Core.Common.DEncrypt
         /// <returns>返回16位加密结果，该结果取32位加密结果的第9位到25位</returns>
         public static string Get16MD5Two(string source)
         {
-            System.Security.Cryptography.MD5 md5 = new System.Security.Cryptography.MD5CryptoServiceProvider();
-            //获取密文字节数组
-            byte[] bytResult = md5.ComputeHash(System.Text.Encoding.Default.GetBytes(source));
-            //转换成字符串，并取9到25位
-            string strResult = BitConverter.ToString(bytResult, 4, 8);
-            //BitConverter转换出来的字符串会在每个字符中间产生一个分隔符，需要去除掉
-            strResult = strResult.Replace("-", "");
-            return strResult.ToUpper();
+            // Sprint 10.30: SYSLIB0021 — MD5CryptoServiceProvider → MD5.Create()
+            using (System.Security.Cryptography.MD5 md5 = MD5.Create())
+            {
+                //获取密文字节数组
+                byte[] bytResult = md5.ComputeHash(System.Text.Encoding.Default.GetBytes(source));
+                //转换成字符串，并取9到25位
+                string strResult = BitConverter.ToString(bytResult, 4, 8);
+                //BitConverter转换出来的字符串会在每个字符中间产生一个分隔符，需要去除掉
+                strResult = strResult.Replace("-", "");
+                return strResult.ToUpper();
+            }
         }
         /// <summary>
         /// 自定义MD5函数,32位,从老版本迁移过来，后续淘汰不用。与Get32MD5One重复
@@ -98,7 +104,11 @@ namespace XHD.Core.Common.DEncrypt
         public static string Get32MD5Old(string str)
         {
             byte[] b = Encoding.UTF8.GetBytes(str);
-            b = new MD5CryptoServiceProvider().ComputeHash(b);
+            // Sprint 10.30: SYSLIB0021 — MD5CryptoServiceProvider → MD5.Create()
+            using (var md5 = MD5.Create())
+            {
+                b = md5.ComputeHash(b);
+            }
             string ret = "";
             for (int i = 0; i < b.Length; i++)
                 ret += b[i].ToString("x").PadLeft(2, '0');

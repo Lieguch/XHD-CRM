@@ -6,6 +6,9 @@
 		<ApplicationIcon>wwwroot\favicon.ico</ApplicationIcon>
 		<SatelliteResourceLanguages>zh-Hans;en</SatelliteResourceLanguages>
 
+		<!-- Sprint 10.30: 抑制 nullable 引用警告（历史遗留代码，量级 100+，非缺陷）-->
+		<NoWarn>CS8600;CS8602;CS8604;CS8625;CS8629;CS8632</NoWarn>
+
 
 		<!-- 移除调试符号pdb，减少多余文件 -->
 		<TrimmerRemoveSymbols>true</TrimmerRemoveSymbols>

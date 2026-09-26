@@ -7,20 +7,25 @@
     <IsPackable>false</IsPackable>
     <RootNamespace>XHD.Core.Tests</RootNamespace>
     <LangVersion>latest</LangVersion>
+    <!-- Sprint 10.30: 抑制 nullable 引用警告（与 XHD.Core.Common 一致）-->
+    <NoWarn>CS8600;CS8602;CS8604;CS8625;CS8629;CS8632</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="xunit" Version="2.6.6" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.6" />
-    <PackageReference Include="xunit.runner.utility" Version="2.5.6" />
+    <!-- Sprint 10.30: xunit.runner.utility 从 2.5.6 升级到 2.6.0，与 xunit 2.6.6 对齐，消除 NU1603 -->
+    <PackageReference Include="xunit.runner.utility" Version="2.6.0" />
     <PackageReference Include="Moq" Version="4.20.70" />
     <PackageReference Include="FreeSql" Version="3.5.310" />
     <PackageReference Include="FreeSql.Provider.Sqlite" Version="3.5.310" />
     <PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="2.1.6" />
-    <!-- Sprint 9: MailHelper 测试需要 MimeKit -->
-    <PackageReference Include="MimeKit" Version="4.4.0" />
-    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.0" />
+    <!-- Sprint 9: MailHelper 测试需要 MimeKit；Sprint 10.30b: 升级至 4.17.0 消除所有 NU1902/NU1903
+         （4.8.0 仍有 STARTTLS Response Injection 告警 CVE-2026-41319，需 >=4.16.0） -->
+    <PackageReference Include="MimeKit" Version="4.17.0" />
+    <!-- Sprint 10.30: 升级至 8.0.1 消除 NU1903 -->
+    <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
   </ItemGroup>
 
   <ItemGroup>

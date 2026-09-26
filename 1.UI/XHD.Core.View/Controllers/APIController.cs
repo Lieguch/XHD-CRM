@@ -1107,6 +1107,7 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> CountData()
         {
+            await Task.CompletedTask; // Sprint 10.30: 保留 async 签名；主体为同步 FreeSql Count
             //身份验证
             var userresult = checkToken();
 

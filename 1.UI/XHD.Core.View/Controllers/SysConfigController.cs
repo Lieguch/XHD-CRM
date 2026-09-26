@@ -59,6 +59,7 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> tryConnect(int servertype, string servername, string serverport, string serveruid, string serverpwd)
         {
+            await Task.CompletedTask; // Sprint 10.30: 保留 async 签名；主体为同步连接串拼接
             var datatype = FreeSql.DataType.MySql;
             var connString = "";
             switch (servertype)

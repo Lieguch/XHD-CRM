@@ -711,6 +711,7 @@ namespace XHD.Core.Tests
         [Fact]
         public async Task Helper_BuildExcelStream_CanRoundTrip()
         {
+            await Task.CompletedTask; // Sprint 10.30: 保留 async 签名；主体为同步 round-trip 断言
             var dt = new DataTable();
             dt.Columns.Add("A");
             dt.Columns.Add("B");
