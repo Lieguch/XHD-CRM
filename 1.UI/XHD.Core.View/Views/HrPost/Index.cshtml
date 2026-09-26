@@ -1,0 +1,297 @@
+@{
+    ViewData["Title"] = "员工职务管理";
+}
+
+<div class="layui-row layui-col-space10">
+    <!-- 左侧：部门树 -->
+    <div class="layui-col-md3">
+        <div class="layuimini-card">
+            <div class="layui-card-header">组织架构</div>
+            <div class="layui-card-body" style="overflow:auto; max-height:600px;">
+                <ul id="deptTree" class="layui-tree"></ul>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧：职务列表 -->
+    <div class="layui-col-md9">
+        <div class="table-search-fieldset">
+            <div>
+                <form class="layui-form layui-form-pane" action="">
+                    <div class="layui-form-item layui-inline">
+                        <label class="layui-form-label">岗位名称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="serchtxt" id="serchtxt" autocomplete="off" placeholder="岗位关键字" class="layui-input">
+                        </div>
+                    </div>
+                    <div class="layui-form-item layui-inline">
+                        <label class="layui-form-label">部门</label>
+                        <div class="layui-input-inline">
+                            <input type="text" id="dep_disp" autocomplete="off" placeholder="全部部门" class="layui-input" readonly>
+                            <input type="hidden" id="depid" name="depid" value="">
+                        </div>
+                    </div>
+                    <div class="btn-group-inline">
+                        <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn" id="btn_serch"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                        <button type="reset" class="layui-btn layui-btn-primary" id="btn_reset"><i class="layui-icon layui-icon-error"></i> 重置</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="layuimini-card">
+            <div class="layui-card-body">
+                <script type="text/html" id="toolbarDemo">
+                    <div class="layui-btn-container">
+                        <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="add">添加岗位</button>
+                    </div>
+                </script>
+
+                <table id="munu-table" class="layui-table" lay-filter="currentTableFilter"></table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 操作列 -->
+<script type="text/html" id="auth-state">
+    <a class="layui-btn layui-btn-xs" lay-event="info">详情</a>
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">修改</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+</script>
+
+<script>
+    layui.use(['tree', 'table', 'form', 'layer'], function () {
+        var $ = layui.jquery;
+        var tree = layui.tree;
+        var table = layui.table;
+        var form = layui.form;
+
+        var currentDepId = "";
+        var currentDepName = "全部部门";
+
+        // 渲染部门树
+        $.ajax({
+            type: 'POST',
+            url: '/HrDepartment/ComboTree',
+            data: { id: '' },
+            dataType: "json",
+            success: function (res) {
+                var data = (res && res.data) ? res.data : (res || []);
+                tree.render({
+                    elem: '#deptTree',
+                    data: data,
+                    showLine: true,
+                    click: function (node) {
+                        currentDepId = node.data.id || "";
+                        currentDepName = node.data.title || "";
+                        $("#dep_disp").val(currentDepName);
+                        $("#depid").val(currentDepId);
+                        reloadTable();
+                    }
+                });
+            }
+        });
+
+        // 渲染表格
+        layer.load(2);
+        table.render({
+            elem: '#munu-table',
+            url: 'Grid',
+            toolbar: '#toolbarDemo',
+            defaultToolbar: ['filter'],
+            id: "mainGrid4",
+            cols: [[
+                { type: 'numbers', title: "序号", width: 60, fixed: 'left' },
+                { field: 'post_name', width: 200, title: '岗位名称', fixed: 'left' },
+                {
+                    field: 'dep_id', width: 180, title: '部门', templet: function (t) {
+                        return (t.department && t.department.dep_name) ? t.department.dep_name : "";
+                    }
+                },
+                {
+                    field: 'position_id', width: 160, title: '职务级别', templet: function (t) {
+                        return (t.position && t.position.position_name) ? t.position.position_name : "";
+                    }
+                },
+                {
+                    field: 'emp_id', width: 160, title: '岗位员工', templet: function (t) {
+                        return (t.employee && t.employee.name) ? t.employee.name : "-";
+                    }
+                },
+                {
+                    field: 'default_post', width: 100, title: '默认岗位', templet: function (t) {
+                        return (t.default_post === 1) ? '<span class="layui-badge layui-bg-green">默认</span>' : '<span class="layui-badge layui-bg-gray">否</span>';
+                    }
+                },
+                { field: 'note', minWidth: 180, title: '描述' },
+                { field: 'create_time', width: 170, title: '创建时间' },
+                { templet: '#auth-state', width: 200, align: 'center', fixed: 'right', title: '操作' }
+            ]],
+            limits: [10, 15, 20, 25, 50, 100],
+            limit: 15,
+            page: true,
+            done: function () {
+                layer.closeAll('loading');
+            }
+        });
+
+        function reloadTable() {
+            var curr = $(".layui-laypage-skip").find("input").val() || 1;
+            table.reload('mainGrid4', {
+                page: { curr: curr },
+                where: {
+                    depid: currentDepId,
+                    serchtxt: $("#serchtxt").val()
+                }
+            }, 'data');
+        }
+
+        // toolbar
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'add') {
+                add();
+                return;
+            }
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+
+            if (layEvent === 'del') {
+                layer.confirm('岗位删除后无法恢复，确定删除？', { icon: 3, title: '提示信息' }, function (index) {
+                    del(data.id);
+                    layer.close(index);
+                });
+            } else if (layEvent === 'edit') {
+                add(data);
+            } else if (layEvent === 'info') {
+                info(data);
+            }
+        });
+
+        function info(data) {
+            var index = layui.layer.open({
+                title: "详情",
+                type: 2,
+                anim: 1,
+                area: ['760px', '520px'],
+                maxmin: true,
+                content: "Add?id=" + data.id,
+                btn: ['关闭'],
+                success: function (layero, index) {
+                    var body = layui.layer.getChildFrame('body', index);
+                    if (data) {
+                        for (var val in data) {
+                            var value = data[val];
+                            if (value !== null && typeof value === 'object') continue;
+                            if (isNaN(value) && !isNaN(Date.parse(value))) {
+                                value = value.replace(' 00:00:00', '');
+                            }
+                            body.find("#" + val).val(value);
+                        }
+                        if (data.department) body.find("#dep_name").val(data.department.dep_name);
+                        if (data.position) body.find("#position_name").val(data.position.position_name);
+                        if (data.employee) body.find("#emp_name").val(data.employee.name);
+                    }
+                },
+                btn2: function (index, layero) { layer.close(index); }
+            });
+        }
+
+        function del(id) {
+            $.ajax({
+                type: 'POST',
+                url: "Delete",
+                data: { id: id },
+                dataType: "json",
+                success: function (res) {
+                    if (res.code == 0) {
+                        layer.msg('删除成功', { icon: 1 });
+                        reloadTable();
+                    } else {
+                        layer.alert(res.msg, { icon: 5 });
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                }
+            });
+        }
+
+        function add(edit) {
+            var tit = "添加岗位";
+            if (edit) tit = "修改岗位";
+
+            var id = edit ? edit.id : "";
+            var index = layui.layer.open({
+                title: tit,
+                type: 2,
+                anim: 1,
+                area: ['760px', '520px'],
+                maxmin: true,
+                content: "Add?id=" + id + "&depid=" + currentDepId,
+                btn: ['确定', '关闭'],
+                success: function (layero, index) {
+                    var body = layui.layer.getChildFrame('body', index);
+                    if (edit) {
+                        body.find("#id").val(edit.id);
+                        body.find("#post_name").val(edit.post_name);
+                        body.find("#note").val(edit.note);
+                        body.find("#dep_id").val(edit.dep_id);
+                        body.find("#dep_name").val(edit.department ? edit.department.dep_name : "");
+                        body.find("#position_id").val(edit.position_id);
+                        body.find("#position_name").val(edit.position ? edit.position.position_name : "");
+                        body.find("#emp_id").val(edit.emp_id);
+                        body.find("#emp_name").val(edit.employee ? edit.employee.name : "");
+                        body.find("#default_post").val(edit.default_post);
+                    } else if (currentDepId) {
+                        body.find("#dep_id").val(currentDepId);
+                        body.find("#dep_name").val(currentDepName);
+                    }
+                },
+                yes: function (index, layero) {
+                    var iframeWindow = window['layui-layer-iframe' + index]
+                        , submitID = 'LAY-user-front-submit'
+                        , submit = layero.find('iframe').contents().find('#' + submitID);
+
+                    iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                        var field = data.field;
+                        layer.close(index);
+                        $.ajax({
+                            type: 'POST',
+                            url: 'Save',
+                            data: field,
+                            dataType: "json",
+                            success: function (res) {
+                                if (res.code == 0) {
+                                    layer.msg('保存成功', { icon: 1 });
+                                    reloadTable();
+                                } else {
+                                    layer.alert(res.msg, { icon: 5 });
+                                }
+                            },
+                            error: function (XMLHttpRequest, textStatus, errorThrown) {
+                                layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                            }
+                        });
+                    });
+
+                    submit.trigger('click');
+                },
+                btn2: function (index, layero) { layer.close(index); }
+            });
+        }
+
+        // 搜索
+        form.on('submit(data-search-btn)', function (data) {
+            var curr = $(".layui-laypage-skip").find("input").val() || 1;
+            table.reload('mainGrid4', {
+                page: { curr: curr },
+                where: data.field
+            }, 'data');
+            return false;
+        });
+    });
+</script>
