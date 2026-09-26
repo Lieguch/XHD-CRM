@@ -144,6 +144,14 @@
     "Menu_order": 130
   },
   {
+    "id": "CRM_Repeat",
+    "Menu_name": "重复客户查询",
+    "Menu_url": "Customer/Repeat",
+    "Menu_icon": "fa-clone",
+    "parentid": "CRM_Manager",
+    "Menu_order": 140
+  },
+  {
     "id": "SMS_Manager",
     "Menu_name": "短信管理",
     "Menu_url": "SMS/Index",
