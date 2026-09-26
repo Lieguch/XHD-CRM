@@ -17,14 +17,12 @@ using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.View.Configs;
 
-// 消除歧义：XHD.Core.Models.Task（业务实体） vs System.Threading.Tasks.Task<T>
-using Task = XHD.Core.Models.Task;
-
 namespace XHD.Core.View.Controllers
 {
     /// <summary>
     /// 任务管理控制器
     /// Sprint 10.22：从 A 版本 BLL.Task 移植，含 Grid/Save/Delete/UpdateStatus/MyTodo。
+    /// 实体名为 TaskInfo（避开与 System.Threading.Tasks.Task 的命名冲突）。
     /// Delete 会级联删除该任务下的 Task_follow 记录。
     /// </summary>
     [Authorize]
@@ -74,9 +72,9 @@ namespace XHD.Core.View.Controllers
         /// <summary>
         /// 列表查询，支持按 task_title / task_status_id / priority_id / executive_id 过滤。
         /// </summary>
-        public async Task<string> Grid(PageView<Task> model)
+        public async Task<string> Grid(PageView<TaskInfo> model)
         {
-            Expression<Func<Task, bool>> exp = t => true;
+            Expression<Func<TaskInfo, bool>> exp = t => true;
 
             if (!string.IsNullOrWhiteSpace(Request.Query["task_title"]))
             {
@@ -113,7 +111,7 @@ namespace XHD.Core.View.Controllers
         /// 关键修复点：id 为空即新建（生成 UUID + create_id + create_time），
         /// id 有值即更新；避免重复 JobsController.Save 的"新建返回无权限"逻辑反了 bug。
         /// </summary>
-        public async Task<string> Save(Task model)
+        public async Task<string> Save(TaskInfo model)
         {
             if (model == null || string.IsNullOrWhiteSpace(model.task_title))
             {
@@ -219,7 +217,7 @@ namespace XHD.Core.View.Controllers
                 return XHDResult.Error("找不到数据！").ToString();
             }
 
-            var updateModel = new Task
+            var updateModel = new TaskInfo
             {
                 id = existing.id,
                 task_title = existing.task_title,
@@ -257,7 +255,7 @@ namespace XHD.Core.View.Controllers
                 return XHDResult.Error("参数错误！").ToString();
             }
 
-            Expression<Func<Task, bool>> exp = t => t.executive_id == exec && t.task_status_id == 0;
+            Expression<Func<TaskInfo, bool>> exp = t => t.executive_id == exec && t.task_status_id == 0;
             var result = await _service.GridAsync(exp, 1, 200, "executive_time asc");
             return result.ToString();
         }
