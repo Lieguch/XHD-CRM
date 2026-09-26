@@ -1,0 +1,166 @@
+@{
+    ViewData["Title"] = "客户回收站";
+}
+
+<div class="table-search-fieldset">
+    <div>
+        <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">客户</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="cus_name" id="cus_name" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">电话</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="cus_tel" id="cus_tel" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="btn-group-inline">
+                <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn" id="btn_serch"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                <button type="reset" class="layui-btn layui-btn-primary" id="btn_reset"><i class="layui-icon layui-icon-error"></i> 重置</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="layuimini-card">
+    <div class="layui-card-body">
+        <table id="munu-table" class="layui-table" lay-filter="currentTableFilter"></table>
+    </div>
+</div>
+
+<!-- 操作列模板 -->
+<script type="text/html" id="recycle-actions">
+    <a class="layui-btn layui-btn-xs layui-bg-blue" lay-event="regain"><i class="layui-icon layui-icon-refresh"></i> 恢复</a>
+</script>
+
+<script>
+    layui.use(['table', 'form'], function () {
+        var $ = layui.jquery;
+        var table = layui.table;
+        var form = layui.form;
+
+        layer.load(2);
+        table.render({
+            elem: '#munu-table',
+            url: 'RecycleGrid',
+            id: "recycleGrid",
+            defaultToolbar: ['filter', 'print', 'exports'],
+            cols: [[
+                { type: 'numbers', fixed: 'left', title: '序号' },
+                {
+                    field: 'cus_name', width: 220, title: '客户名称', fixed: 'left', templet: function (item) {
+                        var html = "<a href='javascript:void(0)' onclick=CusInfo('" + item.id + "','【客户】" + item.cus_name + "')> ";
+                        html += "<i class='fa fa-user'></i> ";
+                        html += item.cus_name || '';
+                        html += "</a>";
+                        return html;
+                    }
+                },
+                {
+                    field: 'cus_type', width: 100, title: '类型', templet: function (t) {
+                        return t.cus_type ? t.cus_type.params_name : '';
+                    }
+                },
+                {
+                    field: 'cus_level', width: 100, title: '等级', templet: function (t) {
+                        return t.cus_level ? t.cus_level.params_name : '';
+                    }
+                },
+                {
+                    field: 'cus_source', width: 100, title: '来源', templet: function (t) {
+                        return t.cus_source ? t.cus_source.params_name : '';
+                    }
+                },
+                {
+                    field: 'isPrivate', width: 80, title: '客源', align: "center", templet: function (t) {
+                        switch (t.isPrivate) {
+                            case 1: return '<div style="background:#F00;Color:#FFF;">公客</div>';
+                            case 0: return '<div style="background:#0F0;Color:#000;">私客</div>';
+                            default: return "";
+                        }
+                    }
+                },
+                {
+                    field: 'employee', width: 100, title: '负责人', templet: function (t) {
+                        return t.Employee ? t.Employee.name : '';
+                    }
+                },
+                {
+                    field: 'employee', width: 100, title: '所属部门', templet: function (t) {
+                        if (t.Employee && t.Employee.department) {
+                            return t.Employee.department.dep_name;
+                        }
+                        return "";
+                    }
+                },
+                {
+                    field: 'Deleter', width: 100, title: '删除人', templet: function (t) {
+                        return t.Deleter ? t.Deleter.name : '';
+                    }
+                },
+                {
+                    field: 'Delete_time', width: 180, title: '删除时间'
+                },
+                {
+                    templet: '#recycle-actions', width: 100, align: 'center', fixed: 'right', title: '操作'
+                }
+            ]],
+            limits: [10, 15, 20, 25, 50, 100],
+            limit: 15,
+            page: true,
+            done: function () {
+                layer.closeAll('loading');
+            }
+        });
+
+        // 行工具事件
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+            if (layEvent === 'regain') {
+                layer.confirm('确定要恢复此客户吗？', { icon: 3, title: '提示信息' }, function (index) {
+                    doRegain(data.id);
+                    layer.close(index);
+                });
+            }
+        });
+
+        // 恢复操作
+        function doRegain(id) {
+            $.ajax({
+                type: 'POST',
+                url: 'regain',
+                data: { id: id },
+                dataType: 'json',
+                success: function (res) {
+                    if (res.code === 0) {
+                        layer.msg(res.msg || '恢复成功', { icon: 1 });
+                        f_reload();
+                    } else {
+                        layer.alert(res.msg || '恢复失败', { icon: 5 });
+                    }
+                },
+                error: function (xhr, status, err) {
+                    layer.alert('恢复失败！！！' + xhr.status + '|' + xhr.readyState + '|' + status, { icon: 5 });
+                }
+            });
+        }
+
+        function f_reload() {
+            $("#btn_serch").click();
+        }
+
+        form.on('submit(data-search-btn)', function (data) {
+            var curr = $(".layui-laypage-skip").find("input").val();
+            if (!curr) curr = 1;
+            table.reload('recycleGrid', {
+                page: { curr: curr },
+                where: data.field
+            }, 'data');
+            return false;
+        });
+    });
+</script>
