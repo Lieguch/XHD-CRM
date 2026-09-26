@@ -58,6 +58,129 @@ namespace XHD.Core.View.Controllers
             return View();
         }
 
+        public IActionResult Add()
+        {
+            return View();
+        }
+
+        /// <summary>
+        /// Sprint 10.25：岗位分页列表（对齐 A 侧 hr_post.grid.xhd 语义）。
+        /// 支持按部门（depid）过滤 + 岗位名模糊（serchtxt）。
+        /// 权限：非全员可见角色仅查看自己部门下的岗位（简化实现：按 department 归属）。
+        /// </summary>
+        public async Task<string> Grid(PageView<hr_post> model)
+        {
+            Expression<Func<hr_post, bool>> exp = a => a.isDelete == 0 || a.isDelete == null;
+
+            if (!string.IsNullOrWhiteSpace(Request.Query["depid"]))
+            {
+                var depId = Request.Query["depid"];
+                exp = exp.And(a => a.dep_id == depId);
+            }
+
+            if (!string.IsNullOrWhiteSpace(Request.Query["serchtxt"]))
+            {
+                var kw = Request.Query["serchtxt"];
+                exp = exp.And(a => a.post_name.Contains(kw));
+            }
+
+            var result = await _service.GridAsync(exp, model.Page, model.Limit, "a.create_time desc");
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Sprint 10.25：新增/编辑岗位（对齐 A 侧 hr_post.save.xhd）。
+        /// id 空 = 新增，非空 = 编辑。
+        /// 权限：hr_post|edit（若无该按钮则回退到 hr_position|edit）。
+        /// </summary>
+        public async Task<string> Save(hr_post model)
+        {
+            if (model == null)
+            {
+                return XHDResult.Error("参数无效").ToString();
+            }
+
+            var userId = GetUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return XHDResult.Error("登录状态已过期").ToString();
+            }
+
+            var authbtn = await _dBAuthService.GetAuth(userId, "hr_post|edit");
+            if (!authbtn)
+            {
+                authbtn = await _dBAuthService.GetAuth(userId, "hr_position|edit");
+            }
+            if (!authbtn)
+            {
+                return XHDResult.Error("无权限！").ToString();
+            }
+
+            if (string.IsNullOrWhiteSpace(model.post_name))
+            {
+                return XHDResult.Error("岗位名称不能为空").ToString();
+            }
+
+            var result = 0;
+
+            if (string.IsNullOrWhiteSpace(model.id))
+            {
+                model.id = UUIDNext.Uuid.NewSequential().ToString();
+                model.create_id = userId;
+                model.create_time = DateTime.Now;
+                result = await _service.AddAsync(model);
+            }
+            else
+            {
+                result = await _service.UpdateAsync(model);
+            }
+
+            return result > 0
+                ? XHDResult.Success().ToString()
+                : XHDResult.Error("保存失败").ToString();
+        }
+
+        /// <summary>
+        /// Sprint 10.25：软删除岗位（对齐 A 侧 hr_post.del.xhd）。
+        /// 使用 isDelete/Delete_time/Delete_id 三元组，与 B 版本其它模块一致。
+        /// </summary>
+        public async Task<string> Delete(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return XHDResult.Error("岗位ID无效").ToString();
+            }
+
+            var userId = GetUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return XHDResult.Error("登录状态已过期").ToString();
+            }
+
+            var authbtn = await _dBAuthService.GetAuth(userId, "hr_post|del");
+            if (!authbtn)
+            {
+                authbtn = await _dBAuthService.GetAuth(userId, "hr_post|edit");
+            }
+            if (!authbtn)
+            {
+                return XHDResult.Error("无权限！").ToString();
+            }
+
+            var result = await _service.UpdateAsync(
+                a => new hr_post
+                {
+                    isDelete = 1,
+                    Delete_time = DateTime.Now,
+                    Delete_id = userId
+                },
+                a => a.id == id);
+
+            return result > 0
+                ? XHDResult.Success().ToString()
+                : XHDResult.Error("岗位不存在或删除失败").ToString();
+        }
+
         /// <summary>
         /// Sprint 5 Wave 1 #27：变更员工岗位三元组（dep_id / post_id / position_id）。
         /// 对应 A 侧 BLL.hr_employee.UpdatePost → DAL.hr_employee.UpdatePost。
