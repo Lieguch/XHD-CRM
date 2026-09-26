@@ -1,0 +1,198 @@
+@{
+    ViewData["Title"] = "岗位 新增/编辑";
+}
+
+<style type="text/css">
+    .downpanel .layui-select-title span { line-height: 38px; }
+    .downpanel dl dd:hover { background-color: inherit; }
+</style>
+
+<div class="layui-form layui-form-pane" action="">
+    @Html.Hidden("id")
+    @Html.Hidden("emp_id")
+    <div class="layui-card">
+        <div class="layui-card-header">岗位信息</div>
+        <div class="layui-card-body">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label required">岗位名称</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="post_name" id="post_name" autocomplete="off" placeholder="请输入岗位名称" class="layui-input" lay-verify="required">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label required">所属部门</label>
+                    <div class="layui-input-inline">
+                        <div class="layui-unselect layui-form-select downpanel">
+                            <div class="layui-select-title">
+                                <span class="layui-input layui-unselect" id="dep_name">选择部门</span>
+                                <input type="hidden" name="dep_id" id="dep_id" lay-verify="required">
+                                <i class="layui-edge"></i>
+                            </div>
+                            <dl class="layui-anim layui-anim-upbit">
+                                <dd>
+                                    <ul id="deptTree"></ul>
+                                </dd>
+                            </dl>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label required">职务级别</label>
+                    <div class="layui-input-inline">
+                        <select id="position_id" name="position_id" autocomplete="off" class="layui-input" lay-verify="required">
+                            <option value="">请选择</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">岗位员工</label>
+                    <div class="layui-input-inline">
+                        <input type="text" id="emp_name" autocomplete="off" placeholder="点击选择员工" class="layui-input">
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">默认岗位</label>
+                <div class="layui-input-inline">
+                    <input type="checkbox" name="default_post" id="default_post" lay-skin="switch" lay-text="是|否" value="1">
+                </div>
+            </div>
+
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label">描述</label>
+                <div class="layui-input-block">
+                    <textarea id="note" name="note" placeholder="请输入岗位描述" class="layui-textarea"></textarea>
+                </div>
+            </div>
+
+            <div class="layui-form-item layui-hide">
+                <input type="button" lay-submit lay-filter="LAY-user-front-submit" id="LAY-user-front-submit" value="确认">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    layui.use(['tree', 'form', 'layer', 'tableSelect', 'table'], function () {
+        var tree = layui.tree;
+        var form = layui.form;
+        var layer = layui.layer;
+        var $ = layui.$;
+        var table = layui.table;
+        var tableSelect = layui.tableSelect;
+
+        // 部门树
+        $.ajax({
+            type: 'POST',
+            url: '/HrDepartment/ComboTree',
+            data: { id: '' },
+            dataType: "json",
+            success: function (res) {
+                var data = (res && res.data) ? res.data : (res || []);
+                tree.render({
+                    elem: "#deptTree",
+                    data: data,
+                    click: function (node) {
+                        var $select = $($(this)[0].elem).parents(".layui-form-select");
+                        $select.removeClass("layui-form-selected")
+                            .find(".layui-select-title span").html(node.data.title)
+                            .end()
+                            .find("input:hidden[name='dep_id']").val(node.data.id);
+                    }
+                });
+                $(".downpanel").on("click", ".layui-select-title", function (e) {
+                    $(".layui-form-select").not($(this).parents(".layui-form-select")).removeClass("layui-form-selected");
+                    $(this).parents(".downpanel").toggleClass("layui-form-selected");
+                    layui.stope(e);
+                }).on("click", "dl i", function (e) {
+                    layui.stope(e);
+                });
+                $(document).on("click", function () {
+                    $(".layui-form-select").removeClass("layui-form-selected");
+                });
+
+                // 回填预置的 depid（从 Index 树点击传入）
+                var presetDep = $("#dep_id").val() || getparastr("depid");
+                if (presetDep) {
+                    var nodes = findPathByLeafId(presetDep, data);
+                    if (nodes) {
+                        $("#dep_name").text(nodes);
+                    }
+                }
+            }
+        });
+
+        function findPathByLeafId(leafId, nodes, path) {
+            if (path === undefined) path = [];
+            for (var i = 0; i < nodes.length; i++) {
+                var tmpPath = path.concat();
+                tmpPath.push(nodes[i].id);
+                if (leafId == nodes[i].id) return nodes[i].title;
+                if (nodes[i].children) {
+                    var r = findPathByLeafId(leafId, nodes[i].children, tmpPath);
+                    if (r) return r;
+                }
+            }
+            return null;
+        }
+
+        // 职务级别下拉
+        $.ajax({
+            url: "/HrPosition/Combo",
+            type: "GET",
+            dataType: "json",
+            success: function (data) {
+                var list = data || [];
+                var $sel = $('#position_id');
+                $sel.html('<option value="">请选择</option>');
+                for (var i = 0; i < list.length; i++) {
+                    var opt = $('<option>').val(list[i].id).text(list[i].text);
+                    $sel.append(opt);
+                }
+                form.render('select');
+            }
+        });
+
+        // 员工选择
+        tableSelect.render({
+            elem: '#emp_name',
+            checkedKey: 'id',
+            table: {
+                url: '/HrEmployee/grid',
+                width: 500,
+                cols: [[
+                    { type: 'radio' },
+                    { field: 'name', width: 150, title: '员工姓名' },
+                    {
+                        field: 'dep_name', width: 150, title: '部门', templet: function (t) {
+                            return t.department ? t.department.dep_name : "";
+                        }
+                    },
+                    {
+                        field: 'position_name', width: 150, title: '职务', templet: function (t) {
+                            return t.position ? t.position.position_name : "";
+                        }
+                    }
+                ]]
+            },
+            done: function (elem, data) {
+                var rows = data.data || [];
+                if (rows.length === 0) {
+                    $("#emp_id").val("");
+                    return;
+                }
+                $("#emp_id").val(rows[0].id);
+            }
+        });
+
+        // 单选回填
+        if (getparastr("id")) {
+            // 编辑模式由父页 set value
+        }
+    });
+</script>
