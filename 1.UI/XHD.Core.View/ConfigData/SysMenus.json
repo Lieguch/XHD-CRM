@@ -208,6 +208,14 @@
     "Menu_order": 20
   },
   {
+    "id": "Finance_Receivable",
+    "Menu_name": "应收账款",
+    "Menu_url": "Finance_Receivable/Index",    
+    "Menu_icon": "fa-money",    
+    "parentid": "FinanceManager",
+    "Menu_order": 30
+  },
+  {
     "id": "ReportManager",
     "Menu_name": "报表管理",
     "Menu_url": "",    
@@ -302,6 +310,14 @@
     "Menu_icon": "fa-user-circle",    
     "parentid": "hrmanager",
     "Menu_order": 40
+  },
+  {
+    "id": "hr_post_emp",
+    "Menu_name": "员工职务",
+    "Menu_url": "HrPost/Index",    
+    "Menu_icon": "fa-users",    
+    "parentid": "hrmanager",
+    "Menu_order": 50
   },
   {
     "id": "paramsmanager",
