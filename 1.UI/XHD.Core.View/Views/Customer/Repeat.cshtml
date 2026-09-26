@@ -1,0 +1,211 @@
+@{
+    ViewData["Title"] = "重复客户查询";
+}
+
+<div class="table-search-fieldset">
+    <div>
+        <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">客户</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="cus_name" id="cus_name" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">电话</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="cus_tel" id="cus_tel" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="btn-group-inline">
+                <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn" id="btn_serch"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                <button type="reset" class="layui-btn layui-btn-primary" id="btn_reset"><i class="layui-icon layui-icon-error"></i> 重置</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="layui-form-item layui-row" style="margin: 8px 12px; color: #FF8800; line-height: 30px;">
+    <i class="layui-icon layui-icon-tips"></i>
+    <b>重复客户查询</b> — 显示客户名出现 2 次及以上的记录（未删除）。同名客户可能是重复录入，请核对后删除多余记录。
+</div>
+
+<div class="layuimini-card">
+    <div class="layui-card-body">
+        <table id="repeat-table" class="layui-table" lay-filter="currentTableFilter"></table>
+    </div>
+</div>
+
+<!-- 操作列模板 -->
+<script type="text/html" id="repeat-actions">
+    <a class="layui-btn layui-btn-xs layui-bg-blue" lay-event="view"><i class="layui-icon layui-icon-view"></i> 查看</a>
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="del"><i class="layui-icon layui-icon-delete"></i> 删除</a>
+</script>
+
+<script>
+    layui.use(['table', 'form'], function () {
+        var $ = layui.jquery;
+        var table = layui.table;
+        var form = layui.form;
+
+        layer.load(2);
+        table.render({
+            elem: '#repeat-table',
+            url: 'Grid?type=repeat',
+            id: "repeatGrid",
+            defaultToolbar: ['filter', 'print', 'exports'],
+            cols: [[
+                { type: 'numbers', fixed: 'left', title: '序号' },
+                {
+                    field: 'cus_name', width: 220, title: '客户', fixed: 'left', templet: function (item) {
+                        var html = "<a href='javascript:void(0)' onclick=CusInfo('" + item.id + "','【客户】" + (item.cus_name || '') + "')> ";
+                        html += "<i class='fa fa-user'></i> ";
+                        html += item.cus_name || '';
+                        html += "</a>";
+                        return html;
+                    }
+                },
+                { field: 'cus_tel', width: 120, title: '电话', align: 'right' },
+                {
+                    field: 'cus_type', width: 100, title: '客户类型', templet: function (t) {
+                        return t.cus_type ? t.cus_type.params_name : '';
+                    }
+                },
+                {
+                    field: 'cus_level', width: 100, title: '客户类别', templet: function (t) {
+                        return t.cus_level ? t.cus_level.params_name : '';
+                    }
+                },
+                {
+                    field: 'cus_source', width: 100, title: '客户来源', templet: function (t) {
+                        return t.cus_source ? t.cus_source.params_name : '';
+                    }
+                },
+                {
+                    field: 'Provinces', width: 100, title: '省份', templet: function (t) {
+                        return t.Provinces ? t.Provinces.name : '';
+                    }
+                },
+                {
+                    field: 'City', width: 100, title: '城市', templet: function (t) {
+                        return t.City ? t.City.name : '';
+                    }
+                },
+                {
+                    field: 'cus_industry', width: 100, title: '所属行业', templet: function (t) {
+                        return t.cus_industry ? t.cus_industry.params_name : '';
+                    }
+                },
+                {
+                    field: 'Employee', width: 100, title: '部门', templet: function (t) {
+                        if (t.Employee && t.Employee.department) {
+                            return t.Employee.department.dep_name;
+                        }
+                        return "";
+                    }
+                },
+                {
+                    field: 'Employee', width: 100, title: '员工', templet: function (t) {
+                        return t.Employee ? t.Employee.name : '';
+                    }
+                },
+                {
+                    field: 'isPrivate', width: 80, title: '客源状态', align: "center", templet: function (t) {
+                        switch (t.isPrivate) {
+                            case 1: return '<div style="background:#F00;Color:#FFF;">公客</div>';
+                            case 0: return '<div style="background:#0F0;Color:#000;">私客</div>';
+                            default: return "";
+                        }
+                    }
+                },
+                {
+                    field: 'lastfollow', width: 100, title: '最后跟进', templet: function (t) {
+                        if (t.lastfollow) {
+                            return t.lastfollow.substring(0, 10);
+                        }
+                        return "";
+                    }
+                },
+                {
+                    field: 'Delete_time', width: 100, title: '删除时间', templet: function (t) {
+                        if (t.Delete_time) {
+                            return t.Delete_time.substring(0, 10);
+                        }
+                        return "";
+                    }
+                },
+                {
+                    field: 'create_time', width: 100, title: '创建时间', templet: function (t) {
+                        if (t.create_time) {
+                            return t.create_time.substring(0, 10);
+                        }
+                        return "";
+                    }
+                },
+                {
+                    templet: '#repeat-actions', width: 130, align: 'center', fixed: 'right', title: '操作'
+                }
+            ]],
+            limits: [10, 15, 20, 25, 50, 100],
+            limit: 15,
+            page: true,
+            done: function () {
+                layer.closeAll('loading');
+            }
+        });
+
+        // 行工具事件
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+            if (layEvent === 'view') {
+                if (typeof CusInfo === 'function') {
+                    CusInfo(data.id, '【客户】' + (data.cus_name || ''));
+                }
+            } else if (layEvent === 'del') {
+                layer.confirm('彻底删除后不能恢复，请谨慎操作！<br/>您确定要删除吗？', {
+                    icon: 3,
+                    title: '提示信息'
+                }, function (index) {
+                    doDelete(data.id);
+                    layer.close(index);
+                });
+            }
+        });
+
+        // 删除操作
+        function doDelete(id) {
+            $.ajax({
+                type: 'POST',
+                url: '/Customer/Delete',
+                data: { id: id },
+                dataType: 'json',
+                success: function (res) {
+                    if (res.code == 0) {
+                        layer.msg(res.msg || '删除成功', { icon: 1 });
+                        f_reload();
+                    } else {
+                        layer.alert(res.msg || '删除失败', { icon: 5 });
+                    }
+                },
+                error: function (xhr, status, err) {
+                    layer.alert('操作失败！！！' + xhr.status + '|' + xhr.readyState + '|' + status, { icon: 5 });
+                }
+            });
+        }
+
+        function f_reload() {
+            $("#btn_serch").click();
+        }
+
+        form.on('submit(data-search-btn)', function (data) {
+            var curr = $(".layui-laypage-skip").find("input").val();
+            if (!curr) curr = 1;
+            table.reload('repeatGrid', {
+                page: { curr: curr },
+                where: data.field
+            }, 'data');
+            return false;
+        });
+    });
+</script>
