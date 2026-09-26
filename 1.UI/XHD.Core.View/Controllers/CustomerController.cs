@@ -1352,6 +1352,61 @@ namespace XHD.Core.View.Controllers
             return exp;
         }
 
+        // ========== Sprint 10.27b 客户回收站 ==========
+
+        /// <summary>
+        /// Sprint 10.27b：客户回收站页面入口。
+        /// 展示已软删除（isDelete=1）的客户列表，供管理员恢复或删除前最后确认。
+        /// 对应 A 侧 View/Toolbar/Recycle/CRM/Customer.aspx。
+        /// View 名 "Recycle" 对应 Views/Customer/Recycle.cshtml。
+        /// </summary>
+        [HttpGet("Recycle")]
+        public IActionResult RecycleView()
+        {
+            return View("Recycle");
+        }
+
+        /// <summary>
+        /// Sprint 10.27b：客户回收站 Grid。
+        /// 语义：仅显示 isDelete=1 的已软删除客户；按 Delete_time DESC 排序（最近删除优先）。
+        /// 权限：无按钮级校验（列表查看），恢复由 <see cref="Regain"/> 做权限校验。
+        /// 参数：支持 cus_name / cus_tel / keyword 搜索过滤；数据权限同 <see cref="BuildCustomerQueryExpression"/>。
+        /// </summary>
+        /// <param name="model">分页参数</param>
+        /// <returns>XHDData&lt;CRM_Customer&gt; JSON 字符串</returns>
+        [HttpGet("RecycleGrid")]
+        public async Task<string> RecycleGrid(PageView<CRM_Customer> model)
+        {
+            var exp = await BuildCustomerQueryExpression();
+            exp = exp.And(c => c.isDelete == 1);
+            var result = await _service.GridAsync(exp, model.Page, model.Limit, "a.Delete_time desc");
+
+            // 补充 Deleter 导航属性（Repository 默认不 join Deleter）
+            if (_fsql != null && result.data != null)
+            {
+                var deleteIds = result.data
+                    .Where(c => !string.IsNullOrEmpty(c.Delete_id))
+                    .Select(c => c.Delete_id)
+                    .Distinct()
+                    .ToList();
+                if (deleteIds.Count > 0)
+                {
+                    var deleters = await _fsql.Select<hr_employee>()
+                        .Where(e => deleteIds.Contains(e.id))
+                        .ToListAsync(true);
+                    var deleterMap = deleters.ToDictionary(e => e.id, e => e);
+                    foreach (var c in result.data)
+                    {
+                        if (!string.IsNullOrEmpty(c.Delete_id) && deleterMap.TryGetValue(c.Delete_id, out var d))
+                        {
+                            c.Deleter = d;
+                        }
+                    }
+                }
+            }
+
+            return result.ToString();
+        }
 
     }
 }
