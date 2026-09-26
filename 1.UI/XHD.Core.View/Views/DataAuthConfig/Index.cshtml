@@ -1,0 +1,161 @@
+@{
+    ViewData["Title"] = "数据权限配置";
+}
+
+<div class="layuimini-card">
+    <div class="layui-card-body">
+        <div style="margin-bottom: 12px; color: #7d7e7e; font-size: 13px; line-height: 1.7;">
+            <i class="fa fa-info-circle"></i>
+            <b>B 版数据权限说明：</b>
+            基于角色层级（0 无 / 1 本人 / 2 本部 / 3 本部及下级 / 4 全部），
+            由 <code>Sys_role.DataAuth</code> 字段直接控制，
+            <code>DBAuthRepository.GetDataAuth</code> 按整数层级展开可见员工 ID。
+            与 A 版 <code>Sys_data_authority</code> 表按部门勾选不同，
+            本页为 B 版可行配置（<b>非 A 版 1:1 复刻</b>）。
+            直接修改下拉框即保存。
+        </div>
+
+        <div style="margin-bottom: 8px;">
+            <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnReload">
+                <i class="fa fa-refresh"></i> 刷新
+            </button>
+            <span style="margin-left: 12px; color: #999;">修改下拉框即保存到 <code>Sys_role.DataAuth</code>；变更会写入系统日志。</span>
+        </div>
+
+        <table id="dataauth-table" class="layui-table" lay-filter="dataAuthFilter"></table>
+    </div>
+</div>
+
+<!-- 数据权限下拉单元格 -->
+<script type="text/html" id="dataauth-cell">
+    <select name="DataAuth" lay-filter="dataAuthSelect">
+        <option value="0" {{# if(d.DataAuth == 0){ }}selected{{# } }}>0 - 无</option>
+        <option value="1" {{# if(d.DataAuth == 1){ }}selected{{# } }}>1 - 本人</option>
+        <option value="2" {{# if(d.DataAuth == 2){ }}selected{{# } }}>2 - 本部</option>
+        <option value="3" {{# if(d.DataAuth == 3){ }}selected{{# } }}>3 - 本部及下级</option>
+        <option value="4" {{# if(d.DataAuth == 4){ }}selected{{# } }}>4 - 全部</option>
+    </select>
+</script>
+
+<script>
+    var AuthMap = {
+        0: '无',
+        1: '本人',
+        2: '本部',
+        3: '本部及下级',
+        4: '全部'
+    };
+
+    function AuthDesc(value) {
+        return AuthMap[value] || ('未知(' + value + ')');
+    }
+
+    layui.use(['table', 'form', 'layer'], function () {
+        var $ = layui.jquery;
+        var table = layui.table;
+        var form = layui.form;
+        var layer = layui.layer;
+
+        layer.load(2);
+
+        var tableIns = table.render({
+            elem: '#dataauth-table',
+            id: 'mainDataAuth',
+            url: 'Grid',
+            page: false,
+            limit: 100,
+            cols: [[
+                { type: 'numbers', title: '序号', width: 60 },
+                { field: 'RoleName', width: 200, title: '角色名称' },
+                { field: 'RoleDscript', title: '角色描述' },
+                { field: 'RoleSort', width: 80, title: '排序' },
+                {
+                    field: 'DataAuth',
+                    width: 220,
+                    title: '数据权限层级',
+                    templet: '#dataauth-cell'
+                },
+                {
+                    field: 'AuthDesc',
+                    width: 160,
+                    title: '说明',
+                    templet: function (d) {
+                        return '<span class="layui-badge" style="background: #1e9fff;">' + AuthDesc(d.DataAuth) + '</span>';
+                    }
+                }
+            ]],
+            done: function () {
+                layer.closeAll('loading');
+                form.render('select');
+            }
+        });
+
+        // 下拉选择即保存
+        form.on('select(dataAuthSelect)', function (data) {
+            var tr = $(data.elem).closest('tr[lay-id]');
+            var trIndex = tr.attr('lay-id');
+            var cache = table.cache['mainDataAuth'] || {};
+            var row = cache[trIndex];
+            if (!row) {
+                layer.msg('无法定位行数据', { icon: 2 });
+                return;
+            }
+
+            var roleId = row.id;
+            var roleName = row.RoleName;
+            var newVal = parseInt(data.value, 10);
+            var oldVal = parseInt(row.DataAuth, 10);
+
+            if (isNaN(newVal) || newVal < 0 || newVal > 4) {
+                layer.msg('数据权限层级必须是 0-4 的整数', { icon: 2 });
+                return;
+            }
+            if (newVal === oldVal) {
+                return;
+            }
+
+            layer.confirm(
+                '将角色「' + roleName + '」的数据权限从「' + AuthDesc(oldVal) + '」改为「' + AuthDesc(newVal) + '」，是否继续？',
+                { icon: 3, title: '确认保存' },
+                function (idx) {
+                    layer.close(idx);
+                    save(roleId, newVal);
+                }
+            );
+        });
+
+        $('#btnReload').on('click', function () {
+            tableIns.reload({}, 'data');
+        });
+
+        function save(roleId, dataAuth) {
+            layer.load(2);
+            $.ajax({
+                type: 'POST',
+                url: 'Save',
+                data: { role_id: roleId, DataAuth: dataAuth },
+                dataType: 'json',
+                success: function (res) {
+                    layer.closeAll('loading');
+                    if (res.code === 0) {
+                        layer.msg('保存成功', { icon: 1 });
+                        var cache = table.cache['mainDataAuth'] || {};
+                        for (var key in cache) {
+                            if (cache[key] && cache[key].id === roleId) {
+                                cache[key].DataAuth = dataAuth;
+                                break;
+                            }
+                        }
+                        tableIns.reload({}, 'data');
+                    } else {
+                        layer.alert(res.msg || '保存失败', { icon: 5 });
+                    }
+                },
+                error: function (xhr, status, err) {
+                    layer.closeAll('loading');
+                    layer.alert('操作失败！' + status + '|' + err, { icon: 5 });
+                }
+            });
+        }
+    });
+</script>
