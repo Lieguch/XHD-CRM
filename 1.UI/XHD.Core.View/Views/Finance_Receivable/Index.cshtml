@@ -1,0 +1,426 @@
+@{
+    ViewData["Title"] = "应收账款";
+}
+
+<div class="table-search-fieldset">
+    <div>
+        <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">客户</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="cus_name" id="cus_name" autocomplete="off" placeholder="客户名称" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">订单号</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="order_no" id="order_no" autocomplete="off" placeholder="订单号" class="layui-input">
+                </div>
+            </div>
+            <div class="btn-group-inline">
+                <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn" id="btn_serch"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                <button type="reset" class="layui-btn layui-btn-primary" id="btn_reset"><i class="layui-icon layui-icon-error"></i> 重置</button>
+                <a id="toggleBtn" style="cursor:pointer;">
+                    <i class="layui-icon layui-icon-down"></i>
+                    <span>展开</span>
+                </a>
+            </div>
+
+            <div id="extraConditions" style="display: none;">
+                <div class="layui-form-item layui-inline">
+                    <label class="layui-form-label">应收时间</label>
+                    <div class="layui-input-inline" style="width: 130px;">
+                        <input type="text" name="date1" id="date1" placeholder="开始日期" autocomplete="off" class="layui-input">
+                    </div>
+                    <div class="layui-form-mid">-</div>
+                    <div class="layui-input-inline" style="width: 130px;">
+                        <input type="text" name="date2" id="date2" placeholder="结束日期" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-form-item layui-inline">
+                    <label class="layui-form-label">最小金额</label>
+                    <div class="layui-input-inline" style="width: 130px;">
+                        <input type="number" name="min_amount" id="min_amount" placeholder="应收金额 ≥" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="layuimini-card">
+    <div class="layui-card-body">
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="add">添加</button>
+                <button class="layui-btn layui-btn-sm" lay-event="receive">收款重算</button>
+            </div>
+        </script>
+
+        <table id="munu-table" class="layui-table" lay-filter="currentTableFilter"></table>
+    </div>
+</div>
+
+<!-- 操作列 -->
+<script type="text/html" id="auth-state">
+    <a class="layui-btn layui-btn-xs" lay-event="info">详情</a>
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">修改</a>
+    <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="receive">收款</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+</script>
+
+<!-- 状态列模板 -->
+<script type="text/html" id="status-templet">
+    {{# if(d.receivable_amount && d.receivable_amount > 0 && d.received_amount && d.received_amount >= d.receivable_amount){ }}
+    <span class="layui-badge layui-bg-green">已收齐</span>
+    {{# } else if(d.received_amount && d.received_amount > 0){ }}
+    <span class="layui-badge layui-bg-orange">部分收款</span>
+    {{# } else { }}
+    <span class="layui-badge layui-bg-gray">未收款</span>
+    {{# } }}
+</script>
+
+<script>
+    layui.use(['table', 'form', 'laydate'], function () {
+        var $ = layui.jquery;
+        var table = layui.table;
+        var form = layui.form;
+        var laydate = layui.laydate;
+
+        // 渲染表格
+        layer.load(2);
+        table.render({
+            elem: '#munu-table',
+            url: 'Grid',
+            toolbar: '#toolbarDemo',
+            defaultToolbar: ['filter'],
+            id: "mainGrid4",
+            cols: [[
+                { type: 'numbers', title: "序号", width: 60, fixed: 'left' },
+                {
+                    field: 'receivable_no', width: 180, title: '应收单号', fixed: 'left', templet: function (t) {
+                        if (!t.receivable_no) return "";
+                        return "<a href='javascript:void(0)' onclick=\"showDetail('" + t.id + "')\">" + t.receivable_no + "</a>";
+                    }
+                },
+                {
+                    field: 'order_id', width: 200, title: '订单', templet: function (t) {
+                        if (t.Order) {
+                            var sn = t.Order.sn || t.Order.Order_no || "";
+                            var cid = t.Order.customer ? t.Order.customer.id : "";
+                            return "<a href='javascript:void(0)' onclick=\"location.href='/SaleOrder/Index?cid=" + cid + "'\">" + sn + "</a>";
+                        }
+                        return "";
+                    }
+                },
+                {
+                    field: 'cus_name', width: 200, title: '客户', templet: function (t) {
+                        if (t.Order && t.Order.customer) {
+                            return t.Order.customer.cus_name;
+                        }
+                        return "";
+                    }
+                },
+                {
+                    field: 'receivable_amount', width: 120, title: '应收金额', align: 'right', templet: function (item) {
+                        return toMoney(item.receivable_amount);
+                    }
+                },
+                {
+                    field: 'received_amount', width: 120, title: '已收金额', align: 'right', templet: function (item) {
+                        return toMoney(item.received_amount);
+                    }
+                },
+                {
+                    field: 'arrears_amount', width: 120, title: '未收余额', align: 'right', templet: function (item) {
+                        return toMoney(item.arrears_amount);
+                    }
+                },
+                { field: 'receivable_time', width: 130, title: '应收时间', templet: function (item) {
+                    var v = item.receivable_time;
+                    if (v && !isNaN(Date.parse(v))) {
+                        v = v.replace(' 00:00:00', '');
+                    }
+                    return v || "";
+                }},
+                { field: 'isDelete', width: 110, title: '状态', templet: '#status-templet', align: 'center' },
+                { field: 'create_time', width: 170, title: '创建时间' },
+                { templet: '#auth-state', width: 240, align: 'center', fixed: 'right', title: '操作' }
+            ]],
+            limits: [10, 15, 20, 25, 50, 100],
+            limit: 15,
+            page: true,
+            done: function () {
+                layer.closeAll('loading');
+            }
+        });
+
+        /**
+         * toolbar监听事件
+         */
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'add') {
+                add();
+                return;
+            }
+            if (obj.event === 'receive') {
+                layer.confirm('对当前订单触发收款状态重算？', { icon: 3, title: '提示信息' }, function (idx) {
+                    var orderIds = collectOrderIds();
+                    layer.close(idx);
+                    if (!orderIds || orderIds.length === 0) {
+                        layer.msg('请至少勾选一行含订单的数据', { icon: 5 });
+                        return;
+                    }
+                    var n = orderIds.length;
+                    for (var i = 0; i < n; i++) {
+                        (function (oid) {
+                            $.ajax({
+                                type: 'POST',
+                                url: 'Receive',
+                                data: { orderId: oid },
+                                dataType: "json",
+                                success: function (res) {
+                                    if (res.code !== 0) {
+                                        layer.msg('订单 ' + oid.slice(0, 8) + ' 重算失败：' + res.msg, { icon: 5 });
+                                    }
+                                }
+                            });
+                        })(orderIds[i]);
+                    }
+                    layer.msg('已触发 ' + n + ' 笔订单收款重算', { icon: 1 });
+                    setTimeout(function () { f_reload(); }, 500);
+                });
+                return;
+            }
+        });
+
+        // 收集当前页去重后的订单 ID 列表
+        function collectOrderIds() {
+            var rows = table.cache['mainGrid4'] || [];
+            var map = {};
+            var list = [];
+            layui.each(rows, function (idx, r) {
+                if (r.order_id && !map[r.order_id]) {
+                    map[r.order_id] = 1;
+                    list.push(r.order_id);
+                }
+            });
+            return list;
+        }
+
+        // 监听工具条
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+
+            if (layEvent === 'del') {
+                layer.confirm('删除后无法恢复，确定删除？', { icon: 3, title: '提示信息' }, function (index) {
+                    del(data.id);
+                    layer.close(index);
+                });
+            } else if (layEvent === 'edit') {
+                add(data);
+            } else if (layEvent === 'info') {
+                info(data);
+            } else if (layEvent === 'receive') {
+                if (!data.order_id) {
+                    layer.msg('该应收单无关联订单，无法收款', { icon: 5 });
+                    return;
+                }
+                receive(data.order_id);
+            }
+        });
+
+        function info(data) {
+            var index = layui.layer.open({
+                title: "详情",
+                type: 2,
+                anim: 1,
+                area: ['80%', '80%'],
+                maxmin: true,
+                content: "Add?id=" + data.id,
+                btn: ['关闭'],
+                success: function (layero, index) {
+                    var iframe = window["layui-layer-iframe" + index];
+                    var body = layui.layer.getChildFrame('body', index);
+                    if (data) {
+                        for (var val in data) {
+                            var value = data[val];
+                            if (value !== null && typeof value === 'object') continue;
+                            if (isNaN(value) && !isNaN(Date.parse(value))) {
+                                value = value.replace(' 00:00:00', '');
+                            }
+                            body.find("#" + val).val(value);
+                        }
+                        if (data.Order) {
+                            body.find("#order").val(data.Order.sn || data.Order.Order_no || "");
+                            body.find("#cus_name_disp").val(data.Order.customer ? data.Order.customer.cus_name : "");
+                            body.find("#order_amount").val(data.Order.Order_amount);
+                            body.find("#order_id").val(data.order_id);
+                        }
+                    }
+                },
+                btn2: function (index, layero) {
+                    layer.close(index);
+                }
+            });
+        }
+
+        function del(id) {
+            $.ajax({
+                type: 'POST',
+                url: "Delete",
+                data: { id: id },
+                dataType: "json",
+                success: function (res) {
+                    if (res.code == 0) {
+                        layer.msg('删除成功', { icon: 1 });
+                        f_reload();
+                    } else {
+                        layer.alert(res.msg, { icon: 5 });
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                }
+            });
+        }
+
+        function receive(orderId) {
+            layer.confirm('对当前订单触发收款重算？', { icon: 3, title: '提示信息' }, function (index) {
+                layer.close(index);
+                $.ajax({
+                    type: 'POST',
+                    url: "Receive",
+                    data: { orderId: orderId },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.code == 0) {
+                            layer.msg('订单收款状态已更新', { icon: 1 });
+                            f_reload();
+                        } else {
+                            layer.alert(res.msg, { icon: 5 });
+                        }
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                    }
+                });
+            });
+        }
+
+        function add(edit) {
+            var tit = "添加";
+            if (edit) {
+                tit = "编辑";
+            }
+            var id = "";
+            if (edit) {
+                id = edit.id;
+            }
+            var index = layui.layer.open({
+                title: tit,
+                type: 2,
+                anim: 1,
+                area: ['760px', '520px'],
+                maxmin: true,
+                content: "Add?id=" + id,
+                btn: ['确定', '关闭'],
+                success: function (layero, index) {
+                    var iframe = window["layui-layer-iframe" + index];
+                    var body = layui.layer.getChildFrame('body', index);
+                    if (edit) {
+                        body.find("#id").val(edit.id);
+                        body.find("#receivable_no").val(edit.receivable_no);
+                        body.find("#receivable_amount").val(edit.receivable_amount);
+                        body.find("#received_amount").val(edit.received_amount);
+                        body.find("#arrears_amount").val(edit.arrears_amount);
+                        body.find("#Remark").val(edit.Remark);
+                        body.find("#receivable_time").val(
+                            edit.receivable_time ? edit.receivable_time.replace(' 00:00:00', '') : '');
+                        if (edit.Order) {
+                            body.find("#order").val(edit.Order.sn || edit.Order.Order_no || "");
+                            body.find("#cus_name_disp").val(edit.Order.customer ? edit.Order.customer.cus_name : "");
+                            body.find("#order_amount").val(edit.Order.Order_amount);
+                            body.find("#order_id").val(edit.order_id);
+                        }
+                    }
+                },
+                yes: function (index, layero) {
+                    var iframeWindow = window['layui-layer-iframe' + index]
+                        , submitID = 'LAY-user-front-submit'
+                        , submit = layero.find('iframe').contents().find('#' + submitID);
+
+                    iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                        var field = data.field;
+                        layer.close(index);
+                        $.ajax({
+                            type: 'POST',
+                            url: 'Save',
+                            data: field,
+                            dataType: "json",
+                            success: function (res) {
+                                if (res.code == 0) {
+                                    layer.msg('保存成功', { icon: 1 });
+                                    f_reload();
+                                } else {
+                                    layer.alert(res.msg, { icon: 5 });
+                                }
+                            },
+                            error: function (XMLHttpRequest, textStatus, errorThrown) {
+                                layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                            }
+                        });
+                    });
+
+                    submit.trigger('click');
+                },
+                btn2: function (index, layero) {
+                    layer.close(index);
+                }
+            });
+        }
+
+        function f_reload() {
+            var curr = $(".layui-laypage-skip").find("input").val();
+            if (!curr) {
+                curr = 1;
+            }
+            table.reload('mainGrid4', {
+                page: { curr: curr }
+            }, 'data');
+        }
+
+        // 监听搜索
+        form.on('submit(data-search-btn)', function (data) {
+            var curr = $(".layui-laypage-skip").find("input").val();
+            if (!curr) {
+                curr = 1;
+            }
+            table.reload('mainGrid4', {
+                page: { curr: curr },
+                where: data.field
+            }, 'data');
+            return false;
+        });
+
+        laydate.render({ elem: '#date1', trigger: 'click' });
+        laydate.render({ elem: '#date2', trigger: 'click' });
+
+        // 展开/折叠
+        $('#toggleBtn').on('click', function () {
+            var $extra = $('#extraConditions');
+            var $icon = $(this).find('i');
+            var $span = $(this).find('span');
+            if ($extra.is(':visible')) {
+                $extra.slideUp(200);
+                $icon.removeClass('layui-icon-up').addClass('layui-icon-down');
+                $span.text('展开');
+            } else {
+                $extra.slideDown(200);
+                $icon.removeClass('layui-icon-down').addClass('layui-icon-up');
+                $span.text('收起');
+            }
+        });
+    });
+</script>
