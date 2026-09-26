@@ -1,0 +1,48 @@
+@{
+    ViewData["Title"] = "短信 新增/编辑";
+}
+
+<div class="layui-form layui-form-pane" action="">
+    @Html.Hidden("id")
+    @Html.Hidden("contact_ids")
+    <div class="layui-card">
+        <div class="layui-card-header">发送短信</div>
+        <div class="layui-card-body">
+            <div class="layui-form-item">
+                <label class="layui-form-label required">短信主题</label>
+                <div class="layui-input-inline" style="width:480px;">
+                    <input type="text" name="sms_title" id="sms_title" autocomplete="off" placeholder="请输入短信主题" class="layui-input" lay-verify="required">
+                </div>
+            </div>
+
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label required">短信内容</label>
+                <div class="layui-input-block">
+                    <textarea id="sms_content" name="sms_content" placeholder="请输入短信内容（可含【公司名】签名）" class="layui-textarea" lay-verify="required" style="width:760px;height:140px;"></textarea>
+                </div>
+            </div>
+
+            <div class="layui-form-item layui-form-text">
+                <label class="layui-form-label required">手机号</label>
+                <div class="layui-input-block">
+                    <textarea id="sms_mobiles" name="sms_mobiles" placeholder="多个手机号请用逗号、分号或换行分隔，例如：13800138000,13900139000" class="layui-textarea" lay-verify="required" style="width:760px;height:120px;"></textarea>
+                    <div style="margin-top:6px;font-size:12px;color:#999;">注：每行/每段为一个手机号，最多 200 个；不合规的号码将被拒绝保存。</div>
+                </div>
+            </div>
+
+            <div class="layui-form-item layui-hide">
+                <input type="button" lay-submit lay-filter="LAY-user-front-submit" id="LAY-user-front-submit" value="确认">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    layui.use(['form', 'layer'], function () {
+        var form = layui.form;
+        var $ = layui.$;
+
+        // 编辑模式：由父页回填；新增模式：清空
+        form.render();
+    });
+</script>
