@@ -258,13 +258,28 @@ namespace XHD.Core.View.Controllers
                 // 使用 BuildCustomerQueryExpression 已包含的数据权限 + isPrivate 过滤，与列表视图口径一致
                 var dupBaseExp = exp.And(c => c.isDelete == 0
                     && c.cus_name != null && c.cus_name != "");
-                var dupNames = await _service.GridAsync(dupBaseExp);
-                var dupSet = dupNames
-                    .Select(c => c.cus_name)
-                    .GroupBy(n => n)
-                    .Where(g => g.Count() >= 2)
-                    .Select(g => g.Key)
-                    .ToList();
+                var dupNameList = await _service.GridAsync(dupBaseExp);
+                var nameCount = new Dictionary<string, int>();
+                foreach (var cust in dupNameList)
+                {
+                    var nm = cust.cus_name;
+                    if (nameCount.ContainsKey(nm))
+                    {
+                        nameCount[nm]++;
+                    }
+                    else
+                    {
+                        nameCount[nm] = 1;
+                    }
+                }
+                var dupSet = new List<string>();
+                foreach (var kv in nameCount)
+                {
+                    if (kv.Value >= 2)
+                    {
+                        dupSet.Add(kv.Key);
+                    }
+                }
 
                 if (dupSet.Count == 0)
                 {
