@@ -386,9 +386,17 @@
   {
     "id": "sys_logs",
     "Menu_name": "日志管理",
-    "Menu_url": "SysLog/Index",    
-    "Menu_icon": "fa-file-o",    
+    "Menu_url": "SysLog/Index",
+    "Menu_icon": "fa-file-o",
     "parentid": "Sys_Manager",
     "Menu_order": 90
+  },
+  {
+    "id": "sys_log_err",
+    "Menu_name": "错误日志",
+    "Menu_url": "SysLogErr/Index",
+    "Menu_icon": "fa-exclamation-triangle",
+    "parentid": "Sys_Manager",
+    "Menu_order": 100
   }
 ]
