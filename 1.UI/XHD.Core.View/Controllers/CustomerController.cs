@@ -247,7 +247,38 @@ namespace XHD.Core.View.Controllers
         public async Task<string> Grid(PageView<CRM_Customer> model)
         {
             var exp = await BuildCustomerQueryExpression();
-            var result = await _service.GridAsync(exp, model.Page, model.Limit, "a.create_time desc");
+            var sortText = "a.create_time desc";
+
+            // Sprint 10.28：重复客户查询（对应 A 侧 CRM_Customer.grid.xhd?type=repeat）
+            // 语义：找出未删除客户中，cus_name 出现 2+ 次的记录，按 cus_name, id DESC 排序
+            var type = Request.Query["type"].FirstOrDefault() ?? "";
+            if (type == "repeat")
+            {
+                // 在数据权限过滤范围内取回所有未删除客户的 cus_name，再 LINQ GroupBy 找重复名
+                // 使用 BuildCustomerQueryExpression 已包含的数据权限 + isPrivate 过滤，与列表视图口径一致
+                var dupBaseExp = exp.And(c => c.isDelete == 0
+                    && c.cus_name != null && c.cus_name != "");
+                var dupNames = await _service.GridAsync(dupBaseExp);
+                var dupSet = dupNames
+                    .Select(c => c.cus_name)
+                    .GroupBy(n => n)
+                    .Where(g => g.Count() >= 2)
+                    .Select(g => g.Key)
+                    .ToList();
+
+                if (dupSet.Count == 0)
+                {
+                    // 无重复：直接返回空结果集（保持排序口径一致）
+                    exp = exp.And(c => false);
+                }
+                else
+                {
+                    exp = exp.And(c => dupSet.Contains(c.cus_name) && c.isDelete == 0);
+                }
+                sortText = "cus_name desc, id desc";
+            }
+
+            var result = await _service.GridAsync(exp, model.Page, model.Limit, sortText);
             return result.ToString();
         }
 
@@ -1364,6 +1395,20 @@ namespace XHD.Core.View.Controllers
         public IActionResult RecycleView()
         {
             return View("Recycle");
+        }
+
+        // ========== Sprint 10.28 重复客户查询 ==========
+
+        /// <summary>
+        /// Sprint 10.28：重复客户查询页面入口。
+        /// 展示 cus_name 出现 2+ 次（未删除）的客户列表。
+        /// 对应 A 侧 View/Toolbar/Repeat.aspx。
+        /// View 名 "Repeat" 对应 Views/Customer/Repeat.cshtml。
+        /// </summary>
+        [HttpGet("Repeat")]
+        public IActionResult RepeatView()
+        {
+            return View("Repeat");
         }
 
         /// <summary>
