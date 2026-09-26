@@ -1,4 +1,4 @@
-using Azure.Core;
+﻿using Azure.Core;
 using FreeSql;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -995,6 +995,28 @@ namespace XHD.Core.View.Controllers
         }
 
         // ========== Sprint 4 Wave 3：Excel 导入（#04 / #06） ==========
+
+        /// <summary>
+        /// Sprint 10.24：打开客户 Excel 导入对话框（页面）。
+        /// 供 SysMenus 菜单 "客户导入" 打开——独立于 <see cref="Import(IFormFile)"/> 上传端点。
+        /// View 名 "Import" 对应 Views/Customer/Import.cshtml。
+        /// </summary>
+        [HttpGet("ImportView")]
+        public IActionResult ImportView()
+        {
+            return View("Import");
+        }
+
+        /// <summary>
+        /// Sprint 10.24：打开管理员客户覆盖导入对话框（页面）。
+        /// 供 SysMenus 菜单 "管理员导入" 打开——独立于 <see cref="AdminImport(IFormFile)"/> 上传端点。
+        /// View 名 "AdminImport" 对应 Views/Customer/AdminImport.cshtml。
+        /// </summary>
+        [HttpGet("AdminImportView")]
+        public IActionResult AdminImportView()
+        {
+            return View("AdminImport");
+        }
 
         /// <summary>
         /// Sprint 4 Wave 3 #04：Excel 客户导入（普通用户）。
