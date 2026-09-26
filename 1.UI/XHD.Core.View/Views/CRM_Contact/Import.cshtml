@@ -1,0 +1,143 @@
+@{
+    ViewData["Title"] = "联系人导入";
+}
+
+<style>
+    .import-guide {
+        margin: 0 20px 20px 20px;
+        padding: 15px 20px;
+        background-color: #fdf6ec;
+        border: 1px solid #faecd8;
+        border-radius: 4px;
+        color: #666;
+        line-height: 28px;
+    }
+    .import-guide .step-title {
+        font-weight: bold;
+        color: #1E9FFF;
+        margin-right: 6px;
+    }
+    .import-guide a {
+        color: #0073AD;
+        text-decoration: underline;
+    }
+    .import-files {
+        margin: 0 20px;
+        padding: 30px;
+        text-align: center;
+        background-color: #fff;
+        border: 1px dashed #d2d2d2;
+        border-radius: 4px;
+    }
+    .import-files .selected {
+        margin-top: 12px;
+        color: #666;
+        font-size: 12px;
+    }
+    .import-files .selected .fname {
+        color: #1E9FFF;
+        margin: 0 4px;
+    }
+    .import-tip {
+        margin: 20px 20px 0 20px;
+        padding: 10px 15px;
+        background-color: #f2f2f2;
+        border-left: 3px solid #1E9FFF;
+        border-radius: 2px;
+        color: #666;
+        font-size: 12px;
+    }
+    #btn-upload {
+        min-width: 140px;
+    }
+</style>
+
+<div class="import-guide">
+    <div><span class="step-title">步骤 1：</span>请先 <a href="/file/template/联系人导入模板.xls" target="_blank">下载导入模板</a> 并填写数据</div>
+    <div><span class="step-title">步骤 2：</span>按照模板要求填写联系人信息（"姓名"和"客户名字"为必填项）</div>
+    <div><span class="step-title">步骤 3：</span>点击下方按钮选择本地文件</div>
+    <div><span class="step-title">步骤 4：</span>选择后自动上传导入，请留意导入结果</div>
+</div>
+
+<div class="import-files">
+    <button type="button" class="layui-btn layui-btn-normal" id="btn-upload">
+        <i class="layui-icon">&#xe67c;</i> 选择并上传文件
+    </button>
+    <div class="selected" id="file-info" style="display:none;">
+        已选择文件：<span class="fname"></span>
+    </div>
+</div>
+
+<div class="import-tip">
+    操作提示：数据导入过程中请稍候，切勿关闭窗口。文件大小不超过 10 MB，支持 .xls / .xlsx 格式。
+    <br/>注意："客户名字"必须与系统中已存在的客户名匹配，否则该行导入会失败。
+</div>
+
+@section Scripts {
+    <script>
+        layui.use(['upload', 'layer'], function () {
+            var upload = layui.upload,
+                layer = layui.layer;
+
+            upload.render({
+                elem: '#btn-upload',
+                url: '/CRM_Contact/Import',
+                accept: 'file',
+                exts: 'xls|xlsx',
+                size: 10240,
+                auto: true,
+                bindAction: '#btn-upload',
+                before: function (obj) {
+                    obj.preview(function (index, file, result) {
+                        $('#file-info').find('.fname').text(file.name);
+                        $('#file-info').show();
+                    });
+                    layer.msg('数据导入中请稍候...', { icon: 16, time: 0, shade: 0.01 });
+                },
+                done: function (res) {
+                    layer.closeAll('msg');
+                    var data = (typeof res === 'string') ? res : JSON.stringify(res);
+                    try {
+                        data = JSON.parse(data);
+                    } catch (e) {
+                        layer.alert('服务端返回异常：' + res, { icon: 5 });
+                        return;
+                    }
+
+                    if (data.code !== 0) {
+                        layer.alert(data.msg || '导入失败', { icon: 5 });
+                        return;
+                    }
+
+                    var detail = null;
+                    try {
+                        detail = JSON.parse(data.msg);
+                    } catch (e) {
+                        layer.alert('导入完成：' + data.msg, { icon: 1 });
+                        return;
+                    }
+
+                    if (detail && detail.error > 0 && (!detail.success || detail.success === 0)) {
+                        layer.alert(
+                            '导入失败：共 ' + detail.error + ' 条记录存在问题<br/>' +
+                            '<pre style="text-align:left;white-space:pre-wrap;font-size:12px;margin-top:8px;">' +
+                            (detail.message || '（无详细信息）') + '</pre>',
+                            { icon: 5, title: '导入失败' }
+                        );
+                    } else {
+                        var msg = '导入完成：新增 ' + (detail.success || 0) + ' 条';
+                        if (detail.update > 0) msg += '，覆盖 ' + detail.update + ' 条';
+                        msg += '，失败 ' + detail.error + ' 条';
+                        layer.alert(msg, { icon: 1, title: '导入结果' }, function () {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name));
+                        });
+                    }
+                },
+                error: function (res) {
+                    layer.closeAll('msg');
+                    layer.alert('上传失败：' + res, { icon: 5 });
+                }
+            });
+        });
+    </script>
+}
