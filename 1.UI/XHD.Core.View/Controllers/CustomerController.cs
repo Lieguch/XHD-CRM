@@ -155,7 +155,7 @@ namespace XHD.Core.View.Controllers
                 resp["code"] = 1; resp["msg"] = "参数为空"; resp["data"] = null;
                 return resp.ToString();
             }
-            if (!payload["state"]?.HasValue ?? true)
+            if (payload["state"] == null || payload["state"].Type == JTokenType.Null)
             {
                 resp["code"] = 1; resp["msg"] = "参数为空"; resp["data"] = null;
                 return resp.ToString();
