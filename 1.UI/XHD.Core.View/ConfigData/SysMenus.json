@@ -112,6 +112,30 @@
     "Menu_order": 90
   },
   {
+    "id": "CRM_Customer_Import",
+    "Menu_name": "客户导入",
+    "Menu_url": "Customer/ImportView",
+    "Menu_icon": "fa-download",
+    "parentid": "CRM_Manager",
+    "Menu_order": 100
+  },
+  {
+    "id": "CRM_Customer_AdminImport",
+    "Menu_name": "管理员导入",
+    "Menu_url": "Customer/AdminImportView",
+    "Menu_icon": "fa-server",
+    "parentid": "CRM_Manager",
+    "Menu_order": 110
+  },
+  {
+    "id": "CRM_Contact_Import",
+    "Menu_name": "联系人导入",
+    "Menu_url": "CRM_Contact/ImportView",
+    "Menu_icon": "fa-user-plus",
+    "parentid": "CRM_Manager",
+    "Menu_order": 120
+  },
+  {
     "id": "ProductManager",
     "Menu_name": "产品管理",
     "Menu_url": null,    
