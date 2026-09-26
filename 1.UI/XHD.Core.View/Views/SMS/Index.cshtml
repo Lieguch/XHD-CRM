@@ -1,0 +1,352 @@
+@{
+    ViewData["Title"] = "短信管理";
+}
+
+<div class="table-search-fieldset">
+    <div>
+        <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">短信主题</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="serchtxt" id="serchtxt" autocomplete="off" placeholder="主题关键字" class="layui-input">
+                </div>
+            </div>
+            <div class="btn-group-inline">
+                <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn" id="btn_serch"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                <button type="reset" class="layui-btn layui-btn-primary" id="btn_reset"><i class="layui-icon layui-icon-error"></i> 重置</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="layuimini-card">
+    <div class="layui-card-body">
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="add"><i class="layui-icon layui-icon-add-1"></i> 新增短信</button>
+                <button class="layui-btn layui-btn-sm layui-btn-danger" lay-event="del"><i class="layui-icon layui-icon-delete"></i> 删除</button>
+                <button class="layui-btn layui-btn-sm layui-btn-warm" lay-event="check"><i class="layui-icon layui-icon-ok-circle"></i> 审核发送</button>
+                <button class="layui-btn layui-btn-sm layui-btn-primary" lay-event="status"><i class="layui-icon layui-icon-chart"></i> 发送状态</button>
+            </div>
+        </script>
+
+        <table id="sms-table" class="layui-table" lay-filter="currentTableFilter"></table>
+    </div>
+</div>
+
+<!-- 操作列模板 -->
+<script type="text/html" id="auth-state">
+    <a class="layui-btn layui-btn-xs" lay-event="info">详情</a>
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">修改</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="rowdel">删除</a>
+</script>
+
+<script>
+    layui.use(['table', 'form', 'layer'], function () {
+        var $ = layui.jquery;
+        var table = layui.table;
+        var form = layui.form;
+
+        // 渲染表格（对齐 A 侧 maingrid4 列）
+        layer.load(2);
+        table.render({
+            elem: '#sms-table',
+            url: 'Grid',
+            toolbar: '#toolbarDemo',
+            defaultToolbar: ['filter'],
+            id: "mainGrid4",
+            cols: [[
+                { type: 'numbers', title: "序号", width: 60, fixed: 'left' },
+                {
+                    field: 'sms_title', width: 220, title: '短信主题', fixed: 'left',
+                    templet: function (t) {
+                        var title = t.sms_title ? t.sms_title : "";
+                        return '<a href="javascript:void(0)" style="color:#5FB878" lay-event="info">' + title + '</a>';
+                    },
+                    event: {
+                        'click a[lay-event="info"]': function (d) { layui.table.on('tool(currentTableFilter)'); }
+                    }
+                },
+                {
+                    field: 'create_id', width: 100, title: '创建人',
+                    templet: function (t) {
+                        return t.create_name || t.create_id || "";
+                    }
+                },
+                {
+                    field: 'create_time', width: 160, title: '创建时间',
+                    templet: function (t) {
+                        return formatTime(t.create_time);
+                    }
+                },
+                {
+                    field: 'isSend', width: 60, title: '审核', align: 'center',
+                    templet: function (t) {
+                        return (t.isSend == 1)
+                            ? '<span class="layui-badge layui-bg-green">已发送</span>'
+                            : '<span class="layui-badge layui-bg-gray">未发送</span>';
+                    }
+                },
+                {
+                    field: 'check_id', width: 100, title: '审核人',
+                    templet: function (t) {
+                        return t.check_name || t.check_id || "-";
+                    }
+                },
+                {
+                    field: 'sendtime', width: 160, title: '审核时间',
+                    templet: function (t) {
+                        return formatTime(t.sendtime);
+                    }
+                },
+                { templet: '#auth-state', width: 200, align: 'center', fixed: 'right', title: '操作' }
+            ]],
+            limits: [10, 15, 20, 25, 50, 100],
+            limit: 15,
+            page: true,
+            done: function () {
+                layer.closeAll('loading');
+            }
+        });
+
+        function formatTime(val) {
+            if (!val) return "";
+            // 兼容 "2026-09-26T10:20:30" / "2026-09-26 10:20:30"
+            return String(val).replace('T', ' ').replace(/\.\d+.*/, '');
+        }
+
+        function reloadTable() {
+            var curr = $(".layui-laypage-skip").find("input").val() || 1;
+            table.reload('mainGrid4', {
+                page: { curr: curr },
+                where: { serchtxt: $("#serchtxt").val() }
+            }, 'data');
+        }
+
+        // 搜索
+        form.on('submit(data-search-btn)', function (data) {
+            reloadTable();
+            return false;
+        });
+
+        // 顶部工具栏事件
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            var ev = obj.event;
+            if (ev === 'add') { addRow(null); return; }
+            if (ev === 'del') { deleteChecked(); return; }
+            if (ev === 'check') { sendCheck(); return; }
+            if (ev === 'status') { openStatus(); return; }
+        });
+
+        // 行工具事件
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+
+            if (layEvent === 'del' || layEvent === 'rowdel') {
+                del(data.id, data.isSend);
+            } else if (layEvent === 'edit') {
+                addRow(data);
+            } else if (layEvent === 'info') {
+                info(data);
+            }
+        });
+
+        function info(data) {
+            var index = layui.layer.open({
+                title: "短信详情",
+                type: 2,
+                anim: 1,
+                area: ['760px', '520px'],
+                maxmin: true,
+                content: "Add?id=" + data.id,
+                btn: ['关闭'],
+                success: function (layero, index) {
+                    var body = layui.layer.getChildFrame('body', index);
+                    if (data) {
+                        body.find("#id").val(data.id);
+                        body.find("#sms_title").val(data.sms_title || "");
+                        body.find("#sms_content").val(data.sms_content || "");
+                        body.find("#sms_mobiles").val(data.sms_mobiles || "");
+                        body.find("#contact_ids").val(data.contact_ids || "");
+                    }
+                },
+                btn2: function (index, layero) { layer.close(index); }
+            });
+        }
+
+        function addRow(edit) {
+            var tit = edit ? "修改短信" : "新增短信";
+            var id = edit ? edit.id : "";
+            var index = layui.layer.open({
+                title: tit,
+                type: 2,
+                anim: 1,
+                area: ['820px', '540px'],
+                maxmin: true,
+                content: "Add?id=" + id,
+                btn: ['确定', '关闭'],
+                success: function (layero, index) {
+                    var body = layui.layer.getChildFrame('body', index);
+                    if (edit) {
+                        body.find("#id").val(edit.id);
+                        body.find("#sms_title").val(edit.sms_title || "");
+                        body.find("#sms_content").val(edit.sms_content || "");
+                        body.find("#sms_mobiles").val(edit.sms_mobiles || "");
+                        body.find("#contact_ids").val(edit.contact_ids || "");
+                    }
+                },
+                yes: function (index, layero) {
+                    var iframeWindow = window['layui-layer-iframe' + index]
+                        , submitID = 'LAY-user-front-submit'
+                        , submit = layero.find('iframe').contents().find('#' + submitID);
+
+                    iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                        var field = data.field;
+                        layer.close(index);
+                        $.ajax({
+                            type: 'POST',
+                            url: 'Save',
+                            data: field,
+                            dataType: "json",
+                            success: function (res) {
+                                if (res.code == 0) {
+                                    layer.msg('保存成功', { icon: 1 });
+                                    reloadTable();
+                                } else {
+                                    layer.alert(res.msg || '保存失败', { icon: 5 });
+                                }
+                            },
+                            error: function (XMLHttpRequest, textStatus, errorThrown) {
+                                layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                            }
+                        });
+                    });
+
+                    submit.trigger('click');
+                },
+                btn2: function (index, layero) { layer.close(index); }
+            });
+        }
+
+        function deleteChecked() {
+            var checked = table.checkStatus('mainGrid4').data;
+            if (!checked || checked.length === 0) {
+                layer.alert('请选择至少一条短信！', { icon: 3 });
+                return;
+            }
+            for (var i = 0; i < checked.length; i++) {
+                if (checked[i].isSend == 1) {
+                    layer.alert('存在已发送短信，不能删除：' + (checked[i].sms_title || ''), { icon: 5 });
+                    return;
+                }
+            }
+            layer.confirm('短信删除无法恢复，确定删除所选 ' + checked.length + ' 条？', { icon: 3, title: '提示信息' }, function () {
+                var seq = 0;
+                (function next() {
+                    if (seq >= checked.length) {
+                        layer.msg('删除完成', { icon: 1 });
+                        reloadTable();
+                        return;
+                    }
+                    var id = checked[seq].id;
+                    seq++;
+                    $.ajax({
+                        type: 'POST',
+                        url: 'Delete',
+                        data: { id: id },
+                        dataType: "json",
+                        success: function (res) {
+                            if (res.code != 0) {
+                                layer.alert(res.msg || '删除失败', { icon: 5 });
+                            }
+                            next();
+                        },
+                        error: function () {
+                            layer.alert('删除失败', { icon: 5 });
+                            next();
+                        }
+                    });
+                })();
+            });
+        }
+
+        function del(id, isSend) {
+            if (isSend == 1) {
+                layer.alert('此短信已发送，不能删除！', { icon: 5 });
+                return;
+            }
+            layer.confirm('短信删除无法恢复，确定删除？', { icon: 3, title: '提示信息' }, function (index) {
+                layer.close(index);
+                $.ajax({
+                    type: 'POST',
+                    url: "Delete",
+                    data: { id: id },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.code == 0) {
+                            layer.msg('删除成功', { icon: 1 });
+                            reloadTable();
+                        } else {
+                            layer.alert(res.msg || '删除失败', { icon: 5 });
+                        }
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                    }
+                });
+            });
+        }
+
+        function sendCheck() {
+            var checked = table.checkStatus('mainGrid4').data;
+            if (!checked || checked.length === 0) {
+                layer.alert('请选择短信！', { icon: 3 });
+                return;
+            }
+            var row = checked[0];
+            if (row.isSend == 1) {
+                layer.alert('该信息已经审核并发送！', { icon: 5 });
+                return;
+            }
+            layer.confirm('审核之后，短信将发送并相应扣费，是否继续？', { icon: 3, title: '审核提示' }, function () {
+                $.ajax({
+                    type: 'POST',
+                    url: "send",
+                    data: { id: row.id },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.code == 0) {
+                            layer.msg('发送成功', { icon: 1 });
+                            reloadTable();
+                        } else {
+                            layer.alert(res.msg || '发送失败', { icon: 5 });
+                        }
+                    },
+                    error: function () {
+                        layer.alert('系统错误，发送失败！', { icon: 5 });
+                    }
+                });
+            });
+        }
+
+        function openStatus() {
+            var checked = table.checkStatus('mainGrid4').data;
+            if (!checked || checked.length === 0) {
+                layer.alert('请选择短信！', { icon: 3 });
+                return;
+            }
+            var row = checked[0];
+            var index = layui.layer.open({
+                title: "发送状态",
+                type: 2,
+                anim: 1,
+                area: ['620px', '400px'],
+                maxmin: true,
+                content: "Report?id=" + row.id,
+                btn: ['关闭'],
+                btn2: function (index, layero) { layer.close(index); }
+            });
+        }
+    });
+</script>
