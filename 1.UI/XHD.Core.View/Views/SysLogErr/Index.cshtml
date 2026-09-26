@@ -1,0 +1,152 @@
+
+@{
+    ViewData["Title"] = "系统错误日志";
+}
+
+<!-- 搜索工具条 -->
+<div class="table-search-fieldset">
+    <div style="margin: 10px 10px 10px 10px">
+        <form class="layui-form layui-form-pane" id="searchform" action="">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">错误类型</label>
+                    <div class="layui-input-inline">
+                        <select id="logtype">
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="layui-inline">
+                    <label class="layui-form-label">时间</label>
+                    <div class="layui-input-inline" style="width: 130px;">
+                        <input type="text" id="date1" placeholder="开始日期" autocomplete="off" class="layui-input">
+                    </div>
+                    <div class="layui-form-mid">-</div>
+                    <div class="layui-input-inline" style="width: 130px;">
+                        <input type="text" id="date2" placeholder="结束日期" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+
+                <div class="layui-inline">
+                    <label class="layui-form-label">关键字</label>
+                    <div class="layui-input-inline">
+                        <input type="text" id="keyword" placeholder="错误信息 / 堆栈" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+
+                <div class="layui-inline">
+                    <button type="button" class="layui-btn" id="data-search-btn">
+                        <i class="layui-icon">&#xe615;</i> 搜 索
+                    </button>
+                    <button type="button" class="layui-btn layui-btn-primary" id="data-reset-btn">
+                        <i class="layui-icon">&#xe653;</i> 重 置
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="layuimini-card">
+    <div class="layui-card-body">
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>
+
+<!-- 详情展开行：显示 Err_message + Err_trace -->
+<script type="text/html" id="detail-row">
+    <table style="width: 99%; margin: 8px 0; border-collapse: collapse;">
+        <tr>
+            <td style="width: 90px; padding: 6px 8px; color: #666; vertical-align: top; border-bottom: 1px dashed #eee;">
+                错误信息：
+            </td>
+            <td style="padding: 6px 8px; border-bottom: 1px dashed #eee;">
+                <pre style="margin:0; white-space: pre-wrap; word-break: break-all; font-family: Consolas, Monaco, monospace; font-size: 12px;">{{d.Err_message}}</pre>
+            </td>
+        </tr>
+        <tr>
+            <td style="width: 90px; padding: 6px 8px; color: #666; vertical-align: top;">
+                堆栈信息：
+            </td>
+            <td style="padding: 6px 8px;">
+                <pre style="margin:0; white-space: pre-wrap; word-break: break-all; font-family: Consolas, Monaco, monospace; font-size: 12px; color: #c00;">{{d.Err_trace}}</pre>
+            </td>
+        </tr>
+    </table>
+</script>
+
+<script>
+    layui.use(['form', 'table', 'laydate', 'layer'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            laydate = layui.laydate,
+            layer = layui.layer;
+
+        // 日期控件
+        laydate.render({ elem: '#date1', type: 'datetime' });
+        laydate.render({ elem: '#date2', type: 'datetime' });
+
+        // 表格渲染（支持行展开看 Err_message / Err_trace）
+        table.render({
+            elem: '#currentTableId',
+            url: 'Grid',
+            id: 'mainGrid1',
+            text: { none: '暂无错误日志' },
+            cols: [[
+                { type: 'numbers', title: '序号', width: 60 },
+                { field: 'Err_type', title: '版本号', width: 100 },
+                { field: 'Err_url', title: '页面地址', minWidth: 320, align: 'left' },
+                { field: 'Err_source', title: '错误来源', width: 120 },
+                { field: 'Err_emp_name', title: '操作人', width: 100 },
+                { field: 'Err_time', title: '时间', width: 170, sort: true },
+                { field: 'Err_ip', title: 'IP', width: 150 },
+                { type: 'detail', width: 60, title: '详情', templet: '#detail-row' }
+            ]],
+            limits: [15, 30, 50, 100, 200],
+            limit: 30,
+            page: true
+        });
+
+        // 加载错误类型下拉
+        $.ajax({
+            url: "GetLogtype",
+            type: "GET",
+            dataType: "json",
+            success: function (data) {
+                if (!data || !data.data) return;
+                var list = data.data;
+                var sel = $('#logtype');
+                sel.html('<option value="">全部</option>');
+                for (var i = 0; i < list.length; i++) {
+                    sel.append("<option value='" + list[i].typeid + "'>" + list[i].type + "</option>");
+                }
+                form.render("select");
+            }
+        });
+
+        // 搜索
+        $('#data-search-btn').on('click', function () {
+            table.reload('mainGrid1', {
+                page: { curr: 1 },
+                where: {
+                    logtype: $('#logtype').val(),
+                    date1: $('#date1').val(),
+                    date2: $('#date2').val(),
+                    keyword: $('#keyword').val()
+                }
+            });
+        });
+
+        // 重置
+        $('#data-reset-btn').on('click', function () {
+            $('#logtype').val('');
+            $('#date1').val('');
+            $('#date2').val('');
+            $('#keyword').val('');
+            form.render('select');
+            table.reload('mainGrid1', { page: { curr: 1 }, where: {} });
+        });
+    });
+</script>
