@@ -26,15 +26,18 @@
     </div>
 </div>
 
-<!-- 数据权限下拉单元格 -->
-<script type="text/html" id="dataauth-cell">
-    <select name="DataAuth" lay-filter="dataAuthSelect">
-        <option value="0" {{# if(d.DataAuth == 0){ }}selected{{# } }}>0 - 无</option>
-        <option value="1" {{# if(d.DataAuth == 1){ }}selected{{# } }}>1 - 本人</option>
-        <option value="2" {{# if(d.DataAuth == 2){ }}selected{{# } }}>2 - 本部</option>
-        <option value="3" {{# if(d.DataAuth == 3){ }}selected{{# } }}>3 - 本部及下级</option>
-        <option value="4" {{# if(d.DataAuth == 4){ }}selected{{# } }}>4 - 全部</option>
-    </select>
+<!-- 数据权限下拉单元格：用 JS 函数渲染，避免在 <option> 属性内写 LayUI 模板标记而触发 RZ1030 -->
+<script>
+    function DataAuthCellHtml(d) {
+        var labels = ['无', '本人', '本部', '本部及下级', '全部'];
+        var html = '<select name="DataAuth" lay-filter="dataAuthSelect">';
+        for (var i = 0; i <= 4; i++) {
+            var sel = (d.DataAuth == i) ? ' selected' : '';
+            html += '<option value="' + i + '"' + sel + '>' + i + ' - ' + labels[i] + '</option>';
+        }
+        html += '</select>';
+        return html;
+    }
 </script>
 
 <script>
@@ -73,7 +76,7 @@
                     field: 'DataAuth',
                     width: 220,
                     title: '数据权限层级',
-                    templet: '#dataauth-cell'
+                    templet: DataAuthCellHtml
                 },
                 {
                     field: 'AuthDesc',
