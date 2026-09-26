@@ -8,3 +8,4 @@ TestResults/
 packages/
 artifacts/
 _logs.txt
+_logs*.txt
