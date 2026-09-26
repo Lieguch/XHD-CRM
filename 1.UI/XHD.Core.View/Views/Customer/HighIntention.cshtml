@@ -1,0 +1,398 @@
+@{
+    ViewData["Title"] = "高意向客户";
+}
+
+<div class="table-search-fieldset">
+    <div>
+        <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">客户</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="cus_name" id="cus_name" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">电话</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="cus_tel" id="cus_tel" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+            <div class="btn-group-inline">
+                <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn" id="btn_serch"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                <button type="reset" class="layui-btn layui-btn-primary" id="btn_reset"><i class="layui-icon layui-icon-error"></i> 重置</button>
+                <a id="toggleBtn" style="cursor:pointer;">
+                    <i class="layui-icon layui-icon-down"></i>
+                    <span>展开</span>
+                </a>
+            </div>
+
+            <div id="extraConditions" style="display: none;">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label" style="padding-left:0px;">行业</label>
+                        <div class="layui-input-inline">
+                            <select id="cus_industry_id" name="cus_industry_id">
+                                <option value="">请选择</option>
+                                @{
+                                    var cus_industry = ViewData["cus_industry"] as Dictionary<string, string>;
+                                    if (cus_industry != null && cus_industry.Any())
+                                    {
+                                        foreach (var item in cus_industry)
+                                        {
+                                            <option value="@item.Key">@item.Value</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label" style="padding-left:0px;">类型</label>
+                        <div class="layui-input-inline">
+                            <select id="cus_type_id" name="cus_type_id">
+                                <option value="">请选择</option>
+                                @{
+                                    var cus_type = ViewData["cus_type"] as Dictionary<string, string>;
+                                    if (cus_type != null && cus_type.Any())
+                                    {
+                                        foreach (var item in cus_type)
+                                        {
+                                            <option value="@item.Key">@item.Value</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label" style="padding-left:0px;">来源</label>
+                        <div class="layui-input-inline">
+                            <select id="cus_source_id" name="cus_source_id">
+                                <option value="">请选择</option>
+                                @{
+                                    var cus_source = ViewData["cus_source"] as Dictionary<string, string>;
+                                    if (cus_source != null && cus_source.Any())
+                                    {
+                                        foreach (var item in cus_source)
+                                        {
+                                            <option value="@item.Key">@item.Value</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label" style="padding-left:0px;">省份</label>
+                        <div class="layui-input-inline">
+                            <select id="Provinces_id" name="Provinces_id" lay-filter="Provinces">
+                                <option value="">请选择</option>
+                                @{
+                                    var Province = ViewData["Province"] as Dictionary<string, string>;
+                                    if (Province != null && Province.Any())
+                                    {
+                                        foreach (var item in Province)
+                                        {
+                                            <option value="@item.Key">@item.Value</option>
+                                        }
+                                    }
+                                }
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <label class="layui-form-label">创建时间</label>
+                        <div class="layui-input-inline" style="width: 100px;">
+                            <input type="text" name="date1" id="date1" placeholder="yyyy-MM-dd" autocomplete="off" class="layui-input">
+                        </div>
+                        <div class="layui-form-mid">-</div>
+                        <div class="layui-input-inline" style="width: 100px;">
+                            <input type="text" name="date2" id="date2" placeholder="yyyy-MM-dd" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="layuimini-card">
+    <div class="layui-card-body">
+        <table id="munu-table" class="layui-table" lay-filter="currentTableFilter"></table>
+    </div>
+</div>
+
+<!-- 顶部工具栏：批量放弃 / 批量设回意向 / 导出 -->
+<script type="text/html" id="toolbarDemo">
+    <div class="layui-btn-container">
+        <button class="layui-btn layui-btn-sm layui-bg-red" lay-event="aban"><i class="layui-icon layui-icon-close-fill"></i> 批量放弃</button>
+        <button class="layui-btn layui-btn-sm layui-bg-cyan" lay-event="backIntention"><i class="layui-icon layui-icon-refresh"></i> 批量降级为意向</button>
+        <button class="layui-btn layui-btn-sm layui-bg-blue" lay-event="export"><i class="layui-icon layui-icon-export"></i> 导出</button>
+    </div>
+</script>
+
+<!-- 操作列：降级意向 / 放弃 / 详情 / 删除 -->
+<script type="text/html" id="auth-state">
+    <a class="layui-btn layui-btn-xs layui-bg-cyan" lay-event="backIntention">降级意向</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="aban">放弃</a>
+    <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="info">详情</a>
+    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+</script>
+
+<form id="form_excel"></form>
+
+<script>
+    layui.use(['table', 'form', 'laydate'], function () {
+        var $ = layui.jquery;
+        var table = layui.table;
+        var form = layui.form;
+        var laydate = layui.laydate;
+
+        layer.load(2);
+        table.render({
+            elem: '#munu-table',
+            url: 'HighIntentiongrid',
+            toolbar: '#toolbarDemo',
+            defaultToolbar: ['filter', 'print', 'exports'],
+            id: "highIntentionGrid",
+            cols: [[
+                { type: 'checkbox', fixed: 'left' },
+                { type: 'numbers', fixed: 'left', title: '序号' },
+                {
+                    field: 'cus_name', width: 220, title: '客户名', fixed: 'left', templet: function (item) {
+                        var html = "<a href='javascript:void(0)' onclick= CusInfo('" + item.id + "','【高意向】" + item.cus_name + "')> ";
+                        html += "<i class='fa fa-heart'></i> ";
+                        html += item.cus_name || '';
+                        html += "</a>";
+                        return html;
+                    }
+                },
+                { field: 'sn', width: 160, title: '编号' },
+                {
+                    field: 'cus_tel', width: 140, title: '电话', templet: function (item) {
+                        return "<i class='fa fa-phone'></i> " + (item.cus_tel || '');
+                    }
+                },
+                { field: 'cus_add', width: 200, title: '地址' },
+                {
+                    field: 'employee', width: 150, title: '归属员工', templet: function (t) {
+                        if (t.Employee) {
+                            if (t.Employee.department) {
+                                return "【" + t.Employee.department.dep_name + "】" + t.Employee.name;
+                            }
+                            return t.Employee.name;
+                        }
+                        return "";
+                    }
+                },
+                {
+                    field: 'cus_industry', width: 100, title: '行业', templet: function (t) {
+                        return t.cus_industry ? t.cus_industry.params_name : '';
+                    }
+                },
+                {
+                    field: 'cus_type', width: 100, title: '类别', templet: function (t) {
+                        return t.cus_type ? t.cus_type.params_name : '';
+                    }
+                },
+                {
+                    field: 'cus_level', width: 100, title: '级别', templet: function (t) {
+                        return t.cus_level ? t.cus_level.params_name : '';
+                    }
+                },
+                {
+                    field: 'cus_source', width: 100, title: '来源', templet: function (t) {
+                        return t.cus_source ? t.cus_source.params_name : '';
+                    }
+                },
+                {
+                    field: 'Provinces', width: 90, title: '省份', templet: function (t) {
+                        return t.Provinces ? t.Provinces.Provinces : '';
+                    }
+                },
+                {
+                    field: 'City', width: 90, title: '城市', templet: function (t) {
+                        return t.City ? t.City.City : '';
+                    }
+                },
+                {
+                    field: 'state', width: 90, title: '意向状态', align: 'center', templet: function (t) {
+                        return '<span style="color:#F5222D;">高意向</span>';
+                    }
+                },
+                { field: 'lastfollow', width: 180, title: '最后跟进' },
+                { field: 'create_time', width: 180, title: '创建时间' },
+                { templet: '#auth-state', width: 260, align: 'center', fixed: 'right', title: '操作' }
+            ]],
+            limits: [10, 15, 20, 25, 50, 100],
+            limit: 15,
+            page: true,
+            done: function () {
+                layer.closeAll('loading');
+            }
+        });
+
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'aban') { batchAban(); return; }
+            if (obj.event === 'backIntention') { batchBackIntention(); return; }
+            if (obj.event === 'export') { Export(); return; }
+        });
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+            if (layEvent === 'aban') {
+                doAban([data.id], '放弃');
+            } else if (layEvent === 'backIntention') {
+                doSetState([data.id], 3, '降级意向');
+            } else if (layEvent === 'info') {
+                CusInfo(data.id, data.cus_name);
+            } else if (layEvent === 'del') {
+                layer.confirm('确定删除？', { icon: 3, title: '提示信息' }, function (index) {
+                    del(data.id);
+                    layer.close(index);
+                });
+            }
+        });
+
+        function Export() {
+            $("#form_excel").attr("method", "get");
+            $("#form_excel").attr("action", "Export");
+            $("#form_excel").submit();
+        }
+
+        function getCheckedIds() {
+            var checkStatus = table.checkStatus('highIntentionGrid');
+            return (checkStatus.data || []).map(function (r) { return r.id; });
+        }
+
+        function doAban(ids, label) {
+            if (!ids || ids.length === 0) {
+                layer.msg('请选择要' + label + '的客户', { icon: 0 });
+                return;
+            }
+            layer.confirm('确定' + label + '所选 ' + ids.length + ' 个客户？客户将回到公共客户池。', { icon: 3, title: '提示信息' }, function (index) {
+                $.ajax({
+                    type: 'POST',
+                    url: 'AbanDon',
+                    contentType: 'application/json',
+                    data: JSON.stringify(ids),
+                    dataType: 'json',
+                    success: function (res) {
+                        if (res.code === 0) {
+                            layer.msg(res.msg || label + '成功', { icon: 1 });
+                            f_reload();
+                        } else {
+                            layer.alert(res.msg || '操作失败', { icon: 5 });
+                        }
+                    },
+                    error: function (xhr, status, err) {
+                        layer.alert('操作失败！！！' + xhr.status + '|' + xhr.readyState + '|' + status, { icon: 5 });
+                    }
+                });
+                layer.close(index);
+            });
+        }
+
+        function doSetState(ids, newState, label) {
+            if (!ids || ids.length === 0) {
+                layer.msg('请选择要' + label + '的客户', { icon: 0 });
+                return;
+            }
+            layer.confirm('确定' + label + '所选 ' + ids.length + ' 个客户？', { icon: 3, title: '提示信息' }, function (index) {
+                $.ajax({
+                    type: 'POST',
+                    url: 'SetIntention',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ ids: ids, state: newState }),
+                    dataType: 'json',
+                    success: function (res) {
+                        if (res.code === 0) {
+                            layer.msg(res.msg || label + '成功', { icon: 1 });
+                            f_reload();
+                        } else {
+                            layer.alert(res.msg || '操作失败', { icon: 5 });
+                        }
+                    },
+                    error: function (xhr, status, err) {
+                        layer.alert('操作失败！！！' + xhr.status + '|' + xhr.readyState + '|' + status, { icon: 5 });
+                    }
+                });
+                layer.close(index);
+            });
+        }
+
+        function batchAban() { doAban(getCheckedIds(), '放弃'); }
+        function batchBackIntention() { doSetState(getCheckedIds(), 3, '降级意向'); }
+
+        function del(id) {
+            $.ajax({
+                type: 'POST',
+                url: 'Delete',
+                data: { id: id },
+                dataType: 'json',
+                success: function (res) {
+                    if (res.code === 0) {
+                        f_reload();
+                    } else {
+                        layer.alert(res.msg, { icon: 5 });
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    layer.alert('操作失败！！！' + XMLHttpRequest.status + '|' + XMLHttpRequest.readyState + '|' + textStatus, { icon: 5 });
+                }
+            });
+        }
+
+        function f_reload() { $("#btn_serch").click(); }
+
+        form.on('submit(data-search-btn)', function (data) {
+            var curr = $(".layui-laypage-skip").find("input").val();
+            if (!curr) curr = 1;
+            table.reload('highIntentionGrid', {
+                page: { curr: curr },
+                where: data.field
+            }, 'data');
+            return false;
+        });
+
+        laydate.render({ elem: '#date1', trigger: 'click' });
+        laydate.render({ elem: '#date2', trigger: 'click' });
+
+        form.on('select(Provinces)', function (data) { fillCity(data.value); });
+
+        function fillCity(province_id) {
+            $.ajax({
+                url: "/ParamsCity/Combo",
+                data: { 'province_id': province_id },
+                type: "post",
+                dataType: "json",
+                success: function (data) {
+                    var category = $('#City_id');
+                    category.html("");
+                    category.append('<option value="">请选择</option>');
+                    if (!data) return;
+                    for (var i = 0; i < data.length; i++) {
+                        category.append("<option value='" + data[i]["id"] + "'>" + data[i]["title"] + "</option>");
+                    }
+                    form.render("select");
+                }
+            });
+        }
+
+        $('#toggleBtn').on('click', function () {
+            var $extra = $('#extraConditions');
+            var $icon = $(this).find('i');
+            var $span = $(this).find('span');
+            if ($extra.is(':visible')) {
+                $extra.slideUp(200);
+                $icon.removeClass('layui-icon-up').addClass('layui-icon-down');
+                $span.text('展开');
+            } else {
+                $extra.slideDown(200, function () { form.render('select'); });
+                $icon.removeClass('layui-icon-down').addClass('layui-icon-up');
+                $span.text('收起');
+            }
+        });
+    });
+</script>
