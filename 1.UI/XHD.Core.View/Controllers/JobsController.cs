@@ -76,7 +76,12 @@ namespace XHD.Core.View.Controllers
 
                 result = await _service.AddAsync(model);
 
-                return XHDResult.Error("无权限！").ToString();
+                if (result == 0)
+                {
+                    return XHDResult.Error("操作失败，系统错误！").ToString();
+                }
+
+                return XHDResult.Success("新增成功！").ToString();
 
             }
             else

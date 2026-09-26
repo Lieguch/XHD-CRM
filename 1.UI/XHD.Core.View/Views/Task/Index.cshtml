@@ -1,0 +1,422 @@
+@{
+    ViewData["Title"] = "任务管理";
+}
+
+<style type="text/css">
+    .task-status-0 { background: #52c41a; color: #fff; padding: 2px 8px; border-radius: 3px; }
+    .task-status-1 { background: #f5222d; color: #fff; padding: 2px 8px; border-radius: 3px; }
+    .task-status-2 { background: #1890ff; color: #fff; padding: 2px 8px; border-radius: 3px; }
+    .task-priority-0 { color: #f5222d; font-weight: 600; }
+    .task-priority-1 { color: #faad14; font-weight: 600; }
+    .task-priority-2 { color: #52c41a; font-weight: 600; }
+    .task-overdue { background: #ffe7e7 !important; }
+    .task-follow-detail { padding: 8px 16px; background: #fafafa; }
+    .task-follow-detail .layui-table { margin-top: 8px; }
+</style>
+
+<div class="table-search-fieldset">
+    <div>
+        <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">任务标题</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="task_title" id="task_title" autocomplete="off" class="layui-input" placeholder="任务标题">
+                </div>
+            </div>
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">状态</label>
+                <div class="layui-input-inline">
+                    <select id="task_status_id" name="task_status_id">
+                        <option value="">全部</option>
+                        <option value="0">进行中</option>
+                        <option value="1">已完成</option>
+                        <option value="2">已中止</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">优先级</label>
+                <div class="layui-input-inline">
+                    <select id="priority_id" name="priority_id">
+                        <option value="">全部</option>
+                        <option value="0">高</option>
+                        <option value="1">中</option>
+                        <option value="2">低</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">执行人</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="executive_name" id="executive_name" placeholder="执行人" autocomplete="off" class="layui-input">
+                    <input type="hidden" name="executive_id" id="executive_id">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn" id="btn_serch"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                <button type="reset" class="layui-btn layui-btn-primary" id="btn_reset"><i class="layui-icon layui-icon-error"></i> 重置</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="layuimini-card">
+    <div class="layui-card-body">
+        <table id="task-table" class="layui-table" lay-filter="taskTableFilter"></table>
+    </div>
+</div>
+
+<script type="text/html" id="toolbarDemo">
+    <div class="layui-btn-container">
+        <button class="layui-btn layui-btn-sm" lay-event="add">添加</button>
+        <button class="layui-btn layui-btn-sm layui-bg-orange" lay-event="mytodo">我的待办</button>
+    </div>
+</script>
+
+<script type="text/html" id="op-demo">
+    <a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="detail">明细</a>
+    <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
+    <a class="layui-btn layui-btn-xs layui-bg-blue" lay-event="finish">完成</a>
+    <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="abort">中止</a>
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="del">删除</a>
+</script>
+
+<script type="text/html" id="status-demo">
+    {{# if (d.task_status_id === 0 || d.task_status_id === '0') { }}
+        <span class="task-status-0">进行中</span>
+    {{# } else if (d.task_status_id === 1 || d.task_status_id === '1') { }}
+        <span class="task-status-1">已完成</span>
+    {{# } else if (d.task_status_id === 2 || d.task_status_id === '2') { }}
+        <span class="task-status-2">已中止</span>
+    {{# } else { }}
+        -
+    {{# } }}
+</script>
+
+<script type="text/html" id="priority-demo">
+    {{# if (d.priority_id === 0 || d.priority_id === '0') { }}
+        <span class="task-priority-0">高</span>
+    {{# } else if (d.priority_id === 1 || d.priority_id === '1') { }}
+        <span class="task-priority-1">中</span>
+    {{# } else if (d.priority_id === 2 || d.priority_id === '2') { }}
+        <span class="task-priority-2">低</span>
+    {{# } else { }}
+        -
+    {{# } }}
+</script>
+
+<script type="text/html" id="detail-content">
+    <div class="task-follow-detail">
+        <div style="margin-bottom:6px;">
+            <span>任务跟进列表</span>
+            <button class="layui-btn layui-btn-xs layui-btn-primary" onclick="addFollow('{{d.id}}')">+ 新增跟进</button>
+        </div>
+        <table id="follow-table-{{d.id}}" lay-filter="followTableFilter"></table>
+    </div>
+</script>
+
+<form id="form_excel"></form>
+<script>
+    layui.use(['table', 'form', 'laydate', 'layer', 'tableSelect'], function () {
+        var $ = layui.jquery;
+        var table = layui.table;
+        var form = layui.form;
+        var laydate = layui.laydate;
+        var tableSelect = layui.tableSelect;
+        var layer = layui.layer;
+
+        layer.load(2);
+
+        function renderFollowTable(taskId) {
+            table.render({
+                elem: '#follow-table-' + taskId,
+                url: '/TaskFollow/Grid',
+                where: { task_id: taskId },
+                id: 'followTable_' + taskId,
+                page: false,
+                limit: 20,
+                cols: [[
+                    { field: 'follow_time', width: 160, title: '跟进时间' },
+                    { field: 'follow_id', width: 160, title: '跟进人' },
+                    { field: 'follow_content', title: '跟进内容' },
+                    {
+                        field: 'follow_status', width: 80, title: '状态', align: 'center',
+                        templet: function (t) {
+                            if (t.follow_status === 1) {
+                                return '<span style="color:#52c41a">完成</span>';
+                            }
+                            return '<span style="color:#1890ff">进行中</span>';
+                        }
+                    }
+                ]],
+                done: function () {
+                    layer.closeAll('loading');
+                }
+            });
+        }
+
+        table.render({
+            elem: '#task-table',
+            url: 'Grid',
+            toolbar: '#toolbarDemo',
+            defaultToolbar: ['filter', 'print', 'exports'],
+            id: "taskGrid",
+            page: true,
+            cols: [[
+                { type: 'numbers', fixed: 'left', title: "序号" },
+                { type: 'extend' },
+                { field: 'task_title', width: 240, title: '任务名称', fixed: 'left' },
+                { field: 'task_type_id', width: 100, title: '类别' },
+                { field: 'assign_id', width: 100, title: '指派人' },
+                { field: 'executive_id', width: 100, title: '执行人' },
+                {
+                    field: 'executive_time', width: 170, title: '执行时间', align: 'center', templet: function (t) {
+                        var val = t.executive_time || '';
+                        if (val && new Date(val) < new Date() && (t.task_status_id === 0 || t.task_status_id === '0')) {
+                            return '<span class="task-overdue" style="padding:2px 6px;color:#f5222d;font-weight:600;">' + val + '（逾期）</span>';
+                        }
+                        return val || '-';
+                    }
+                },
+                { field: 'task_status_id', width: 90, title: '状态', align: 'center', templet: '#status-demo' },
+                { field: 'priority_id', width: 80, title: '优先级', align: 'center', templet: '#priority-demo' },
+                { field: 'customer_id', width: 140, title: '相关客户' },
+                { field: 'create_time', width: 170, title: '创建时间' },
+                { templet: '#op-demo', width: 280, align: 'center', fixed: 'right', title: '操作' }
+            ]],
+            limits: [10, 15, 20, 25, 50, 100],
+            limit: 15,
+            done: function () {
+                layer.closeAll('loading');
+            }
+        });
+
+        table.on('toolbar(taskTableFilter)', function (obj) {
+            if (obj.event === 'add') {
+                openAdd();
+                return;
+            }
+            if (obj.event === 'mytodo') {
+                openMyTodo();
+                return;
+            }
+        });
+
+        table.on('tool(taskTableFilter)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+
+            if (layEvent === 'del') {
+                layer.confirm('确定删除此任务？跟进记录将一并删除。', { icon: 3, title: '提示信息' }, function (index) {
+                    del(data.id);
+                    layer.close(index);
+                });
+            } else if (layEvent === 'edit') {
+                openAdd(data);
+            } else if (layEvent === 'finish') {
+                updateStatus(data.id, 1);
+            } else if (layEvent === 'abort') {
+                updateStatus(data.id, 2);
+            } else if (layEvent === 'detail') {
+                obj.update({ icon: 'detail' });
+                renderFollowTable(data.id);
+            }
+        });
+
+        function del(id) {
+            $.ajax({
+                type: 'POST',
+                url: "Delete",
+                data: { id: id },
+                dataType: "json",
+                success: function (res) {
+                    if (res.code == 0) {
+                        f_reload();
+                    } else {
+                        layer.alert(res.msg, { icon: 5 });
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                }
+            });
+        }
+
+        function updateStatus(id, status) {
+            $.ajax({
+                type: 'POST',
+                url: "UpdateStatus",
+                data: { id: id, status: status },
+                dataType: "json",
+                success: function (res) {
+                    if (res.code == 0) {
+                        f_reload();
+                    } else {
+                        layer.alert(res.msg, { icon: 5 });
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                }
+            });
+        }
+
+        function openAdd(edit) {
+            var tit = edit ? "编辑任务" : "添加任务";
+            var id = edit ? edit.id : "";
+            var index = layer.open({
+                title: tit,
+                type: 2,
+                anim: 1,
+                area: ['100%', '100%'],
+                maxmin: true,
+                content: "Add?id=" + id,
+                btn: ['确定', '关闭'],
+                success: function (layero, index) {
+                    var iframe = window["layui-layer-iframe" + index];
+                    var body = iframe.document;
+                    if (edit) {
+                        var fields = ['id', 'task_title', 'task_content', 'task_type_id', 'customer_id',
+                                      'assign_id', 'executive_id', 'executive_time', 'task_status_id',
+                                      'priority_id', 'remind_time', 'is_check'];
+                        fields.forEach(function (f) {
+                            var v = edit[f];
+                            if (v && typeof v === 'string' && isNaN(v) && !isNaN(Date.parse(v))) {
+                                v = v.replace(' 00:00:00', '');
+                            }
+                            $(body).find("#" + f).val(v);
+                        });
+                        $(body).trigger('taskEditReady');
+                    }
+                },
+                yes: function (index, layero) {
+                    var iframeWindow = window['layui-layer-iframe' + index];
+                    var submitID = 'LAY-task-submit';
+                    var submit = layero.find('iframe').contents().find('#' + submitID);
+                    iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
+                        $.ajax({
+                            type: 'POST',
+                            url: 'Save',
+                            data: data.field,
+                            dataType: "json",
+                            success: function (res) {
+                                if (res.code == 0) {
+                                    layer.close(index);
+                                    f_reload();
+                                } else {
+                                    layer.alert(res.msg, { icon: 5 });
+                                }
+                            },
+                            error: function (XMLHttpRequest, textStatus, errorThrown) {
+                                layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                            }
+                        });
+                    });
+                    submit.trigger('click');
+                },
+                btn2: function (index) {
+                    layer.close(index);
+                }
+            });
+        }
+
+        function openMyTodo() {
+            layer.open({
+                title: '我的待办',
+                type: 1,
+                area: ['80%', '80%'],
+                maxmin: true,
+                content: '<div style="padding:10px;"><table id="mytodo-table"></table></div>',
+                btn: ['关闭'],
+                btn2: false,
+                success: function () {
+                    table.render({
+                        elem: '#mytodo-table',
+                        url: 'MyTodo',
+                        page: false,
+                        limit: 200,
+                        cols: [[
+                            { field: 'task_title', width: 300, title: '任务名称' },
+                            { field: 'priority_id', width: 80, title: '优先级', align: 'center', templet: '#priority-demo' },
+                            { field: 'executive_time', width: 180, title: '执行时间' },
+                            { field: 'create_time', width: 180, title: '创建时间' }
+                        ]]
+                    });
+                }
+            });
+        }
+
+        window.addFollow = function (taskId) {
+            layer.prompt({
+                title: '新增跟进',
+                formType: 2
+            }, function (value, index) {
+                $.ajax({
+                    type: 'POST',
+                    url: '/TaskFollow/Save',
+                    data: {
+                        task_id: taskId,
+                        follow_content: value,
+                        follow_status: 0
+                    },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.code == 0) {
+                            layer.close(index);
+                            renderFollowTable(taskId);
+                        } else {
+                            layer.alert(res.msg, { icon: 5 });
+                        }
+                    },
+                    error: function () {
+                        layer.alert('操作失败', { icon: 5 });
+                    }
+                });
+            });
+        };
+
+        function f_reload() {
+            $("#btn_serch").click();
+        }
+
+        form.on('submit(data-search-btn)', function (data) {
+            var curr = $(".layui-laypage-skip").find("input").val();
+            if (!curr) { curr = 1; }
+            table.reload('taskGrid', {
+                page: { curr: curr },
+                where: data.field
+            }, 'data');
+            return false;
+        });
+
+        // 员工选择器（执行人）
+        tableSelect.render({
+            elem: '#executive_name',
+            checkedKey: 'id',
+            table: {
+                url: '/HrEmployee/grid',
+                cols: [[
+                    { type: 'radio' },
+                    { field: 'name', width: 150, title: '员工姓名' },
+                    {
+                        field: 'dep_name', width: 150, title: '部门', templet: function (t) {
+                            return t.department ? t.department.dep_name : '';
+                        }
+                    }
+                ]]
+            },
+            done: function (elem, data) {
+                var ids = [];
+                var names = [];
+                layui.each(data.data, function (idx, item) {
+                    ids.push(item.id);
+                    names.push(item.name);
+                });
+                elem.val(names.join(','));
+                $("#executive_id").val(ids.join(','));
+            }
+        });
+
+        form.render('select');
+    });
+</script>

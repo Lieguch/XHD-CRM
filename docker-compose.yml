@@ -1,4 +1,4 @@
-# ==========================================================================
+﻿# ==========================================================================
 # XHD CRM 3.1 - docker-compose.yml
 # ==========================================================================
 # 使用:
@@ -45,9 +45,6 @@ services:
       - xhd-crm-logs:/app/Logs
       # 如需外部挂载自定义 appsettings.json（覆盖 DB 配置），取消注释：
       # - ./appsettings.override.json:/app/appsettings.json:ro
-    depends_on:
-      # mysql:
-      #   condition: service_healthy
     networks:
       - xhd-crm-net
 

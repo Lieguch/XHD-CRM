@@ -1,0 +1,211 @@
+@{
+    ViewData["Title"] = "任务表单";
+}
+
+<style type="text/css">
+    #treeclass { width: 190px; }
+    body .layui-layer-content { overflow: visible; }
+    #toolbar { padding: 5px 0; }
+</style>
+
+<div class="layui-form layui-form-pane" action="">
+    @Html.Hidden("id")
+    <input type="hidden" name="executive_id" id="executive_id">
+    <input type="hidden" name="assign_id" id="assign_id">
+
+    <div class="layui-card">
+        <div class="layui-card-header">任务信息</div>
+        <div class="layui-card-body">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label required" style="padding-left:0px;">任务标题</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="task_title" id="task_title" placeholder="任务标题" lay-verify="required" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="padding-left:0px;">类别</label>
+                    <div class="layui-input-inline">
+                        <select id="task_type_id" name="task_type_id">
+                            <option value="">请选择</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label required" style="padding-left:0px;">执行人</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="executive_name" id="executive_name" placeholder="执行人" lay-verify="required" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="padding-left:0px;">指派人</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="assign_name" id="assign_name" placeholder="指派人" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="padding-left:0px;">优先级</label>
+                    <div class="layui-input-inline">
+                        <select id="priority_id" name="priority_id" lay-verify="required">
+                            <option value="0">高</option>
+                            <option value="1" selected>中</option>
+                            <option value="2">低</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="padding-left:0px;">执行时间</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="executive_time" id="executive_time" placeholder="yyyy-MM-dd HH:mm" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="padding-left:0px;">提醒时间</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="remind_time" id="remind_time" placeholder="yyyy-MM-dd HH:mm" autocomplete="off" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="padding-left:0px;">状态</label>
+                    <div class="layui-input-inline">
+                        <select id="task_status_id" name="task_status_id">
+                            <option value="0">进行中</option>
+                            <option value="1">已完成</option>
+                            <option value="2">已中止</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">相关客户</label>
+                <div class="layui-input-block">
+                    <input type="text" name="customer_id" id="customer_id" placeholder="客户 ID（可留空）" autocomplete="off" class="layui-input">
+                </div>
+            </div>
+
+            <div class="layui-form-item">
+                <label class="layui-form-label">任务内容</label>
+                <div class="layui-input-block">
+                    <textarea name="task_content" id="task_content" placeholder="任务内容" class="layui-textarea" rows="5"></textarea>
+                </div>
+            </div>
+
+            <div class="layui-form-item layui-hide">
+                <input type="button" lay-submit lay-filter="LAY-task-submit" id="LAY-task-submit" value="确认">
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    layui.use(['form', 'layer', 'table', 'tableSelect', 'laydate', 'element'], function () {
+        var form = layui.form;
+        var layer = layui.layer;
+        var $ = layui.$;
+        var table = layui.table;
+        var laydate = layui.laydate;
+        var tableSelect = layui.tableSelect;
+        var element = layui.element;
+
+        // 日期选择器
+        laydate.render({
+            elem: '#executive_time',
+            type: 'datetime',
+            format: 'yyyy-MM-dd HH:mm',
+            trigger: 'click'
+        });
+        laydate.render({
+            elem: '#remind_time',
+            type: 'datetime',
+            format: 'yyyy-MM-dd HH:mm',
+            trigger: 'click'
+        });
+
+        // 类别下拉（SysParam type=TaskType，可能为空数组）
+        $.ajax({
+            url: "/SysParam/Combo",
+            data: { type: 'TaskType' },
+            type: "post",
+            dataType: "json",
+            success: function (res) {
+                var data = res.data || [];
+                var category = $('#task_type_id');
+                category.html('<option value="">请选择</option>');
+                for (var i = 0; i < data.length; i++) {
+                    category.append("<option value='" + data[i]["id"] + "'>" + data[i]["params_name"] + "</option>");
+                }
+                form.render('select');
+            }
+        });
+
+        // 执行人选择器
+        tableSelect.render({
+            elem: '#executive_name',
+            checkedKey: 'id',
+            table: {
+                url: '/HrEmployee/grid',
+                cols: [[
+                    { type: 'radio' },
+                    { field: 'name', width: 150, title: '员工姓名' },
+                    {
+                        field: 'dep_name', width: 150, title: '部门', templet: function (t) {
+                            return t.department ? t.department.dep_name : '';
+                        }
+                    }
+                ]]
+            },
+            done: function (elem, data) {
+                var ids = [];
+                var names = [];
+                layui.each(data.data, function (idx, item) {
+                    ids.push(item.id);
+                    names.push(item.name);
+                });
+                elem.val(names.join(','));
+                $("#executive_id").val(ids.join(','));
+            }
+        });
+
+        // 指派人选择器
+        tableSelect.render({
+            elem: '#assign_name',
+            checkedKey: 'id',
+            table: {
+                url: '/HrEmployee/grid',
+                cols: [[
+                    { type: 'radio' },
+                    { field: 'name', width: 150, title: '员工姓名' },
+                    {
+                        field: 'dep_name', width: 150, title: '部门', templet: function (t) {
+                            return t.department ? t.department.dep_name : '';
+                        }
+                    }
+                ]]
+            },
+            done: function (elem, data) {
+                var ids = [];
+                var names = [];
+                layui.each(data.data, function (idx, item) {
+                    ids.push(item.id);
+                    names.push(item.name);
+                });
+                elem.val(names.join(','));
+                $("#assign_id").val(ids.join(','));
+            }
+        });
+
+        // 监听父页面回填事件
+        $(document).on('taskEditReady', function () {
+            form.render();
+        });
+
+        form.render('select');
+    });
+</script>

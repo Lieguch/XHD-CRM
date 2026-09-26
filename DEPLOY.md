@@ -1,7 +1,32 @@
-# XHD CRM 3.1 部署说明 (Docker)
+﻿# XHD CRM 3.1 部署说明 (Docker)
 
-> 目标：把 XHD CRM 3.1 (.NET 8 / ASP.NET Core) 一键部署到任意 Linux Docker 主机。
-> 源仓库：CNB `https://cnb.cool/lieguch/XHD-CRM`（HEAD `2e66153`，Sprint 9 收官）
+> 当前版本: Sprint 10.16 (2026-09-24)
+> 修复: FreeSql API 兼容性 + SeedResult 命名冲突
+
+---
+
+## Sprint 10 改动
+
+| 文件 | 改动 |
+|------|------|
+| HealthCheckController.cs | 新增 |
+| AccountController.cs | 修改 |
+| Index.cshtml | 修改 |
+| SysConfigController.cs | 修改 |
+| DatabaseInitializerService.cs | 新增 + API 修复 |
+| SeedData.cs | 新增 |
+| IDatabaseInitializerService.cs | 新增 |
+| Sprint10InitializerTests.cs | 新增 |
+
+## 部署层（未改）
+
+Dockerfile / docker-compose.yml / docker-entrypoint.sh 与 Sprint 9 完全一致。
+
+## 快速验证
+
+    docker compose up -d --build
+    curl http://localhost:5001/health
+    # 浏览器 http://localhost:5001/Account/Login (admin / 123456)
 
 ---
 

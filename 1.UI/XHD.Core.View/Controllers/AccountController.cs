@@ -63,74 +63,94 @@ namespace XHD.Core.View.Controllers
         }
         public async Task<IActionResult> Index()
         {
-            // 1. 系统信息
-            var sysInfoData = _infoservice.Grid(a => true);
-            if (sysInfoData.data.Count == 0)
+
+            // [Sprint 10.12] AES Key 生成与 DB 无关，提到 try 之前，
+            // 保证无论 DB 是否可用都能渲染登录页（否则 hidden field 为空 → 前端 JS 加密报错）。
+            string code = RandomNum(16);
+            try { HttpContext.Session.SetString("AES_Key", code); } catch { /* session 不可用时静默降级 */ }
+            ViewBag.AES_Key = code;
+            ViewData["company"] = "XHD CRM3"; // 兜底值，DB 查询成功时会覆盖
+
+            // [Sprint 10.12] 登录页初始化故障可视化：
+            // 根因——Index() 连续做 7 个表查询，任一抛异常 →
+            // Startup.cs:155-170 全局异常处理器只返回 JSON →
+            // 浏览器看到乱码而非登录页。用户报告"连登录页都打不开"。
+            // 修复：把 7 个表查询包在 try/catch 里，catch 时把错误塞进 ViewBag，
+            // 仍然 return View() 渲染登录页，用户在页面顶部看到醒目红色警告条。
+            try
             {
-                var sysInfoList = await LoadInitDataFromJsonFileAsync<Sys_info>("SysInfo.json");
-                if (sysInfoList != null && sysInfoList.Any())
+                // 1. 系统信息
+                var sysInfoData = _infoservice.Grid(a => true);
+                if (sysInfoData.data.Count == 0)
                 {
-                    await _infoservice.AddAsync(sysInfoList);
-                    ViewData["company"] = sysInfoList.FirstOrDefault(i => i.sys_key == "sys_name")?.sys_value;
+                    var sysInfoList = await LoadInitDataFromJsonFileAsync<Sys_info>("SysInfo.json");
+                    if (sysInfoList != null && sysInfoList.Any())
+                    {
+                        await _infoservice.AddAsync(sysInfoList);
+                        ViewData["company"] = sysInfoList.FirstOrDefault(i => i.sys_key == "sys_name")?.sys_value;
+                    }
+                }
+                else
+                {
+                    var company = sysInfoData.data.FirstOrDefault(a => a.sys_key == "sys_name");
+                    ViewData["company"] = company?.sys_value;
+                }
+                // 2. 员工
+                var employeeData = await _service.GridAsync(a => true);
+                if (employeeData.data.Count == 0)
+                {
+                    var employees = await LoadInitDataFromJsonFileAsync<hr_employee>("HrEmployees.json");
+                    if (employees != null && employees.Any())
+                        await _service.AddAsync(employees);
+                }
+                // 3. 菜单
+                var menuData = await _menuService.GridAsync(a => true);
+                if (menuData.data.Count == 0)
+                {
+                    var menus = await LoadInitDataFromJsonFileAsync<Sys_Menu>("SysMenus.json");
+                    if (menus != null && menus.Any())
+                        await _menuService.AddAsync(menus);
+                }
+                // 4. 按钮
+                var buttonData = await _buttonService.GridAsync(a => true);
+                if (buttonData.count == 0)
+                {
+                    var buttons = await LoadInitDataFromJsonFileAsync<Sys_Button>("SysButtons.json");
+                    if (buttons != null && buttons.Any())
+                        await _buttonService.AddAsync(buttons);
+                }
+                // 5. 省份
+                var provinceData = await _provincesService.GridAsync(a => true);
+                if (provinceData.count == 0)
+                {
+                    var provinces = await LoadInitDataFromJsonFileAsync<Sys_Param_Provinces>("SysParamProvinces.json");
+                    if (provinces != null && provinces.Any())
+                        await _provincesService.AddAsync(provinces);
+                }
+                // 6. 城市
+                var cityData = await _cityService.GridAsync(a => true);
+                if (cityData.count == 0)
+                {
+                    var cities = await LoadInitDataFromJsonFileAsync<Sys_Param_City>("SysParamCities.json");
+                    if (cities != null && cities.Any())
+                        await _cityService.AddAsync(cities);
+                }
+                // 7. 参数类型
+                var typeData = await _typeService.GridAsync(a => true);
+                if (typeData.count == 0)
+                {
+                    var types = await LoadInitDataFromJsonFileAsync<Sys_Param_Type>("SysParamTypes.json");
+                    if (types != null && types.Any())
+                        await _typeService.AddAsync(types);
                 }
             }
-            else
+            catch (Exception ex)
             {
-                var company = sysInfoData.data.FirstOrDefault(a => a.sys_key == "sys_name");
-                ViewData["company"] = company?.sys_value;
+                NLogger.WriteLog("sys_LoginInitError_", ex.ToString());
+                var msg = ex.Message ?? ex.GetType().Name;
+                ViewBag.InitError = msg.Length > 500 ? msg.Substring(0, 500) : msg;
+                ViewBag.InitErrorType = ex.GetType().Name;
             }
-            // 2. 员工
-            var employeeData = await _service.GridAsync(a => true);
-            if (employeeData.data.Count == 0)
-            {
-                var employees = await LoadInitDataFromJsonFileAsync<hr_employee>("HrEmployees.json");
-                if (employees != null && employees.Any())
-                    await _service.AddAsync(employees);
-            }
-            // 3. 菜单
-            var menuData = await _menuService.GridAsync(a => true);
-            if (menuData.data.Count == 0)
-            {
-                var menus = await LoadInitDataFromJsonFileAsync<Sys_Menu>("SysMenus.json");
-                if (menus != null && menus.Any())
-                    await _menuService.AddAsync(menus);
-            }
-            // 4. 按钮
-            var buttonData = await _buttonService.GridAsync(a => true);
-            if (buttonData.count == 0)
-            {
-                var buttons = await LoadInitDataFromJsonFileAsync<Sys_Button>("SysButtons.json");
-                if (buttons != null && buttons.Any())
-                    await _buttonService.AddAsync(buttons);
-            }
-            // 5. 省份
-            var provinceData = await _provincesService.GridAsync(a => true);
-            if (provinceData.count == 0)
-            {
-                var provinces = await LoadInitDataFromJsonFileAsync<Sys_Param_Provinces>("SysParamProvinces.json");
-                if (provinces != null && provinces.Any())
-                    await _provincesService.AddAsync(provinces);
-            }
-            // 6. 城市
-            var cityData = await _cityService.GridAsync(a => true);
-            if (cityData.count == 0)
-            {
-                var cities = await LoadInitDataFromJsonFileAsync<Sys_Param_City>("SysParamCities.json");
-                if (cities != null && cities.Any())
-                    await _cityService.AddAsync(cities);
-            }
-            // 7. 参数类型
-            var typeData = await _typeService.GridAsync(a => true);
-            if (typeData.count == 0)
-            {
-                var types = await LoadInitDataFromJsonFileAsync<Sys_Param_Type>("SysParamTypes.json");
-                if (types != null && types.Any())
-                    await _typeService.AddAsync(types);
-            }
-            // 8. 生成 AES Key（保持不变）
-            string code = RandomNum(16);
-            HttpContext.Session.SetString("AES_Key", code);
-            ViewBag.AES_Key = code;
             return View();
         }
 

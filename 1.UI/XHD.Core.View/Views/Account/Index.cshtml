@@ -40,9 +40,46 @@
                 .login-illustration { display: none; }
                 .login-form-wrap { width: 100%; max-width: 350px; }
             }
+
+            /* [Sprint 10.12] 登录页初始化错误警告条 */
+            .init-error-banner {
+                position: sticky;
+                top: 0;
+                z-index: 9999;
+                background: #d93025;
+                color: #fff;
+                padding: 12px 20px;
+                font-size: 13px;
+                line-height: 1.6;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+            }
+            .init-error-banner .init-error-header {
+                font-weight: bold;
+                font-size: 14px;
+                margin-bottom: 4px;
+            }
+            .init-error-banner code {
+                background: rgba(0,0,0,0.25);
+                padding: 1px 6px;
+                border-radius: 3px;
+                font-family: Consolas, "Courier New", monospace;
+            }
+            .init-error-banner a {
+                color: #ffeeee;
+                text-decoration: underline;
+            }
     </style>
 </head>
 <body>
+    @if (ViewBag.InitError != null)
+    {
+        <div class="init-error-banner">
+            <div class="init-error-header">⚠ 系统初始化异常 — 登录页已加载，但数据库可能不可用</div>
+            <div><strong>错误类型：</strong>@ViewBag.InitErrorType</div>
+            <div><strong>错误信息：</strong>@ViewBag.InitError</div>
+            <div><strong>诊断入口：</strong>访问 <a href="/health">GET /health</a> 获取完整数据库连接诊断信息</div>
+        </div>
+    }
     <div class="login-container">
         <!-- 左侧插画 -->
         <div class="login-illustration">

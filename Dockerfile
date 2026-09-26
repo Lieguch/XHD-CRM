@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile:1
+﻿# syntax=docker/dockerfile:1
 # ==========================================================================
 # XHD CRM 3.1 (.NET 8 / ASP.NET Core) - Multi-stage Dockerfile
 # ==========================================================================
@@ -56,7 +56,16 @@ WORKDIR /app
 #    .NET 8 的 SixLabors.Fonts SystemFonts 在 Linux 上从 /usr/share/fonts 读字体，
 #    官方 aspnet 镜像默认没字体 → CreateImageAsync 里 SystemFonts.Families.FirstOrDefault() 返回 null
 #    → fontFamily.CreateFont() 抛 NullReferenceException → 验证码 img 404 / 空白
-RUN apt-get update && \
+# Sprint 10.18 修复：deb.debian.org 在国内网络被 DNS 劫持到阿里云 IP (8.134.121.112) 但 80 端口被封
+# 前置 sed 切换到 mirrors.aliyun.com（阿里云镜像，国内网络可达）
+# 兼容 deb822 新格式（sources.list.d/*.sources）和传统格式（sources.list）
+RUN (sed -i \
+        's|http://deb.debian.org|http://mirrors.aliyun.com|g; \
+         s|http://security.debian.org|http://mirrors.aliyun.com|g; \
+         s|https://deb.debian.org|https://mirrors.aliyun.com|g; \
+         s|https://security.debian.org|https://mirrors.aliyun.com|g' \
+        /etc/apt/sources.list /etc/apt/sources.list.d/*.sources 2>/dev/null || true) && \
+    apt-get update && \
     apt-get install -y --no-install-recommends \
         curl ca-certificates \
         fonts-dejavu-core fontconfig \
@@ -68,6 +77,14 @@ RUN apt-get update && \
 
 # 5) 复制 publish 产物
 COPY --from=build /app/publish .
+
+# 5.5) [Sprint 10.20] Linux 文件系统大小写敏感修复
+# 根因：.NET publish 输出目录为大写 (JS/CSS/Images)，
+#      但 Razor 页面引用小写 (/js/ /css/ /images/)，
+#      Windows 不区分大小写 → 开发正常；
+#      Linux 区分大小写 → 静态文件 404 → JS 加载失败 → encryptAES 未定义 → 登录必崩。
+# 修复：创建小写别名副本，双路径均可访问。
+RUN sh -c 'for d in JS CSS Images; do lc=$(echo "$d" | tr "[:upper:]" "[:lower:]"); [ -d "/app/wwwroot/$d" ] && cp -r "/app/wwwroot/$d" "/app/wwwroot/$lc"; done'
 
 # 6) 环境变量（appsettings.json 里的 "Urls" 会被 ASPNETCORE_URLS 覆盖）
 ENV ASPNETCORE_URLS=http://+:5001 \

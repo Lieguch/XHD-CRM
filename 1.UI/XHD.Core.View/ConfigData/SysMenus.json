@@ -24,6 +24,14 @@
     "Menu_order": 20
   },
   {
+    "id": "task_manager",
+    "Menu_name": "任务管理",
+    "Menu_url": "Task/Index",
+    "Menu_icon": "fa-tasks",
+    "parentid": "mytable",
+    "Menu_order": 30
+  },
+  {
     "id": "Message_News",
     "Menu_name": "新闻公告",
     "Menu_url": "MessageNews/Index",    
