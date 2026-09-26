@@ -136,6 +136,14 @@
     "Menu_order": 120
   },
   {
+    "id": "CRM_Recycle",
+    "Menu_name": "客户回收站",
+    "Menu_url": "Customer/Recycle",
+    "Menu_icon": "fa-recycle",
+    "parentid": "CRM_Manager",
+    "Menu_order": 130
+  },
+  {
     "id": "SMS_Manager",
     "Menu_name": "短信管理",
     "Menu_url": "SMS/Index",
