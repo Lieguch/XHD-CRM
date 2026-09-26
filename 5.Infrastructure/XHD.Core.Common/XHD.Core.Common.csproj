@@ -26,8 +26,10 @@
     <!-- Sprint 9: #158 DataCache 迁移；替换 A 侧 HttpRuntime.Cache -->
     <!-- Sprint 10.30: 升级至 8.0.1 消除 NU1903 (GHSA-qj66-m88j-hmgj) -->
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="8.0.1" />
-    <!-- Sprint 10.30b: 升级 Primitives 至 8.0.2 保持 Extensions 全家桶一致，消除 NU1605 -->
-    <PackageReference Include="Microsoft.Extensions.Primitives" Version="8.0.2" />
+    <!-- Sprint 10.30c: Primitives 只有 8.0.0 版本（无 8.0.1/8.0.2），
+         Caching.Memory 8.0.1 要求 >=8.0.2 → NuGet 解析到 9.0.0；
+         显式声明 9.0.0 消除 NU1603 警告 -->
+    <PackageReference Include="Microsoft.Extensions.Primitives" Version="9.0.0" />
   </ItemGroup>
 
 </Project>
