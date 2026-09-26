@@ -384,6 +384,17 @@ namespace XHD.Core.View.Controllers
         // ========== Sprint 4 Wave 3 #05：Excel 联系人导入 ==========
 
         /// <summary>
+        /// Sprint 10.24：打开联系人 Excel 导入对话框（页面）。
+        /// 供 SysMenus 菜单 "联系人导入" 打开——独立于 <see cref="Import(IFormFile)"/> 上传端点。
+        /// View 名 "Import" 对应 Views/CRM_Contact/Import.cshtml。
+        /// </summary>
+        [HttpGet("ImportView")]
+        public IActionResult ImportView()
+        {
+            return View("Import");
+        }
+
+        /// <summary>
         /// Sprint 4 Wave 3 #05：Excel 联系人导入。
         /// 对应 A 侧 Server.CRM_Contact.import（ext_rar2018/Server/CRM_Contact.cs:290）。
         /// 列名与 A 侧 contact.xml 模板 100% 对齐，并兼容 B 侧 Export 输出的中文列名。
