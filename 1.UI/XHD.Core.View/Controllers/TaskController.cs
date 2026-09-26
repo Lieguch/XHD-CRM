@@ -17,6 +17,9 @@ using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.View.Configs;
 
+// 消除歧义：XHD.Core.Models.Task（业务实体） vs System.Threading.Tasks.Task<T>
+using Task = XHD.Core.Models.Task;
+
 namespace XHD.Core.View.Controllers
 {
     /// <summary>
