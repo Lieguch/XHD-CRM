@@ -1,0 +1,48 @@
+@{
+    ViewData["Title"] = "发送状态";
+    var smsid = (ViewData["smsid"] as string) ?? string.Empty;
+}
+
+<div class="layui-card" style="margin:10px;">
+    <div class="layui-card-body">
+        <table id="report-table" class="layui-table" lay-filter="reportTableFilter"></table>
+    </div>
+</div>
+
+<script>
+    layui.use(['table', 'layer'], function () {
+        var $ = layui.jquery;
+        var table = layui.table;
+        var smsid = "@Html.Raw(smsid)";
+
+        layer.load(2);
+        table.render({
+            elem: '#report-table',
+            url: 'queryStatus',
+            where: { id: smsid },
+            defaultToolbar: ['filter'],
+            id: "reportGrid",
+            cols: [[
+                { type: 'numbers', title: "序号", width: 60 },
+                { field: 'C_name', title: '姓名', width: 120 },
+                { field: 'mobile', title: '号码', width: 140 },
+                {
+                    field: 'reportStatus', title: '状态', width: 100, align: 'center',
+                    templet: function (t) {
+                        var s = t.reportStatus;
+                        if (s === 0 || s === '0') {
+                            return '<span class="layui-badge layui-bg-green">已接收</span>';
+                        }
+                        return '<span class="layui-badge layui-bg-gray">发送失败</span>';
+                    }
+                }
+            ]],
+            limits: [10, 15, 20, 50, 100],
+            limit: 15,
+            page: false,
+            done: function () {
+                layer.closeAll('loading');
+            }
+        });
+    });
+</script>
