@@ -88,6 +88,30 @@
     "Menu_order": 60
   },
   {
+    "id": "CRM_Pool",
+    "Menu_name": "客户公海",
+    "Menu_url": "Customer/Pool",
+    "Menu_icon": "fa-globe",
+    "parentid": "CRM_Manager",
+    "Menu_order": 70
+  },
+  {
+    "id": "CRM_Intention",
+    "Menu_name": "意向客户",
+    "Menu_url": "Customer/Intention",
+    "Menu_icon": "fa-heart",
+    "parentid": "CRM_Manager",
+    "Menu_order": 80
+  },
+  {
+    "id": "CRM_HighIntention",
+    "Menu_name": "高意向客户",
+    "Menu_url": "Customer/HighIntention",
+    "Menu_icon": "fa-heartbeat",
+    "parentid": "CRM_Manager",
+    "Menu_order": 90
+  },
+  {
     "id": "ProductManager",
     "Menu_name": "产品管理",
     "Menu_url": null,    
