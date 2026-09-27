@@ -21,7 +21,7 @@ namespace XHD.Core.Tests
         {
             var fsql = new FreeSqlBuilder()
                 .UseConnectionString(FreeSql.DataType.Sqlite, "DataSource=:memory:")
-                .UseAutoSyncStructure(true)
+                .UseAutoSyncStructure(false)
                 .Build();
 
             // 显式建表：与生产环境 DB.cs 保持一致，AutoSyncStructure 首次查询时才会同步
