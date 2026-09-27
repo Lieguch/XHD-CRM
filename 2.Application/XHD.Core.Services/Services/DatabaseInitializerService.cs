@@ -176,7 +176,7 @@ namespace XHD.Core.Services
             await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_Param_Type");
             await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_role");
             await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM hr_employee");
-            await fsql.Ado.ExecuteNonQueryAsync($"DELETE FROM Sys_info WHERE sys_key='{SeededKey}'");
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_info");
         }
     }
 }
