@@ -21,7 +21,8 @@ namespace XHD.Core.Services
                 public static IReadOnlyList<Sys_Menu> Menus()
         {
             var list = new List<Sys_Menu>();
-            list.Add(new Sys_Menu { id = "mytable", Menu_name = "工作台", parentid = "root", Menu_url = "", Menu_icon = "fa-user-circle-o", Menu_order = 10 });
+            list.Add(new Sys_Menu { id = "root", Menu_name = "根菜单", parentid = "", Menu_url = "", Menu_icon = "fa-navicon", Menu_order = 0, App_id = "", Menu_type = "" });
+            list.Add(new Sys_Menu { id = "mytable", Menu_name = "工作台", parentid = "root", Menu_url = "", Menu_icon = "fa-user-circle-o", Menu_order = 10, App_id = "", Menu_type = "" });
             list.Add(new Sys_Menu { id = "mynote", Menu_name = "我的便签", parentid = "mytable", Menu_url = "mynote/index", Menu_icon = "fa-bookmark", Menu_order = 10 });
             list.Add(new Sys_Menu { id = "mycalendar", Menu_name = "我的日程", parentid = "mytable", Menu_url = "MyCalendar/Index", Menu_icon = "fa-calendar", Menu_order = 20 });
             list.Add(new Sys_Menu { id = "task_manager", Menu_name = "任务管理", parentid = "mytable", Menu_url = "Task/Index", Menu_icon = "fa-tasks", Menu_order = 30 });
