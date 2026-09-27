@@ -49,7 +49,7 @@ namespace XHD.Core.Common.DEncrypt
         /// 获取16位md5加密
         /// </summary>
         /// <param name="source"></param>
-        /// <returns></returns>
+        /// <returns>返回16位加密结果，取32位加密结果的第9到24位（字节偏移4-11）</returns>
         public static string Get16MD5One(string source)
         {
             using (MD5 md5Hash = MD5.Create())
