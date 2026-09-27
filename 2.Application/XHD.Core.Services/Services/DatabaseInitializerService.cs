@@ -80,7 +80,22 @@ namespace XHD.Core.Services
             {
                 tableName = "Sys_Menu";
                 var menus = SeedData.Menus().ToList();
-                perTable.Add(await fsql.Insert(menus).ExecuteAffrowsAsync());
+                // 逐条插入以定位 constraint failed 的具体行
+                int menuCount = 0;
+                foreach (var m in menus)
+                {
+                    try
+                    {
+                        await fsql.Insert(m).ExecuteAffrowsAsync();
+                        menuCount++;
+                    }
+                    catch (Exception mex)
+                    {
+                        Console.WriteLine($"[SEED DEBUG] Menu insert failed at row {menuCount+1}: id={m.id}, parentid={m.parentid}, error={mex.Message}");
+                        throw;
+                    }
+                }
+                perTable.Add(menuCount);
 
                 tableName = "Sys_Button";
                 var buttons = SeedData.Buttons().ToList();
