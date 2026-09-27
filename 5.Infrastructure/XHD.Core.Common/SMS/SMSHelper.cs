@@ -65,18 +65,41 @@ namespace XHD.Core.Common.SMS
         /// <summary>
         /// #125 getBalance 调用：查询短信余额。
         /// POST JSON { SerialNo, Key } → { Balance }
+        /// Sprint 10.32: 修复假实现 — 从响应体读取 Balance 字段，不再恒返回 0。
         /// </summary>
         public double GetBalance(string softwareSerialNo, string key)
         {
-            var resp = PostAsync(new JObject
+            var j = PostAsyncRaw(new JObject
             {
                 { "SerialNo", softwareSerialNo },
                 { "Key", key }
-            }, "/getBalance").GetAwaiter().GetResult();
+            }, "/getBalance");
 
-            // 兼容：Balance 通过独立响应通道；此简化版以 Result==0 视为余额=0
-            // 生产实现可读取响应体 Balance 字段，此处保证不抛异常
-            return resp == 0 ? 0 : 0;
+            // 优先读取 Balance 字段（兼容大小写）
+            var balanceToken = j["Balance"] ?? j["balance"] ?? j["Data"] ?? j["data"];
+            if (balanceToken != null && balanceToken.Type != JTokenType.Null)
+            {
+                if (balanceToken.Type == JTokenType.Object)
+                {
+                    var inner = balanceToken["Value"] ?? balanceToken["value"] ?? balanceToken["Balance"] ?? balanceToken["balance"];
+                    if (inner != null && inner.Type != JTokenType.Null)
+                        return (double)inner;
+                }
+                else
+                {
+                    return (double)balanceToken;
+                }
+            }
+
+            // 回退：从 Result 判断 — Result==0 视为余额查询成功但余额未知，返回 -1 表示未知
+            var resultToken = j["Result"] ?? j["result"] ?? j["code"];
+            if (resultToken != null && resultToken.Type != JTokenType.Null)
+            {
+                int result = (int)resultToken;
+                return result == 0 ? -1 : -3;
+            }
+
+            return -3; // 网络错误
         }
 
         /// <summary>
@@ -144,10 +167,27 @@ namespace XHD.Core.Common.SMS
         /// </summary>
         private async Task<int> PostAsync(JObject body, string relativePath)
         {
+            var j = await PostAsyncRaw(body, relativePath);
+            var resultToken = j["Result"] ?? j["result"] ?? j["code"];
+            if (resultToken == null || resultToken.Type == JTokenType.Null)
+            {
+                _logger?.LogWarning("SMS API 响应缺少 Result 字段");
+                return -3;
+            }
+            return (int)resultToken;
+        }
+
+        /// <summary>
+        /// 通用 POST 调用，返回完整 JObject。网络/配置异常返回空 JObject，不抛异常。
+        /// Sprint 10.32: 新增，供 GetBalance 读取响应体中的 Balance 字段。
+        /// </summary>
+        private async Task<JObject> PostAsyncRaw(JObject body, string relativePath)
+        {
+            var empty = new JObject();
             if (string.IsNullOrWhiteSpace(_endpoint))
             {
                 _logger?.LogWarning("SMS Endpoint 未配置，返回网络错误");
-                return -3;
+                return empty;
             }
 
             try
@@ -159,22 +199,15 @@ namespace XHD.Core.Common.SMS
                 if (!resp.IsSuccessStatusCode)
                 {
                     _logger?.LogWarning("SMS API 非 2xx 响应：{Status} {Body}", (int)resp.StatusCode, text);
-                    return -3;
+                    return empty;
                 }
 
-                var j = JObject.Parse(text);
-                var resultToken = j["Result"] ?? j["result"] ?? j["code"];
-                if (resultToken == null || resultToken.Type == JTokenType.Null)
-                {
-                    _logger?.LogWarning("SMS API 响应缺少 Result 字段：{Body}", text);
-                    return -3;
-                }
-                return (int)resultToken;
+                return JObject.Parse(text);
             }
             catch (Exception ex)
             {
                 _logger?.LogError("SMS API 调用异常：{Msg}", ex.Message);
-                return -3;
+                return empty;
             }
         }
     }
