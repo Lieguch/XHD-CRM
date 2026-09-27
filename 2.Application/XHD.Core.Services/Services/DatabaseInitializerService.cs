@@ -76,7 +76,7 @@ namespace XHD.Core.Services
             var perTable = new List<int>();
             try
             {
-                using var uow = fsql.CreateUnitOfWork();
+                var tran = fsql.Ado.UseTran();
                 try
                 {
                     var menus = SeedData.Menus();
@@ -105,7 +105,7 @@ namespace XHD.Core.Services
                         sys_remark = $"seeded at {DateTime.Now:yyyy-MM-dd HH:mm:ss}"
                     }).ExecuteAffrowsAsync();
 
-                    uow.Commit();
+                    tran.Commit();
 
                     var total = 0;
                     foreach (var n in perTable) total += n;
@@ -120,14 +120,14 @@ namespace XHD.Core.Services
                 }
                 catch (Exception ex)
                 {
-                    uow.Rollback();
+                    tran.Rollback();
                     _logger.LogError(ex, "数据库初始化失败，事务已回滚。");
                     return SeedResult.FailedResult(ex.Message);
                 }
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "创建 UnitOfWork 失败。");
+                _logger.LogError(ex, "事务创建失败。");
                 return SeedResult.FailedResult(ex.Message);
             }
         }
@@ -142,14 +142,14 @@ namespace XHD.Core.Services
             //         hr_employee.dep_id / position_id / role_id / default_city → 各表.id
             // 因此删除顺序：Button → Menu → City → Province → ParamType → Role → Employee → Info
 
-            await fsql.Delete<Sys_Button>().WithoutFilter().ExecuteAffrowsAsync();
-            await fsql.Delete<Sys_Menu>().WithoutFilter().ExecuteAffrowsAsync();
-            await fsql.Delete<Sys_Param_City>().WithoutFilter().ExecuteAffrowsAsync();
-            await fsql.Delete<Sys_Param_Provinces>().WithoutFilter().ExecuteAffrowsAsync();
-            await fsql.Delete<Sys_Param_Type>().WithoutFilter().ExecuteAffrowsAsync();
-            await fsql.Delete<Sys_role>().WithoutFilter().ExecuteAffrowsAsync();
-            await fsql.Delete<hr_employee>().WithoutFilter().ExecuteAffrowsAsync();
-            await fsql.Delete<Sys_info>().Where(x => x.sys_key == SeededKey).WithoutFilter().ExecuteAffrowsAsync();
+            await fsql.Delete<Sys_Button>().ExecuteAffrowsAsync();
+            await fsql.Delete<Sys_Menu>().ExecuteAffrowsAsync();
+            await fsql.Delete<Sys_Param_City>().ExecuteAffrowsAsync();
+            await fsql.Delete<Sys_Param_Provinces>().ExecuteAffrowsAsync();
+            await fsql.Delete<Sys_Param_Type>().ExecuteAffrowsAsync();
+            await fsql.Delete<Sys_role>().ExecuteAffrowsAsync();
+            await fsql.Delete<hr_employee>().ExecuteAffrowsAsync();
+            await fsql.Delete<Sys_info>().Where(x => x.sys_key == SeededKey).ExecuteAffrowsAsync();
         }
     }
 }
