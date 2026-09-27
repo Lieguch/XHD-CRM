@@ -11,6 +11,7 @@
 using FreeSql;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
@@ -74,24 +75,39 @@ namespace XHD.Core.Services
 
             // 3) 插入所有种子数据（FreeSql 逐条原子操作，异常即停止）
             var perTable = new List<int>();
+            var tableName = "";
             try
             {
-                var menus = SeedData.Menus();
-                var buttons = SeedData.Buttons();
-                var provinces = SeedData.Provinces();
-                var cities = SeedData.Cities();
-                var paramTypes = SeedData.ParamTypes();
-                var admins = SeedData.Admins();
-                var roles = SeedData.Roles();
-                var infos = SeedData.Infos();
-
+                tableName = "Sys_Menu";
+                var menus = SeedData.Menus().ToList();
                 perTable.Add(await fsql.Insert(menus).ExecuteAffrowsAsync());
+
+                tableName = "Sys_Button";
+                var buttons = SeedData.Buttons().ToList();
                 perTable.Add(await fsql.Insert(buttons).ExecuteAffrowsAsync());
+
+                tableName = "Sys_Param_Provinces";
+                var provinces = SeedData.Provinces().ToList();
                 perTable.Add(await fsql.Insert(provinces).ExecuteAffrowsAsync());
+
+                tableName = "Sys_Param_City";
+                var cities = SeedData.Cities().ToList();
                 perTable.Add(await fsql.Insert(cities).ExecuteAffrowsAsync());
+
+                tableName = "Sys_Param_Type";
+                var paramTypes = SeedData.ParamTypes().ToList();
                 perTable.Add(await fsql.Insert(paramTypes).ExecuteAffrowsAsync());
+
+                tableName = "hr_employee";
+                var admins = SeedData.Admins().ToList();
                 perTable.Add(await fsql.Insert(admins).ExecuteAffrowsAsync());
+
+                tableName = "Sys_role";
+                var roles = SeedData.Roles().ToList();
                 perTable.Add(await fsql.Insert(roles).ExecuteAffrowsAsync());
+
+                tableName = "Sys_info";
+                var infos = SeedData.Infos().ToList();
                 perTable.Add(await fsql.Insert(infos).ExecuteAffrowsAsync());
 
                 // 4) 最后写入"已初始化"标记
@@ -115,8 +131,8 @@ namespace XHD.Core.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "数据库初始化失败。");
-                return SeedResult.FailedResult(ex.Message);
+                _logger.LogError(ex, "数据库初始化失败（表: {Table}）。", tableName);
+                return SeedResult.FailedResult($"[{tableName}] {ex.Message}");
             }
         }
 
