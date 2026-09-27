@@ -186,7 +186,7 @@ namespace XHD.Core.Tests
 
         // ========== helpers ==========
 
-        private static (int sysMenu, int sysButton, int provinces, int cities, int paramType, int employee, int role) SnapshotCounts(IFreeSql fsql)
+        private static (long sysMenu, long sysButton, long provinces, long cities, long paramType, long employee, long role) SnapshotCounts(IFreeSql fsql)
         {
             return (
                 fsql.Select<Sys_Menu>().Count(),
