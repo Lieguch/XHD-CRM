@@ -132,6 +132,10 @@ namespace XHD.Core.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "数据库初始化失败（表: {Table}）。", tableName);
+                Console.WriteLine($"[SEED DEBUG] Failed at table '{tableName}': {ex.GetType().Name}: {ex.Message}");
+                if (ex.InnerException != null)
+                    Console.WriteLine($"[SEED DEBUG] Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
+                Console.WriteLine($"[SEED DEBUG] Stack: {ex.StackTrace?.Substring(0, Math.Min(300, ex.StackTrace.Length))}");
                 return SeedResult.FailedResult($"[{tableName}] {ex.Message}");
             }
         }
