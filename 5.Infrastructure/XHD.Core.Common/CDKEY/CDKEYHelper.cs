@@ -13,14 +13,21 @@ namespace XHD.Core.Common.CDKEY
     /// </summary>
     public class CDKEYHelper : ICDKEYHelper
     {
-        private const string Salt = "XHD@2026!";
-        private const string CdkeyPrefix = "XHDRC";
+        private static string _salt = "XHD@2026!"; // 默认盐值（Sprint 10.32: 可通过环境变量 CDKEY_SALT 覆盖）
+        private static readonly string _cdkeyPrefix = "XHDRC";
         private const string MachinePrefix = "XMK";
         private readonly ILogger<CDKEYHelper> _logger;
 
         public CDKEYHelper(ILogger<CDKEYHelper> logger = null)
         {
             _logger = logger;
+            // Sprint 10.32: 支持环境变量覆盖盐值，避免硬编码盐值泄露
+            var envSalt = Environment.GetEnvironmentVariable("CDKEY_SALT");
+            if (!string.IsNullOrWhiteSpace(envSalt))
+            {
+                _salt = envSalt;
+                _logger?.LogInformation("CDKEY salt 已从环境变量 CDKEY_SALT 加载");
+            }
         }
 
         public Task<string> GenerateAsync(string machineCode)
@@ -64,10 +71,10 @@ namespace XHD.Core.Common.CDKEY
         /// </summary>
         private static string BuildCdkey(string machineCode)
         {
-            string hash = HashMd5(machineCode + Salt);
+            string hash = HashMd5(machineCode + _salt);
             // 取 15 位 hex 分 3 组，每组 5 位
             string body = hash.Substring(0, 15).ToUpperInvariant();
-            return $"{CdkeyPrefix}-{body.Substring(0, 5)}-{body.Substring(5, 5)}-{body.Substring(10, 5)}";
+            return $"{_cdkeyPrefix}-{body.Substring(0, 5)}-{body.Substring(5, 5)}-{body.Substring(10, 5)}";
         }
 
         private static string HashMd5(string input)
