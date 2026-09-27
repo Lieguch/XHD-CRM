@@ -32,7 +32,7 @@ namespace XHD.Core.IServices
         /// <summary>失败时携带的异常</summary>
         public string Error { get; set; }
 
-        public static SeedResult AlreadySeeded() => new SeedResult
+        public static SeedResult AlreadySeededResult() => new SeedResult
         {
             Success = true,
             AlreadySeeded = true,
@@ -40,7 +40,7 @@ namespace XHD.Core.IServices
             Message = "系统已初始化，无需重复执行。"
         };
 
-        public static SeedResult Success(int total, IReadOnlyList<int> perTable) => new SeedResult
+        public static SeedResult SuccessResult(int total, IReadOnlyList<int> perTable) => new SeedResult
         {
             Success = true,
             AlreadySeeded = false,
@@ -49,7 +49,7 @@ namespace XHD.Core.IServices
             Message = $"初始化完成，共插入 {total} 行。"
         };
 
-        public static SeedResult Failed(string error) => new SeedResult
+        public static SeedResult FailedResult(string error) => new SeedResult
         {
             Success = false,
             AlreadySeeded = false,
@@ -82,7 +82,7 @@ namespace XHD.Core.IServices
 
         /// <summary>
         /// 执行初始化。若已初始化且 <paramref name="force"/> = false，直接返回
-        /// <see cref="SeedResult.AlreadySeeded"/>；若已初始化且 force = true，
+        /// <see cref="SeedResult.AlreadySeededResult"/>；若已初始化且 force = true，
         /// 会先清理旧数据再重新插入。
         /// </summary>
         /// <param name="fsql">目标数据库的 FreeSql 实例</param>
