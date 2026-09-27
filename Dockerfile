@@ -1,4 +1,4 @@
-﻿# syntax=docker/dockerfile:1
+# syntax=docker/dockerfile:1
 # ==========================================================================
 # XHD CRM 3.1 (.NET 8 / ASP.NET Core) - Multi-stage Dockerfile
 # ==========================================================================
@@ -100,11 +100,10 @@ EXPOSE 5001
 COPY --chown=1001:1001 docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-USER 1001:1001
 
 # 8) Healthcheck（30s 间隔，40s 启动宽限期）
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD curl -fsS http://localhost:5001/ >/dev/null || exit 1
+    CMD curl -fsS http://localhost:5001/health >/dev/null || exit 1
 
 # 9) 启动
 # ⚠️ ENTRYPOINT 负责修正命名卷权限并降权；CMD 才是实际应用命令。
