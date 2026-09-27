@@ -54,7 +54,7 @@ namespace XHD.Core.Services
             if (alreadySeeded && !force)
             {
                 _logger.LogInformation("数据库已初始化，跳过重复执行。");
-                return SeedResult.AlreadySeeded();
+                return SeedResult.AlreadySeededResult();
             }
 
             // 2) force=true 时先清理旧数据（按 FK 反向依赖顺序）
@@ -68,7 +68,7 @@ namespace XHD.Core.Services
                 catch (Exception ex)
                 {
                     _logger.LogError(ex, "清理旧种子数据失败。");
-                    return SeedResult.Failed(ex.Message);
+                    return SeedResult.FailedResult(ex.Message);
                 }
             }
 
@@ -116,19 +116,19 @@ namespace XHD.Core.Services
                         "数据库初始化成功：8 表插入 {Rows} 行（+1 标记行），耗时 {Elapsed}ms。",
                         totalWithMarker, sw.ElapsedMilliseconds);
 
-                    return SeedResult.Success(totalWithMarker, perTable);
+                    return SeedResult.SuccessResult(totalWithMarker, perTable);
                 }
                 catch (Exception ex)
                 {
                     uow.Rollback();
                     _logger.LogError(ex, "数据库初始化失败，事务已回滚。");
-                    return SeedResult.Failed(ex.Message);
+                    return SeedResult.FailedResult(ex.Message);
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "创建 UnitOfWork 失败。");
-                return SeedResult.Failed(ex.Message);
+                return SeedResult.FailedResult(ex.Message);
             }
         }
 
