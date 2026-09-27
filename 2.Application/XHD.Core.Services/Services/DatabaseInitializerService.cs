@@ -72,62 +72,50 @@ namespace XHD.Core.Services
                 }
             }
 
-            // 3) 事务包裹所有插入
+            // 3) 插入所有种子数据（FreeSql 逐条原子操作，异常即停止）
             var perTable = new List<int>();
             try
             {
-                var tran = fsql.Ado.UseTran();
-                try
+                var menus = SeedData.Menus();
+                var buttons = SeedData.Buttons();
+                var provinces = SeedData.Provinces();
+                var cities = SeedData.Cities();
+                var paramTypes = SeedData.ParamTypes();
+                var admins = SeedData.Admins();
+                var roles = SeedData.Roles();
+                var infos = SeedData.Infos();
+
+                perTable.Add(await fsql.Insert(menus).ExecuteAffrowsAsync());
+                perTable.Add(await fsql.Insert(buttons).ExecuteAffrowsAsync());
+                perTable.Add(await fsql.Insert(provinces).ExecuteAffrowsAsync());
+                perTable.Add(await fsql.Insert(cities).ExecuteAffrowsAsync());
+                perTable.Add(await fsql.Insert(paramTypes).ExecuteAffrowsAsync());
+                perTable.Add(await fsql.Insert(admins).ExecuteAffrowsAsync());
+                perTable.Add(await fsql.Insert(roles).ExecuteAffrowsAsync());
+                perTable.Add(await fsql.Insert(infos).ExecuteAffrowsAsync());
+
+                // 4) 最后写入"已初始化"标记
+                await fsql.Insert(new Sys_info
                 {
-                    var menus = SeedData.Menus();
-                    var buttons = SeedData.Buttons();
-                    var provinces = SeedData.Provinces();
-                    var cities = SeedData.Cities();
-                    var paramTypes = SeedData.ParamTypes();
-                    var admins = SeedData.Admins();
-                    var roles = SeedData.Roles();
-                    var infos = SeedData.Infos();
+                    sys_key = SeededKey,
+                    sys_value = SeededValue,
+                    sys_remark = $"seeded at {DateTime.Now:yyyy-MM-dd HH:mm:ss}"
+                }).ExecuteAffrowsAsync();
 
-                    perTable.Add(await fsql.Insert(menus).ExecuteAffrowsAsync());
-                    perTable.Add(await fsql.Insert(buttons).ExecuteAffrowsAsync());
-                    perTable.Add(await fsql.Insert(provinces).ExecuteAffrowsAsync());
-                    perTable.Add(await fsql.Insert(cities).ExecuteAffrowsAsync());
-                    perTable.Add(await fsql.Insert(paramTypes).ExecuteAffrowsAsync());
-                    perTable.Add(await fsql.Insert(admins).ExecuteAffrowsAsync());
-                    perTable.Add(await fsql.Insert(roles).ExecuteAffrowsAsync());
-                    perTable.Add(await fsql.Insert(infos).ExecuteAffrowsAsync());
+                var total = 0;
+                foreach (var n in perTable) total += n;
+                var totalWithMarker = total + 1;
 
-                    // 4) 最后写入"已初始化"标记
-                    await fsql.Insert(new Sys_info
-                    {
-                        sys_key = SeededKey,
-                        sys_value = SeededValue,
-                        sys_remark = $"seeded at {DateTime.Now:yyyy-MM-dd HH:mm:ss}"
-                    }).ExecuteAffrowsAsync();
+                sw.Stop();
+                _logger.LogInformation(
+                    "数据库初始化成功：8 表插入 {Rows} 行（+1 标记行），耗时 {Elapsed}ms。",
+                    totalWithMarker, sw.ElapsedMilliseconds);
 
-                    tran.Commit();
-
-                    var total = 0;
-                    foreach (var n in perTable) total += n;
-                    var totalWithMarker = total + 1;
-
-                    sw.Stop();
-                    _logger.LogInformation(
-                        "数据库初始化成功：8 表插入 {Rows} 行（+1 标记行），耗时 {Elapsed}ms。",
-                        totalWithMarker, sw.ElapsedMilliseconds);
-
-                    return SeedResult.SuccessResult(totalWithMarker, perTable);
-                }
-                catch (Exception ex)
-                {
-                    tran.Rollback();
-                    _logger.LogError(ex, "数据库初始化失败，事务已回滚。");
-                    return SeedResult.FailedResult(ex.Message);
-                }
+                return SeedResult.SuccessResult(totalWithMarker, perTable);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "事务创建失败。");
+                _logger.LogError(ex, "数据库初始化失败。");
                 return SeedResult.FailedResult(ex.Message);
             }
         }
