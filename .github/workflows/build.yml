@@ -29,6 +29,9 @@ jobs:
         run: dotnet build XHDCRM3.sln --no-restore --configuration Release --verbosity normal
       - name: dotnet test
         run: dotnet test 7.Test/XHD.Core.Tests/XHD.Core.Tests.csproj --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=results.trx"
+      - name: Docker compose build
+        run: |
+          docker compose build --no-cache
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
