@@ -54,7 +54,7 @@ namespace XHD.Core.Tests
 
             var result = await _svc.SeedAsync(fsql);
 
-            Assert.True(result.Success);
+            Assert.True(result.Success, $"SeedAsync failed with error: {result.Error}");
             Assert.False(result.AlreadySeeded);
             Assert.Equal(8, result.RecordsPerTable.Count);
             Assert.All(result.RecordsPerTable, x => Assert.True(x > 0, $"表 {x} 应该 >0"));
