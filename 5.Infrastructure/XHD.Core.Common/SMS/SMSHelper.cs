@@ -73,7 +73,7 @@ namespace XHD.Core.Common.SMS
             {
                 { "SerialNo", softwareSerialNo },
                 { "Key", key }
-            }, "/getBalance");
+            }, "/getBalance").GetAwaiter().GetResult();
 
             // 优先读取 Balance 字段（兼容大小写）
             var balanceToken = j["Balance"] ?? j["balance"] ?? j["Data"] ?? j["data"];
