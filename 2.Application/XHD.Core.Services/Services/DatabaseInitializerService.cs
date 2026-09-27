@@ -52,6 +52,7 @@ namespace XHD.Core.Services
 
             // 1) 幂等判断
             var alreadySeeded = await IsSeededAsync(fsql);
+            Console.WriteLine($"[SEED DEBUG] SeedAsync called: force={force}, alreadySeeded={alreadySeeded}");
             if (alreadySeeded && !force)
             {
                 _logger.LogInformation("数据库已初始化，跳过重复执行。");
@@ -65,6 +66,9 @@ namespace XHD.Core.Services
                 {
                     await CleanSeedTablesAsync(fsql);
                     _logger.LogWarning("已按 force=true 清理旧种子数据。");
+                    // Diagnostic: verify clean worked
+                    int menuCountAfterClean = await fsql.Select<Sys_Menu>().CountAsync();
+                    Console.WriteLine($"[SEED DEBUG] After clean: Sys_Menu count = {menuCountAfterClean}");
                 }
                 catch (Exception ex)
                 {
@@ -157,6 +161,7 @@ namespace XHD.Core.Services
 
         /// <summary>
         /// force=true 时清理 8 张种子表的所有数据。按 FK 反向依赖顺序删除。
+        /// 使用原生 SQL 确保在 SQLite 下 DELETE FROM table 不带 WHERE 也能正确删除所有行。
         /// </summary>
         private async Task CleanSeedTablesAsync(IFreeSql fsql)
         {
@@ -164,15 +169,14 @@ namespace XHD.Core.Services
             //         Sys_Param_City.Provinces_id → Sys_Param_Provinces.id
             //         hr_employee.dep_id / position_id / role_id / default_city → 各表.id
             // 因此删除顺序：Button → Menu → City → Province → ParamType → Role → Employee → Info
-
-            await fsql.Delete<Sys_Button>().ExecuteAffrowsAsync();
-            await fsql.Delete<Sys_Menu>().ExecuteAffrowsAsync();
-            await fsql.Delete<Sys_Param_City>().ExecuteAffrowsAsync();
-            await fsql.Delete<Sys_Param_Provinces>().ExecuteAffrowsAsync();
-            await fsql.Delete<Sys_Param_Type>().ExecuteAffrowsAsync();
-            await fsql.Delete<Sys_role>().ExecuteAffrowsAsync();
-            await fsql.Delete<hr_employee>().ExecuteAffrowsAsync();
-            await fsql.Delete<Sys_info>().Where(x => x.sys_key == SeededKey).ExecuteAffrowsAsync();
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_Button");
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_Menu");
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_Param_City");
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_Param_Provinces");
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_Param_Type");
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_role");
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM hr_employee");
+            await fsql.Ado.ExecuteNonQueryAsync($"DELETE FROM Sys_info WHERE sys_key='{SeededKey}'");
         }
     }
 }
