@@ -107,10 +107,10 @@ namespace XHD.Core.View.Controllers
             try
             {
                 var filePath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
-                var text = File.ReadAllText(filePath);
+                var text = System.IO.File.ReadAllText(filePath);
                 var obj = JObject.Parse(text);
                 obj["isConfig"] = 1;
-                File.WriteAllText(filePath, obj.ToString());
+                System.IO.File.WriteAllText(filePath, obj.ToString());
             }
             catch (Exception ex)
             {
