@@ -67,7 +67,7 @@ namespace XHD.Core.Services
                     await CleanSeedTablesAsync(fsql);
                     _logger.LogWarning("已按 force=true 清理旧种子数据。");
                     // Diagnostic: verify clean worked
-                    int menuCountAfterClean = await fsql.Select<Sys_Menu>().CountAsync();
+                    long menuCountAfterClean = await fsql.Select<Sys_Menu>().CountAsync();
                     Console.WriteLine($"[SEED DEBUG] After clean: Sys_Menu count = {menuCountAfterClean}");
                 }
                 catch (Exception ex)
