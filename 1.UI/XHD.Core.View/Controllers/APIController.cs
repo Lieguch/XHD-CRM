@@ -673,11 +673,6 @@ namespace XHD.Core.View.Controllers
         {
             Expression<Func<Sale_order_details, bool>> exp = a => a.order_id == order_id;
 
-            //if (!string.IsNullOrWhiteSpace(Request.Query["T_name"]))
-            //{
-            //    exp = exp.And(a => a.customer.cus_name.Contains(Request.Query["T_name"]));
-            //}
-
             var result = await _OrderDetailsService.GridAsync(exp);
 
             return result.ToString();
@@ -862,11 +857,6 @@ namespace XHD.Core.View.Controllers
         public async Task<string> ContractAtta(string contract_id)
         {
             Expression<Func<Sale_contract_atta, bool>> exp = a => a.contract_id == contract_id;
-
-            //if (!string.IsNullOrWhiteSpace(Request.Query["T_name"]))
-            //{
-            //    exp = exp.And(a => a.customer.cus_name.Contains(Request.Query["T_name"]));
-            //}
 
             var result = await _contractattaservice.GridAsync(exp);
 
@@ -1117,17 +1107,6 @@ namespace XHD.Core.View.Controllers
             }
 
             //权限
-            //var roledata = await _dBAuthService.GetDataAuth(employee.id);
-
-            //if (roledata.authtype != 4)
-            //{
-            //    exp = exp.And(a => roledata.empList.Contains(a.Order.customer.emp_id));
-            //}
-            //else
-            //{ 
-
-            //}
-
             _fsql.Select<CRM_Customer>().Where(a => a.emp_id == employee.id).Count(out var cuscount).Page(1, 1);
             _fsql.Select<CRM_follow>().Where(a => a.employee_id == employee.id).Count(out var followcount).Page(1, 1);
             _fsql.Select<Sale_order>().Where(a => a.emp_id == employee.id).Count(out var ordercount).Page(1, 1);
