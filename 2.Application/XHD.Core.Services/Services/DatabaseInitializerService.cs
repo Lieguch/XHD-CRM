@@ -79,13 +79,6 @@ namespace XHD.Core.Services
             try
             {
                 tableName = "Sys_Menu";
-                // 调试：打印表结构
-                var schemaRows = fsql.Ado.QuerySingle("SELECT sql FROM sqlite_master WHERE type='table' AND name='Sys_Menu'");
-                Console.WriteLine($"[SEED DEBUG] Sys_Menu schema: {schemaRows}");
-                var colInfo = fsql.Ado.Query<object>("PRAGMA table_info(Sys_Menu)");
-                foreach (var col in colInfo)
-                    Console.WriteLine($"[SEED DEBUG] Column: {col}");
-
                 var menus = SeedData.Menus().ToList();
                 // 逐条插入以定位 constraint failed 的具体行
                 int menuCount = 0;
