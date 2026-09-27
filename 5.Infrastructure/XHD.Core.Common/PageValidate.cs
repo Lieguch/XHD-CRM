@@ -308,7 +308,11 @@ namespace XHD.Core.Common
 
         public static string SafeLongFilter(string text, long defaultValue, char split = ',')
         {
-            if (text.Trim().Length < 1)
+            // Sprint 10.32: 修复空引用 — null 输入不再抛 NullReferenceException
+            if (string.IsNullOrWhiteSpace(text))
+                return defaultValue.ToString(CultureInfo.InvariantCulture);
+            text = text.Trim();
+            if (text.Length < 1)
                 return defaultValue.ToString(CultureInfo.InvariantCulture);
             string[] tmpSplit = text.Split(new[] { split }, StringSplitOptions.RemoveEmptyEntries);
             if (tmpSplit.Length < 1)
