@@ -1,0 +1,31 @@
+# =============================================================================
+# docker-compose.override.yml — B 路线本地开发覆盖
+#
+# compose 会自动把本文件合并到 docker-compose.yml（同名键以本文件为准）。
+# 用途：本地开发时打开热加载、暴露更多端口、降低 SQL Server 内存占用等。
+# =============================================================================
+
+services:
+  app:
+    # 开发模式：加载 appsettings.Development.json（ConfigHelper 支持）
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      # 开发时也允许通过 appsettings.Development.json 注入
+    volumes:
+      # 热加载：把源码挂进去（需 docker compose 配合 `--build` 或 `docker compose up --watch`）
+      # 注意：挂载后容器内看到的是宿主机源码，dotnet publish 产物已被覆盖，需先 build 再挂载
+      # 本行注释掉，避免误操作。若要热加载，请改用 `docker compose watch` 命令。
+      # - ../../ext_zip/小黄豆CRM3源码 v3.1.20260827.0/1.UI/XHD.Core.View:/app:ro
+      - ./appsettings.Development.json:/app/appsettings.Development.json:ro
+    # 开发模式不打 healthcheck（避免误杀正在调试的进程）
+    healthcheck:
+      disable: true
+
+  db:
+    # 开发模式降低 SQL Server 内存占用（Developer 版限制 2GB 内存）
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
