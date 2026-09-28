@@ -14,8 +14,14 @@ namespace XHD.Core.Models {
 	/// </summary>
 	[JsonObject(MemberSerialization.OptIn)]
 	public partial class Sale_order_details {
-		/// <summary>
-		/// 单价
+        /// <summary>
+        /// 主键（surrogate）
+        /// </summary>
+        [JsonProperty, Column(StringLength = 50, IsPrimary = true)]
+        public string id { get; set; } = string.Empty;
+
+        /// <summary>
+        /// 单价
 		/// </summary>
 		[JsonProperty, Column(DbType = "decimal(18,2)")]
 		public decimal? price { get; set; }
