@@ -1,4 +1,4 @@
-
+﻿
 using System;
 using System.Linq;
 using System.Linq.Expressions;
@@ -28,6 +28,7 @@ namespace XHD.Core.View.Controllers
     [Authorize]
     public class TaskController : Controller
     {
+        private readonly IDBAuthService _dBAuthService;
         private readonly ILogger<TaskController> _logger;
         private readonly ITaskService _service;
         private readonly ITask_followService _followService;
@@ -39,13 +40,14 @@ namespace XHD.Core.View.Controllers
             ITaskService service,
             ITask_followService followService,
             ICRM_CustomerService customerService,
-            ISys_ParamService paramService)
+            ISys_ParamService paramService, IDBAuthService dBAuthService)
         {
             _logger = logger;
             _service = service;
             _followService = followService;
             _customerService = customerService;
             _paramService = paramService;
+            _dBAuthService = dBAuthService;
         }
 
         private string GetUserId()
@@ -74,6 +76,12 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         public async Task<string> Grid(PageView<TaskInfo> model)
         {
+            // [v10] 数据权限过滤
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             Expression<Func<TaskInfo, bool>> exp = t => true;
 
             if (!string.IsNullOrWhiteSpace(Request.Query["task_title"]))
