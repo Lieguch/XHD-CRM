@@ -1,0 +1,49 @@
+# .NET 源码行尾规范
+# 根因：开发机 core.autocrlf=true 会把 LF 转成 CRLF 提交，
+#      而 CNB/GitHub CI 在 Linux 上 checkout 后 CRLF 的 .sh 脚本
+#      会因 "#!/bin/sh\r" 无法执行（bad interpreter）。
+# 规则：.NET 源码统一 CRLF（VS 习惯）；脚本/配置/文本统一 LF（Linux 执行必需）。
+
+# ---- Linux 必须 LF ----
+*.sh      text eol=lf
+*.yml     text eol=lf
+*.yaml    text eol=lf
+*.json    text eol=lf
+*.csproj  text eol=lf
+*.props   text eol=lf
+*.targets text eol=lf
+*.md      text eol=lf
+*.css     text eol=lf
+*.less    text eol=lf
+*.js      text eol=lf
+*.html    text eol=lf
+*.vue     text eol=lf
+*.xml     text eol=lf
+*.txt     text eol=lf
+.gitattributes text eol=lf
+.dockerignore text eol=lf
+.env.example text eol=lf
+
+# ---- .NET 源码 CRLF ----
+*.cs      text eol=crlf
+*.cshtml  text eol=crlf
+*.sln     text eol=crlf
+*.config  text eol=crlf
+
+# ---- 二进制不做转换 ----
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.xls binary
+*.xlsx binary
+*.pdf binary
+*.zip binary
+
+# ---- 其余自动检测 ----
+* text=auto
