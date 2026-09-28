@@ -57,8 +57,13 @@ namespace XHD.Core.View.Controllers
             _dBAuthService = dBAuthService;
         }
 
-        public IActionResult Index()
+        public async Task<IActionResult> Index()
         {
+            // [v10] 数据权限检查
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype == 0)
+                return View();
+
             return View();
         }
 
