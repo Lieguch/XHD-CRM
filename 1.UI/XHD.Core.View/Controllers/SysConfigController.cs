@@ -53,7 +53,7 @@ namespace XHD.Core.View.Controllers
         }
 
         /// <summary>测试数据库连接，返回可用数据库列表。</summary>
-        public async Task<string> tryConnect(
+        public string tryConnect(
             int servertype,
             string servername,
             string serverport,
