@@ -238,6 +238,10 @@ namespace XHD.Core.View.Controllers
 
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             if (roledata.authtype != 4)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.emp_id) || a.isPrivate == 1);
@@ -381,6 +385,10 @@ namespace XHD.Core.View.Controllers
 
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             if (roledata.authtype != 4)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
@@ -515,6 +523,10 @@ namespace XHD.Core.View.Controllers
 
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             if (roledata.authtype != 4)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
@@ -656,6 +668,10 @@ namespace XHD.Core.View.Controllers
 
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             if (roledata.authtype != 4)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
@@ -843,6 +859,10 @@ namespace XHD.Core.View.Controllers
             //权限
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             if (roledata.authtype != 4)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
@@ -990,6 +1010,10 @@ namespace XHD.Core.View.Controllers
             //权限
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             if (roledata.authtype != 4)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.Order.customer.emp_id));
@@ -1179,6 +1203,10 @@ namespace XHD.Core.View.Controllers
             //权限
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             if (roledata.authtype != 4)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.id));
