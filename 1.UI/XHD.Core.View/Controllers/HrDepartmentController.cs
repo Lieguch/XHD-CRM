@@ -62,6 +62,12 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> Grid()
         {
+            // [v10] 数据权限过滤
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             Expression<Func<hr_department, bool>> exp = a => true;
             var result = await _service.GridAsync(exp, "dep_order");
 
