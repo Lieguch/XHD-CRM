@@ -19,7 +19,8 @@ namespace XHD.Core.Models
         /// <summary>
         /// 权限ID
         /// </summary>
-        [JsonProperty, Column(StringLength = 50)]
+        [JsonProperty, Column(StringLength = 50, IsPrimary = true)]
+        public string id { get; set; }
         public string App_id { get; set; } = string.Empty;
 
         /// <summary>
