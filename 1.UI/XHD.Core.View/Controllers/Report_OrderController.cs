@@ -268,6 +268,12 @@ namespace XHD.Core.View.Controllers
         [HttpGet("ReportEmpOrder")]
         public async Task<string> ReportEmpOrder(int? year, [FromQuery] List<string> empIds = null)
         {
+            // [v10] 数据权限过滤
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             int y = year ?? DateTime.Now.Year;
             var data = await _service.ReportEmpOrderAsync(y, empIds);
             return data.ToString();
