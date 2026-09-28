@@ -409,7 +409,7 @@
             function contact_del(id) {
                 $.ajax({
                     type: 'POST',
-                    url: "CRM_Contact/del",
+                    url: "CRM_Contact/Delete",
                     data: { id: id },
                     dataType: "json",
                     success: function (res) {//res为相应体,function为回调函数
@@ -599,7 +599,7 @@
 
                 $.ajax({
                     type: 'POST',
-                    url: "/CRMFollow/del",
+                    url: "/CRMFollow/Delete",
                     data: { id: id },
                     dataType: "json",
                     success: function (res) {//res为相应体,function为回调函数
@@ -793,7 +793,7 @@
 
                 $.ajax({
                     type: 'POST',
-                    url: "/SaleOrder/del",
+                    url: "/SaleOrder/Delete",
                     data: { id: id },
                     dataType: "json",
                     success: function (res) {//res为相应体,function为回调函数
@@ -861,7 +861,7 @@
 
                             $.ajax({
                                 type: 'POST',
-                                url: '/Sale_Order/Save',
+                                url: '/SaleOrder/Save',
                                 data: data.field,
                                 dataType: "json",
                                 success: function (res) {//res为相应体,function为回调函数
@@ -991,7 +991,7 @@
 
                 $.ajax({
                     type: 'POST',
-                    url: "/SaleContract/del",
+                    url: "/SaleContract/Delete",
                     data: { id: id },
                     dataType: "json",
                     success: function (res) {//res为相应体,function为回调函数
@@ -1059,7 +1059,7 @@
 
                             $.ajax({
                                 type: 'POST',
-                                url: 'Save',
+                                url: '/SaleContract/Save',
                                 data: data.field,
                                 dataType: "json",
                                 success: function (res) {//res为相应体,function为回调函数
