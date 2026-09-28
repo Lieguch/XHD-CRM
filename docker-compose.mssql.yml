@@ -1,0 +1,177 @@
+# =============================================================================
+# docker-compose.mssql.yml — MSSQL 生产部署
+#
+# [Sprint 10.14] 本文件从 `docker-compose.yml` 重命名而来。默认部署路径改为
+# SQLite 单服务版（见 docker-compose.yml），本文件仅供需要 SQL Server 的
+# 生产场景使用。执行方式：
+#
+#   # 必须先准备 .env（复制 .env.example 后按需修改 DB_SA_PASSWORD）
+#   cp .env.example .env
+#   # 修改 appsettings.Production.json 中的 Password 与 .env 的 DB_SA_PASSWORD 一致
+#   docker compose -f docker-compose.mssql.yml up -d --build
+#
+# 为什么不是默认：
+#   - 需拉取 2.6GB 的 mssql/server 镜像
+#   - 需配置 .env 的 DB_SA_PASSWORD（否则容器起不来）
+#   - 需配置 appsettings.Production.json 的连接串（ConfigHelper 不读环境变量）
+#   - 首次登录前需等 db-init 建库（~30s）
+#
+# 设计要点（已读源码核实）：
+#   1. 无 version: 字段 — Compose v2/v5 已忽略此字段（Compose Specification 把它设为可选）
+#      依据: https://docs.docker.com/compose/intro/history/ (检索 2026-09-18)
+#   2. app 服务实际监听 5001（非 .NET 8 默认 8080），依据 appsettings.json:35 "Urls":"http://*:5001"
+#   3. B 源码的 ConfigHelper.cs:20-29 只读 JSON 文件，不读环境变量 →
+#      连接串不能通过 environment 注入，必须挂载 appsettings.Production.json
+#   4. [Sprint 10.12] depends_on 改走 db-init 服务 service_completed_successfully
+#      根因：db 服务 healthcheck `SELECT 1` 连默认 master 库，无法反映用户库 XHDCRM3
+#      是否已建。mssl/server 镜像只自动创建 master/tempdb/model/msdb，从不创建
+#      用户库。app 直接依赖 db 的 service_healthy → 立刻启动 → 首个 DB 查询抛
+#      "Cannot open database 'XHDCRM3'"。修复：db-init 幂等创建 XHDCRM3 后 exit 0，
+#      app 依赖 db-init 完成。
+#      依据: https://docs.docker.com/compose/how-tos/startup-order/ (检索 2026-09-18)
+#   5. SQL Server 2025 是 GA (17.x)，镜像 tag 2025-latest
+#      依据: https://mcr.microsoft.com/product/mssql/server/about (检索 2026-09-18)
+#   6. 非 root 用户 app 需要 chown 可写目录 → 已在 Dockerfile 处理（Sprint 10.13 补 /app）
+#   7. 数据库镜像用 MSSQL_SA_PASSWORD（SA_PASSWORD 已弃用）
+#      依据: https://learn.microsoft.com/sql/linux/quickstart-install-connect-docker (检索 2026-09-18)
+#   8. [Sprint 10.12] HEALTHCHECK 改走 curl /health（真实探测数据库），
+#      原 TCP 探测只能证明进程活着。curl 由 Dockerfile runtime 阶段 apt-get 安装。
+#   9. 启动顺序：db → db-init(建库) → app（依赖 db-init 完成）
+# =============================================================================
+
+name: xhdcrm3-mssql
+
+services:
+  app:
+    build:
+      # build context 指向 B 源码根目录（注意：路径含空格，compose 会自动处理）
+      context: .
+      # dockerfile 相对 compose 文件目录解析（Compose v2 支持 context 外路径）
+      dockerfile: Dockerfile
+      target: runtime
+    image: xhdcrm3/app:net8
+    container_name: xhdcrm3-app
+    ports:
+      # 宿主机端口（可改）: 容器内 5001（appsettings.json 的 Urls 键）
+      - "${APP_HTTP_PORT:-5001}:5001"
+    environment:
+      # ASPNETCORE_ENVIRONMENT=Production 让 ConfigHelper 加载 appsettings.Production.json
+      ASPNETCORE_ENVIRONMENT: "${ASPNETCORE_ENVIRONMENT:-Production}"
+      # ⚠ 下面两行对 B 源码的 DB 配置**无效**（ConfigHelper 不读 env），仅供未来改造参考
+      # type: "${DB_TYPE:-SqlServer}"
+      # connectionString: "${DB_CONNECTIONSTRING:-...}"
+      # 实际 DB 配置通过 volume 挂载 appsettings.Production.json 实现
+    volumes:
+      # 生产配置：挂载 appsettings.Production.json 覆盖默认的 SQLite 配置
+      # ⚠ 必须修改此文件中的 connectionString（Password 需与 .env 的 DB_SA_PASSWORD 一致）
+      # 这是唯一需要用户修改的连接串文件
+      - ./appsettings.Production.json:/app/appsettings.Production.json:ro
+      # 持久化上传目录（.NET 8 镜像的 app 用户已 chown，见 Dockerfile）
+      - xhdcrm3-uploads:/app/wwwroot/upload
+      # 持久化日志目录
+      - xhdcrm3-logs:/app/Logs
+      # [Sprint 10.12] 持久化 DataProtection 密钥（Startup.cs:98-99 硬编码 /app/Data）
+      # 不挂卷 → 容器重建后密钥丢失 → 旧 session cookie 无法解密 → 登录必崩
+      - xhdcrm3-data:/app/Data
+    depends_on:
+      # [Sprint 10.12] 改为依赖 db-init 完成（service_completed_successfully），
+      # 而不是直接依赖 db 的 service_healthy。
+      # 根因：db 的 healthcheck 连 master 库，永远 healthy，无法反映 XHDCRM3 是否已建。
+      # db-init 幂等创建 XHDCRM3 后 exit 0，app 才启动 → 首个 DB 查询不会抛异常。
+      db-init:
+        condition: service_completed_successfully
+    restart: unless-stopped
+    networks:
+      - xhdcrm-net
+    healthcheck:
+      # [Sprint 10.12] 改走 curl /health（真实探测数据库），
+      # 原 TCP 探测 (exec 3<>/dev/tcp/127.0.0.1/5001) 只能证明进程活着。
+      # curl 由 Dockerfile runtime 阶段 apt-get 安装。
+      test: ["CMD", "curl", "-fsS", "http://localhost:5001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  # [Sprint 10.12] 新增：数据库一次性初始化服务
+  # 复用 mssql/server 镜像（自带 sqlcmd），幂等创建 XHDCRM3 后 exit 0。
+  # app 依赖本服务 service_completed_successfully，确保建库完成后 app 才启动。
+  # 详见 db-init/Dockerfile 和 db-init/entrypoint.sh
+  db-init:
+    build:
+      context: ./db-init
+      dockerfile: Dockerfile
+      args:
+        DB_IMAGE_TAG: "${DB_IMAGE_TAG:-2025-latest}"
+    image: xhdcrm3/db-init:net8
+    container_name: xhdcrm3-db-init
+    environment:
+      # 脚本用 MSSQL_SA_PASSWORD 连 SQL Server 执行 CREATE DATABASE
+      # compose 里 $$ 转义为 $（容器内 shell 变量）；此处直接注入字面值
+      MSSQL_SA_PASSWORD: "${DB_SA_PASSWORD}"
+      DB_HOST: "db"
+      DB_PORT: "1433"
+      DB_NAME: "XHDCRM3"
+      DB_INIT_MAX_WAIT: "180"
+      DB_INIT_INTERVAL: "5"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - xhdcrm-net
+    # 不需要 volumes — 初始化通过 TCP 连 db 容器操作共享的 xhdcrm3-mssql 卷，
+    # 不需要本地文件系统访问。
+
+  db:
+    # SQL Server 2025 (17.x) GA，镜像约 2.6GB（拉取后约 1.2GB 解压）
+    # 依据: https://mcr.microsoft.com/product/mssql/server/about (检索 2026-09-18)
+    image: mcr.microsoft.com/mssql/server:${DB_IMAGE_TAG:-2025-latest}
+    container_name: xhdcrm3-db
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${DB_SA_PASSWORD}"
+      MSSQL_PID: "${DB_PID:-Developer}"
+      # 中文排序规则（可选，按需调整）
+      MSSQL_COLLATION: "Chinese_PRC_CI_AS"
+    ports:
+      - "${DB_HOST_PORT:-1433}:1433"
+    volumes:
+      - xhdcrm3-mssql:/var/opt/mssql
+      - xhdcrm3-mssql-data:/var/opt/mssql/data
+      - xhdcrm3-mssql-log:/var/opt/mssql/log
+      - xhdcrm3-mssql-backup:/var/opt/mssql/backup
+    healthcheck:
+      # /opt/mssql-tools/bin/sqlcmd 在 SQL Server 2022/2025 镜像中可用
+      # 依据: https://mcr.microsoft.com/product/mssql/server/about (检索 2026-09-18)
+      # ⚠ 此 healthcheck 连默认 master 库，只证明 SQL Server 进程可用，
+      #    不证明用户库 XHDCRM3 已建。XHDCRM3 的创建由 db-init 服务负责。
+      test: ["CMD-SHELL", "/opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q 'SELECT 1' -b -o /dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - xhdcrm-net
+    # Developer 版官方推荐最小 2GB 内存 / 2 CPU
+    # 依据: https://learn.microsoft.com/en-us/sql/sql-server/editions-and-components-of-sql-server
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+networks:
+  xhdcrm-net:
+    driver: bridge
+
+volumes:
+  xhdcrm3-mssql:
+  xhdcrm3-mssql-data:
+  xhdcrm3-mssql-log:
+  xhdcrm3-mssql-backup:
+  xhdcrm3-uploads:
+  xhdcrm3-logs:
+  xhdcrm3-data:
