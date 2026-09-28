@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -112,6 +112,10 @@ namespace XHD.Core.View.Controllers
             // 权限过滤：非全员可见角色只能查看自己创建的数据
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
 
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             if (roledata.authtype != 4)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.create_id));
@@ -127,6 +131,7 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         /// <param name="model">应收单实体</param>
         /// <returns>操作结果</returns>
+        [HttpPost]
         public async Task<string> Save(Finance_Receivable model)
         {
             var result = 0;
@@ -178,6 +183,17 @@ namespace XHD.Core.View.Controllers
                         return XHDResult.Error("找不到数据！").ToString();
                     }
 
+                    result = 0; // 先做数据权限校验，校验通过后再 await 
+                    // [v11] 数据权限校验（编辑时检查数据归属）
+                    var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+                    if (roledata.authtype == 0)
+                        return XHDResult.Error("无数据权限！").ToString();
+                    if (roledata.authtype != 4)
+                    {
+                        var existing = (await _service.GridAsync(a => a.id == model.id, 1, 1)).data.FirstOrDefault();
+                        if (existing != null && !roledata.empList.Contains(existing.create_id))
+                            return XHDResult.Error("无权限！").ToString();
+                    }
                     result = await _service.UpdateAsync(model);
 
                     // 日志记录
@@ -225,6 +241,7 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         /// <param name="id">应收单ID</param>
         /// <returns>操作结果</returns>
+        [HttpPost]
         public async Task<string> Delete(string id)
         {
             // 先查询信息
