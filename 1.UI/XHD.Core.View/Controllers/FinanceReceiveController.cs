@@ -88,6 +88,10 @@ namespace XHD.Core.View.Controllers
             //权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
 
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             if (roledata.authtype != 4)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.Order.customer.emp_id));
@@ -98,6 +102,7 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
+        [HttpPost]
         public async Task<string> Save(Finance_Receive model)
         {
             var result = 0;
@@ -136,6 +141,17 @@ namespace XHD.Core.View.Controllers
                         return XHDResult.Error("找不到数据！").ToString();
                     }
 
+                    result = 0; // 先做数据权限校验，校验通过后再 await 
+                    // [v11] 数据权限校验（编辑时检查数据归属）
+                    var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+                    if (roledata.authtype == 0)
+                        return XHDResult.Error("无数据权限！").ToString();
+                    if (roledata.authtype != 4)
+                    {
+                        var existing = (await _service.GridAsync(a => a.id == model.id, 1, 1)).data.FirstOrDefault();
+                        if (existing != null && !roledata.empList.Contains(existing.Order.customer.emp_id))
+                            return XHDResult.Error("无权限！").ToString();
+                    }
                     result = await _service.UpdateAsync(model);
 
                     //对比实体差别
@@ -177,6 +193,7 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
+        [HttpPost]
         public async Task<string> Delete(string id)
         {
             //先查询信息
@@ -195,6 +212,13 @@ namespace XHD.Core.View.Controllers
 
             if (authbtn)
             {
+                result = 0; // 先做数据权限校验，校验通过后再 await 
+                // [v11] 数据权限校验（删除时检查数据归属）
+                var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+                if (roledata.authtype == 0)
+                    return XHDResult.Error("无数据权限！").ToString();
+                if (roledata.authtype != 4 && receiveInfo.data[0].Order.customer.emp_id != null && !roledata.empList.Contains(receiveInfo.data[0].Order.customer.emp_id))
+                    return XHDResult.Error("无权限！").ToString();
                 result = await _service.DeleteAsync(id);
 
                 //先存储删除的实体记录，用日志形式
