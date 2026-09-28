@@ -70,6 +70,12 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         public async Task<string> Grid(PageView<hr_post> model)
         {
+            // [v10] 数据权限过滤
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             Expression<Func<hr_post, bool>> exp = a => a.isDelete == 0 || a.isDelete == null;
 
             if (!string.IsNullOrWhiteSpace(Request.Query["depid"]))
