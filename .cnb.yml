@@ -1,6 +1,29 @@
+# ============================================================
+# XHD-CRM 3.1 CI/CD 配置（双通道）
+#
+# 【通道 A】云原生构建（CI 门禁，`main:` 根）
+#   - 配额：576000s CPU 核时（根组织 lieguch 已耗尽，需管理员扩额）
+#   - 用途：push/api_trigger 门禁，用于代码合入前的自动构建
+#
+# 【通道 B】云原生开发（云开发环境，`$:` 根 + vscode 事件）
+#   - 配额：5760000s（约 1600 小时，与通道 A 完全独立）
+#   - 用途：手动/程序化启动一个带 dotnet SDK 的活环境，
+#           在 stages 内跑 dotnet restore/build/test，
+#           把结果落到 /workspace/ 供拉取，也产出可访问的 WebIDE 端口
+#   - 触发：cnb build start-build --event api_trigger  或直接点 CNB 页面「云原生开发」按钮
+#
+# 两条通道使用**同一套 stage 脚本**，逻辑等价，任选一条能跑通即可拿到
+# 真实的 dotnet 编译输出。
+# ============================================================
+
+# ---------- 通道 A：云原生构建（push 门禁） ----------
 main:
   push:
     - name: build-and-test
+      runner:
+        tags:
+          - cnb:arch:amd64
+        cpus: 2
       docker:
         image: mcr.microsoft.com/dotnet/sdk:8.0
       env:
@@ -21,6 +44,7 @@ main:
                 dotnet restore XHDCRM3.sln
                 echo "=== dotnet build ==="
                 dotnet build XHDCRM3.sln --no-restore --verbosity normal
+                echo "=== BUILD_OK ==="
 
         - name: test
           jobs:
@@ -29,36 +53,107 @@ main:
                 set -e
                 echo "=== dotnet test ==="
                 dotnet test 7.Test/XHD.Core.Tests/XHD.Core.Tests.csproj --no-restore --no-build --logger "console;verbosity=normal" --logger "trx;LogFileName=results.trx"
-                echo "=== build result ==="
-                echo "TESTS_DONE"
+                echo "=== TESTS_DONE ==="
 
-  api_trigger:
-    - name: build-and-test
+  # 注：不在 main: 下声明 api_trigger —— 否则会与 $:api_trigger: 冲突，
+  # 让 CNB 优先命中构建通道（配额已耗尽）。所有 API 触发走 $:api_trigger:
+  # → services:[vscode] → 云原生开发（独立配额池）。
+
+# ============================================================
+# 通道 B：云原生开发（云开发环境，独立配额池）
+#
+# 触发方式（任选其一）：
+#   1) 网页：https://cnb.cool/lieguch/XHD-CRM → 分支 main → 点「云原生开发」按钮
+#   2) CLI ：cnb build start-build --repo lieguch/XHD-CRM \
+#             --branch main --event api_trigger
+#   3) API ：POST /api/v1/repos/lieguch/XHD-CRM/builds  with event=api_trigger
+# ============================================================
+$:
+  # 触发方式 1：CNB 仓库页面 → 分支 → 「云原生开发」按钮
+  vscode:
+    - name: dev-dotnet-build
       docker:
         image: mcr.microsoft.com/dotnet/sdk:8.0
+      services:
+        - vscode
+        - docker
       env:
         DOTNET_CLI_TELEMETRY_OPTOUT: "1"
         DOTNET_NOLOGO: "1"
         DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
       stages:
-        - name: build
-          jobs:
-            - name: dotnet-build
-              script: |
-                set -e
-                echo "=== dotnet --version ==="
-                dotnet --version
-                echo "=== dotnet restore ==="
-                dotnet restore XHDCRM3.sln
-                echo "=== dotnet build ==="
-                dotnet build XHDCRM3.sln --no-restore --verbosity normal
+        - name: build-and-emit
+          script: |
+            # CNB runner 默认 /bin/sh(dash) 不支持 set -o pipefail，
+            # tee 会吞掉 dotnet build 的失败退出码导致 build 失败仍报 success。
+            # 显式切 bash 再开 pipefail。
+            exec /bin/bash -e -o pipefail <<'BASH_EOF'
+            echo "=== hostname / whoami ==="
+            hostname
+            whoami
+            echo "=== pwd ==="
+            pwd
+            ls -la
+            echo "=== dotnet --version ==="
+            dotnet --version
+            echo "=== dotnet --info ==="
+            dotnet --info
+            echo "=== dotnet restore ==="
+            dotnet restore XHDCRM3.sln 2>&1 | tee /workspace/restore.log
+            echo "=== dotnet build ==="
+            dotnet build XHDCRM3.sln --no-restore --verbosity normal 2>&1 | tee /workspace/build.log
+            echo "=== dotnet test ==="
+            dotnet test 7.Test/XHD.Core.Tests/XHD.Core.Tests.csproj \
+              --no-restore --no-build \
+              --logger "console;verbosity=normal" \
+              --logger "trx;LogFileName=results.trx" 2>&1 | tee /workspace/test.log
+            echo "=== SUMMARY ==="
+            echo "BUILD_ARTIFACTS_DIR=/workspace"
+            ls -la /workspace/
+            echo "=== DEV_DONE ==="
+            BASH_EOF
 
-        - name: test
-          jobs:
-            - name: dotnet-test
-              script: |
-                set -e
-                echo "=== dotnet test ==="
-                dotnet test 7.Test/XHD.Core.Tests/XHD.Core.Tests.csproj --no-restore --no-build --logger "console;verbosity=normal" --logger "trx;LogFileName=results.trx"
-                echo "=== build result ==="
-                echo "TESTS_DONE"
+  # 触发方式 2：CLI / API 触发（`cnb build start-build --event api_trigger`）
+  # —— 每个事件都必须给出完整 pipeline 配置，不能只写 `- vscode` 引用
+  api_trigger:
+    - name: dev-dotnet-build
+      docker:
+        image: mcr.microsoft.com/dotnet/sdk:8.0
+      services:
+        - vscode
+        - docker
+      env:
+        DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+        DOTNET_NOLOGO: "1"
+        DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "1"
+      stages:
+        - name: build-and-emit
+          script: |
+            # CNB runner 默认 /bin/sh(dash) 不支持 set -o pipefail，
+            # tee 会吞掉 dotnet build 的失败退出码导致 build 失败仍报 success。
+            # 显式切 bash 再开 pipefail。
+            exec /bin/bash -e -o pipefail <<'BASH_EOF'
+            echo "=== hostname / whoami ==="
+            hostname
+            whoami
+            echo "=== pwd ==="
+            pwd
+            ls -la
+            echo "=== dotnet --version ==="
+            dotnet --version
+            echo "=== dotnet --info ==="
+            dotnet --info
+            echo "=== dotnet restore ==="
+            dotnet restore XHDCRM3.sln 2>&1 | tee /workspace/restore.log
+            echo "=== dotnet build ==="
+            dotnet build XHDCRM3.sln --no-restore --verbosity normal 2>&1 | tee /workspace/build.log
+            echo "=== dotnet test ==="
+            dotnet test 7.Test/XHD.Core.Tests/XHD.Core.Tests.csproj \
+              --no-restore --no-build \
+              --logger "console;verbosity=normal" \
+              --logger "trx;LogFileName=results.trx" 2>&1 | tee /workspace/test.log
+            echo "=== SUMMARY ==="
+            echo "BUILD_ARTIFACTS_DIR=/workspace"
+            ls -la /workspace/
+            echo "=== DEV_DONE ==="
+            BASH_EOF
