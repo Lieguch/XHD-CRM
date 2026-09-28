@@ -24,15 +24,17 @@ namespace XHD.Core.View.Controllers
     [Authorize]
     public class TaskFollowController : Controller
     {
+        private readonly IDBAuthService _dBAuthService;
         private readonly ILogger<TaskFollowController> _logger;
         private readonly ITask_followService _service;
 
         public TaskFollowController(
             ILogger<TaskFollowController> logger,
-            ITask_followService service)
+            ITask_followService service, IDBAuthService dBAuthService)
         {
             _logger = logger;
             _service = service;
+            _dBAuthService = dBAuthService;
         }
 
         private string GetUserId()
@@ -64,6 +66,12 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         public async Task<string> Grid(PageView<Task_follow> model)
         {
+            // [v10] 数据权限过滤
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             Expression<Func<Task_follow, bool>> exp = f => true;
 
             if (!string.IsNullOrWhiteSpace(Request.Query["task_id"]))
