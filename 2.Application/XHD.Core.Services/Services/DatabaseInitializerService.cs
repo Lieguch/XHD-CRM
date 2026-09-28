@@ -127,6 +127,30 @@ namespace XHD.Core.Services
 
                 tableName = "Sys_info";
                 var infos = SeedData.Infos().ToList();
+                tableName = "hr_department";
+                var departments = SeedData.Departments().ToList();
+                perTable.Add(await fsql.Insert(departments).ExecuteAffrowsAsync());
+
+                tableName = "hr_position";
+                var positions = SeedData.Positions().ToList();
+                perTable.Add(await fsql.Insert(positions).ExecuteAffrowsAsync());
+
+                tableName = "hr_post";
+                var posts = SeedData.Posts().ToList();
+                perTable.Add(await fsql.Insert(posts).ExecuteAffrowsAsync());
+
+                tableName = "Sys_role_emp";
+                var roleEmps = SeedData.RoleEmps().ToList();
+                perTable.Add(await fsql.Insert(roleEmps).ExecuteAffrowsAsync());
+
+                tableName = "Sys_log_Err";
+                var logErrs = SeedData.LogErrs().ToList();
+                perTable.Add(await fsql.Insert(logErrs).ExecuteAffrowsAsync());
+
+                tableName = "Sys_Param";
+                var paramsList = SeedData.Params().ToList();
+                perTable.Add(await fsql.Insert(paramsList).ExecuteAffrowsAsync());
+
                 perTable.Add(await fsql.Insert(infos).ExecuteAffrowsAsync());
 
                 // 4) 最后写入"已初始化"标记
@@ -143,7 +167,7 @@ namespace XHD.Core.Services
 
                 sw.Stop();
                 _logger.LogInformation(
-                    "数据库初始化成功：8 表插入 {Rows} 行（+1 标记行），耗时 {Elapsed}ms。",
+                    "数据库初始化成功：14 表插入 {Rows} 行（+1 标记行），耗时 {Elapsed}ms。",
                     totalWithMarker, sw.ElapsedMilliseconds);
 
                 return SeedResult.SuccessResult(totalWithMarker, perTable);
@@ -176,6 +200,12 @@ namespace XHD.Core.Services
             await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_Param_Type");
             await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_role");
             await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM hr_employee");
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_Param");
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_role_emp");
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_log_Err");
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM hr_department");
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM hr_position");
+            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM hr_post");
             await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_info");
         }
     }
