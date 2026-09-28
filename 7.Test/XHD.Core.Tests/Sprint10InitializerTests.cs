@@ -5,7 +5,7 @@
 //   ② SeedAsync 首次返回 Success 且 TotalInserted > 0
 //   ③ SeedAsync 二次不重复（幂等）
 //   ④ SeedAsync(force=true) 清旧重插，仍保持正确
-//   ⑤ 8 张表插入行数与 SeedData 声明一致
+//   ⑤ 14 张表插入行数与 SeedData 声明一致
 //   ⑥ 'seeded' 标记行写入 Sys_info
 //   ⑦ SeedAsync 不抛异常（永远返回 SeedResult）
 //   ⑧ SeedData.Roles() 固定 GUID 回归（禁止 Guid.NewGuid）
@@ -56,7 +56,7 @@ namespace XHD.Core.Tests
 
             Assert.True(result.Success, $"SeedAsync failed with error: {result.Error}");
             Assert.False(result.AlreadySeeded);
-            Assert.Equal(8, result.RecordsPerTable.Count);
+            Assert.Equal(14, result.RecordsPerTable.Count);
             Assert.All(result.RecordsPerTable, x => Assert.True(x > 0, $"表 {x} 应该 >0"));
             Assert.True(result.TotalInserted > 0);
         }
@@ -71,7 +71,7 @@ namespace XHD.Core.Tests
             var first = await _svc.SeedAsync(fsql);
             Assert.True(first.Success);
 
-            // 记录 8 张表的行数
+            // 记录 14 张表的行数
             var countsAfterFirst = SnapshotCounts(fsql);
 
             var second = await _svc.SeedAsync(fsql);
@@ -105,7 +105,7 @@ namespace XHD.Core.Tests
             Assert.Equal(countsAfterFirst, countsAfterForce);
         }
 
-        // ========== ⑤ 8 表插入行数与 SeedData 声明一致 ==========
+        // ========== ⑤ 14 表插入行数与 SeedData 声明一致 ==========
 
         [Fact]
         public async Task SeedAsync_AfterFirstSeed_InsertsExpectedRowsPerTable()
