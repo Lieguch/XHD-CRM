@@ -1,0 +1,43 @@
+﻿@{
+    ViewData["Title"] = "添加附件";
+}
+<div class="layui-form">
+    <input type="hidden" id="id" name="id" />
+    <div class="layui-form-item">
+        <label class="layui-form-label">客户ID</label>
+        <div class="layui-input-block">
+            <input type="text" id="cus_id" name="cus_id" lay-verify="required" placeholder="请输入客户ID" class="layui-input" readonly />
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">文件名</label>
+        <div class="layui-input-block">
+            <input type="text" id="file_name" name="file_name" lay-verify="required" placeholder="请输入文件名" class="layui-input" />
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">实际文件名</label>
+        <div class="layui-input-block">
+            <input type="text" id="real_name" name="real_name" lay-verify="required" placeholder="请输入实际文件名" class="layui-input" />
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <label class="layui-form-label">文件大小(KB)</label>
+        <div class="layui-input-block">
+            <input type="text" id="file_size" name="file_size" lay-verify="required" placeholder="请输入文件大小(KB)" class="layui-input" />
+        </div>
+    </div>
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button class="layui-btn" id="LAY-user-front-submit" lay-submit lay-filter="form-submit">确认</button>
+        </div>
+    </div>
+</div>
+<script>
+layui.use(['form', 'layer'], function () {
+    var form = layui.form;
+    var layer = layui.layer;
+    // 初始化表单
+    form.render();
+});
+</script>
