@@ -58,6 +58,12 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> Grid(PageView<hr_position> model)
         {
+            // [v10] 数据权限过滤
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             Expression<Func<hr_position, bool>> exp = a => true;
             var result = await _service.GridAsync(exp, model.Page, model.Limit, "position_level");
 
