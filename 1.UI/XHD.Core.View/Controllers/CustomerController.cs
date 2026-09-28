@@ -623,6 +623,7 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
+        [HttpPost]
         public async Task<string> Delete(string id)
         {
             // 检查关联数据
@@ -654,7 +655,14 @@ namespace XHD.Core.View.Controllers
                 return XHDResult.Error("找不到此数据！").ToString();
             }
 
-            var result = await _service.DeleteAsync(id);
+            var result = 0; // 先做数据权限校验，校验通过后再 await 
+                // [v11] 数据权限校验（删除时检查数据归属）
+                var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+                if (roledata.authtype == 0)
+                    return XHDResult.Error("无数据权限！").ToString();
+                if (roledata.authtype != 4 && customer.emp_id != null && !roledata.empList.Contains(customer.emp_id))
+                    return XHDResult.Error("无权限！").ToString();
+            result = await _service.DeleteAsync(id);
             if (result == 0)
             {
                 return XHDResult.Error("删除失败！").ToString();
