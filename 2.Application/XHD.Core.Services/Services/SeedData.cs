@@ -88,9 +88,9 @@ namespace XHD.Core.Services
             list.Add(new Sys_Button { id = "CRM_Customer|add", Btn_name = "新增", Btn_icon = "fa-plus-circle", Btn_handler = "add", Btn_order = 10, Menu_id = "CRM_Customer" });
             list.Add(new Sys_Button { id = "CRM_Customer|edit", Btn_name = "修改", Btn_icon = "fa-pencil-square-o", Btn_handler = "edit", Btn_order = 20, Menu_id = "CRM_Customer" });
             list.Add(new Sys_Button { id = "CRM_Customer|del", Btn_name = "删除", Btn_icon = "fa-minus-circle", Btn_handler = "del", Btn_order = 30, Menu_id = "CRM_Customer" });
-            list.Add(new Sys_Button { id = "CRM_Contact|add", Btn_name = "新增", Btn_icon = "fa-plus-circle", Btn_handler = "add", Btn_order = 10, Menu_id = "CRM_Contact" });
-            list.Add(new Sys_Button { id = "CRM_Contact|edit", Btn_name = "修改", Btn_icon = "fa-pencil-square-o", Btn_handler = "edit", Btn_order = 20, Menu_id = "CRM_Contact" });
-            list.Add(new Sys_Button { id = "CRM_Contact|del", Btn_name = "删除", Btn_icon = "fa-minus-circle", Btn_handler = "del", Btn_order = 30, Menu_id = "CRM_Contact" });
+            list.Add(new Sys_Button { id = "CRM_Contact|add", Btn_name = "新增", Btn_icon = "fa-plus-circle", Btn_handler = "add", Btn_order = 10, Menu_id = "crm_contact" });
+            list.Add(new Sys_Button { id = "CRM_Contact|edit", Btn_name = "修改", Btn_icon = "fa-pencil-square-o", Btn_handler = "edit", Btn_order = 20, Menu_id = "crm_contact" });
+            list.Add(new Sys_Button { id = "CRM_Contact|del", Btn_name = "删除", Btn_icon = "fa-minus-circle", Btn_handler = "del", Btn_order = 30, Menu_id = "crm_contact" });
             list.Add(new Sys_Button { id = "CRM_Follow|add", Btn_name = "新增", Btn_icon = "fa-plus-circle", Btn_handler = "add", Btn_order = 10, Menu_id = "CRM_Follow" });
             list.Add(new Sys_Button { id = "CRM_Follow|edit", Btn_name = "修改", Btn_icon = "fa-pencil-square-o", Btn_handler = "edit", Btn_order = 20, Menu_id = "CRM_Follow" });
             list.Add(new Sys_Button { id = "CRM_Follow|del", Btn_name = "删除", Btn_icon = "fa-minus-circle", Btn_handler = "del", Btn_order = 30, Menu_id = "CRM_Follow" });
@@ -100,9 +100,9 @@ namespace XHD.Core.Services
             list.Add(new Sys_Button { id = "Product|add", Btn_name = "新增", Btn_icon = "fa-plus-circle", Btn_handler = "add", Btn_order = 10, Menu_id = "Product" });
             list.Add(new Sys_Button { id = "Product|edit", Btn_name = "修改", Btn_icon = "fa-pencil-square-o", Btn_handler = "edit", Btn_order = 20, Menu_id = "Product" });
             list.Add(new Sys_Button { id = "Product|del", Btn_name = "删除", Btn_icon = "fa-minus-circle", Btn_handler = "del", Btn_order = 30, Menu_id = "Product" });
-            list.Add(new Sys_Button { id = "Sale_Order|add", Btn_name = "新增", Btn_icon = "fa-plus-circle", Btn_handler = "add", Btn_order = 10, Menu_id = "Sale_Order" });
-            list.Add(new Sys_Button { id = "Sale_Order|edit", Btn_name = "修改", Btn_icon = "fa-pencil-square-o", Btn_handler = "edit", Btn_order = 20, Menu_id = "Sale_Order" });
-            list.Add(new Sys_Button { id = "Sale_Order|del", Btn_name = "删除", Btn_icon = "fa-minus-circle", Btn_handler = "del", Btn_order = 30, Menu_id = "Sale_Order" });
+            list.Add(new Sys_Button { id = "Sale_Order|add", Btn_name = "新增", Btn_icon = "fa-plus-circle", Btn_handler = "add", Btn_order = 10, Menu_id = "Sale_Menu_order" });
+            list.Add(new Sys_Button { id = "Sale_Order|edit", Btn_name = "修改", Btn_icon = "fa-pencil-square-o", Btn_handler = "edit", Btn_order = 20, Menu_id = "Sale_Menu_order" });
+            list.Add(new Sys_Button { id = "Sale_Order|del", Btn_name = "删除", Btn_icon = "fa-minus-circle", Btn_handler = "del", Btn_order = 30, Menu_id = "Sale_Menu_order" });
             list.Add(new Sys_Button { id = "Sale_Contract|add", Btn_name = "新增", Btn_icon = "fa-plus-circle", Btn_handler = "add", Btn_order = 10, Menu_id = "Sale_Contract" });
             list.Add(new Sys_Button { id = "Sale_Contract|edit", Btn_name = "修改", Btn_icon = "fa-pencil-square-o", Btn_handler = "edit", Btn_order = 20, Menu_id = "Sale_Contract" });
             list.Add(new Sys_Button { id = "Sale_Contract|del", Btn_name = "删除", Btn_icon = "fa-minus-circle", Btn_handler = "del", Btn_order = 30, Menu_id = "Sale_Contract" });
@@ -733,7 +733,7 @@ namespace XHD.Core.Services
         public static IReadOnlyList<hr_employee> Admins()
         {
                         var list = new List<hr_employee>();
-            list.Add(new hr_employee { id = "admin", uid = "admin", pwd = "E10ADC3949BA59ABBE56E057F20F883E", name = "超级管理员" });
+            list.Add(new hr_employee { id = "admin", uid = "admin", pwd = "E10ADC3949BA59ABBE56E057F20F883E", name = "超级管理员", role_id = "SystemAdminRole" });
             return list;
         }
         /// <summary>
@@ -757,5 +757,127 @@ namespace XHD.Core.Services
             return list;
         }
 
-    }
+
+        /// <summary>
+        /// [v10] 部门种子数据。
+        /// </summary>
+        public static IReadOnlyList<hr_department> Departments()
+        {
+            var list = new List<hr_department>();
+            list.Add(new hr_department { id = "dep_root", dep_name = "总公司", parentid = "", dep_order = 0, create_time = DateTime.Now });
+            list.Add(new hr_department { id = "dep_sales", dep_name = "销售部", parentid = "dep_root", dep_order = 1, create_time = DateTime.Now });
+            list.Add(new hr_department { id = "dep_tech", dep_name = "技术部", parentid = "dep_root", dep_order = 2, create_time = DateTime.Now });
+            list.Add(new hr_department { id = "dep_admin", dep_name = "行政部", parentid = "dep_root", dep_order = 3, create_time = DateTime.Now });
+            list.Add(new hr_department { id = "dep_finance", dep_name = "财务部", parentid = "dep_root", dep_order = 4, create_time = DateTime.Now });
+            return list;
+        }
+        /// <summary>
+        /// [v10] 职位种子数据。
+        /// </summary>
+        public static IReadOnlyList<hr_position> Positions()
+        {
+            var list = new List<hr_position>();
+            list.Add(new hr_position { id = "pos_001", position_name = "总经理", position_order = 0, create_time = DateTime.Now });
+            list.Add(new hr_position { id = "pos_002", position_name = "部门经理", position_order = 1, create_time = DateTime.Now });
+            list.Add(new hr_position { id = "pos_003", position_name = "主管", position_order = 2, create_time = DateTime.Now });
+            list.Add(new hr_position { id = "pos_004", position_name = "员工", position_order = 3, create_time = DateTime.Now });
+            return list;
+        }
+        /// <summary>
+        /// [v10] 岗位种子数据。
+        /// </summary>
+        public static IReadOnlyList<hr_post> Posts()
+        {
+            var list = new List<hr_post>();
+            list.Add(new hr_post { id = "post_001", post_name = "销售经理", create_time = DateTime.Now });
+            list.Add(new hr_post { id = "post_002", post_name = "销售主管", create_time = DateTime.Now });
+            list.Add(new hr_post { id = "post_003", post_name = "销售代表", create_time = DateTime.Now });
+            list.Add(new hr_post { id = "post_004", post_name = "技术经理", create_time = DateTime.Now });
+            list.Add(new hr_post { id = "post_005", post_name = "工程师", create_time = DateTime.Now });
+            return list;
+        }
+        /// <summary>
+        /// [v10] 角色-员工关联种子数据。
+        /// </summary>
+        public static IReadOnlyList<Sys_role_emp> RoleEmps()
+        {
+            var list = new List<Sys_role_emp>();
+            list.Add(new Sys_role_emp { id = "re_001", role_id = "SystemAdminRole", emp_id = "admin" });
+            return list;
+        }
+        /// <summary>
+        /// [v10] 错误类型种子数据。
+        /// </summary>
+        public static IReadOnlyList<Sys_log_Err> LogErrs()
+        {
+            var list = new List<Sys_log_Err>();
+            list.Add(new Sys_log_Err { id = "err_001", Err_type = "系统错误", Err_typeid = 1, Err_time = DateTime.Now });
+            list.Add(new Sys_log_Err { id = "err_002", Err_type = "数据库错误", Err_typeid = 2, Err_time = DateTime.Now });
+            list.Add(new Sys_log_Err { id = "err_003", Err_type = "网络错误", Err_typeid = 3, Err_time = DateTime.Now });
+            list.Add(new Sys_log_Err { id = "err_004", Err_type = "业务逻辑错误", Err_typeid = 4, Err_time = DateTime.Now });
+            list.Add(new Sys_log_Err { id = "err_005", Err_type = "权限错误", Err_typeid = 5, Err_time = DateTime.Now });
+            list.Add(new Sys_log_Err { id = "err_006", Err_type = "接口调用错误", Err_typeid = 6, Err_time = DateTime.Now });
+            list.Add(new Sys_log_Err { id = "err_007", Err_type = "文件读写错误", Err_typeid = 7, Err_time = DateTime.Now });
+            list.Add(new Sys_log_Err { id = "err_008", Err_type = "其他错误", Err_typeid = 8, Err_time = DateTime.Now });
+            return list;
+        }
+        /// <summary>
+        /// [v10] 系统参数种子数据。
+        /// </summary>
+        public static IReadOnlyList<Sys_Param> Params()
+        {
+            var list = new List<Sys_Param>();
+            // cus_source
+            list.Add(new Sys_Param { id = "param_001", params_name = "老客户推荐", params_type = "cus_source", params_order = 1, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_002", params_name = "展会", params_type = "cus_source", params_order = 2, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_003", params_name = "网络", params_type = "cus_source", params_order = 3, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_004", params_name = "电话", params_type = "cus_source", params_order = 4, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_005", params_name = "其他", params_type = "cus_source", params_order = 5, create_time = DateTime.Now });
+            // cus_level
+            list.Add(new Sys_Param { id = "param_010", params_name = "A级", params_type = "cus_level", params_order = 1, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_011", params_name = "B级", params_type = "cus_level", params_order = 2, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_012", params_name = "C级", params_type = "cus_level", params_order = 3, create_time = DateTime.Now });
+            // cus_type
+            list.Add(new Sys_Param { id = "param_020", params_name = "企业", params_type = "cus_type", params_order = 1, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_021", params_name = "个人", params_type = "cus_type", params_order = 2, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_022", params_name = "团体", params_type = "cus_type", params_order = 3, create_time = DateTime.Now });
+            // cus_industry
+            list.Add(new Sys_Param { id = "param_030", params_name = "制造业", params_type = "cus_industry", params_order = 1, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_031", params_name = "金融业", params_type = "cus_industry", params_order = 2, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_032", params_name = "IT", params_type = "cus_industry", params_order = 3, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_033", params_name = "教育", params_type = "cus_industry", params_order = 4, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_034", params_name = "医疗", params_type = "cus_industry", params_order = 5, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_035", params_name = "其他", params_type = "cus_industry", params_order = 6, create_time = DateTime.Now });
+            // follow_type
+            list.Add(new Sys_Param { id = "param_040", params_name = "电话", params_type = "follow_type", params_order = 1, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_041", params_name = "拜访", params_type = "follow_type", params_order = 2, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_042", params_name = "邮件", params_type = "follow_type", params_order = 3, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_043", params_name = "微信", params_type = "follow_type", params_order = 4, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_044", params_name = "其他", params_type = "follow_type", params_order = 5, create_time = DateTime.Now });
+            // follow_aim
+            list.Add(new Sys_Param { id = "param_050", params_name = "咨询", params_type = "follow_aim", params_order = 1, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_051", params_name = "采购", params_type = "follow_aim", params_order = 2, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_052", params_name = "合作", params_type = "follow_aim", params_order = 3, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_053", params_name = "其他", params_type = "follow_aim", params_order = 4, create_time = DateTime.Now });
+            // order_status
+            list.Add(new Sys_Param { id = "param_060", params_name = "待审核", params_type = "order_status", params_order = 1, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_061", params_name = "已审核", params_type = "order_status", params_order = 2, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_062", params_name = "已完成", params_type = "order_status", params_order = 3, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_063", params_name = "已取消", params_type = "order_status", params_order = 4, create_time = DateTime.Now });
+            // pay_type
+            list.Add(new Sys_Param { id = "param_070", params_name = "全额付款", params_type = "pay_type", params_order = 1, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_071", params_name = "分期付款", params_type = "pay_type", params_order = 2, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_072", params_name = "货到付款", params_type = "pay_type", params_order = 3, create_time = DateTime.Now });
+            // invoice_type
+            list.Add(new Sys_Param { id = "param_080", params_name = "增值税专用", params_type = "invoice_type", params_order = 1, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_081", params_name = "增值税普通", params_type = "invoice_type", params_order = 2, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_082", params_name = "普通发票", params_type = "invoice_type", params_order = 3, create_time = DateTime.Now });
+            // message_type
+            list.Add(new Sys_Param { id = "param_090", params_name = "系统通知", params_type = "message_type", params_order = 1, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_091", params_name = "业务通知", params_type = "message_type", params_order = 2, create_time = DateTime.Now });
+            list.Add(new Sys_Param { id = "param_092", params_name = "操作提醒", params_type = "message_type", params_order = 3, create_time = DateTime.Now });
+            return list;
+        }
+
+}
 }
