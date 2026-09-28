@@ -1,0 +1,22 @@
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    }
+  },
+  "AllowedHosts": "*",
+  "isConfig": 1,
+  "type": "SqlServer",
+  "connectionString": "Server=db,1433;Database=XHDCRM3;User Id=sa;Password=Your_Strong_Password_123;TrustServerCertificate=True;Encrypt=True",
+  "idleTime": 10,
+  "dbs": [],
+  "Urls": "http://+:5001",
+  "HttpsRedirection": {
+    "Enabled": false
+  },
+  "Hsts": {
+    "Enabled": false
+  }
+}
