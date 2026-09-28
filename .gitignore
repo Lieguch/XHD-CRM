@@ -7,5 +7,6 @@ obj/
 TestResults/
 packages/
 artifacts/
+archives/
 _logs.txt
 _logs*.txt
