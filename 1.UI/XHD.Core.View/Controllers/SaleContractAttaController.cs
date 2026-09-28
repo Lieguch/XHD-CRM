@@ -33,15 +33,17 @@ namespace XHD.Core.View.Controllers
     [Authorize]
     public class SaleContractAttaController : Controller
     {
+        private readonly IDBAuthService _dBAuthService;
         private readonly ILogger<SaleContractAttaController> _logger;
         private readonly ISale_contractService _service;
         private readonly ISale_contract_attaService _detailservice;
 
-        public SaleContractAttaController(ILogger<SaleContractAttaController> logger, ISale_contractService service, ISale_contract_attaService detailservice)
+        public SaleContractAttaController(ILogger<SaleContractAttaController> logger, ISale_contractService service, ISale_contract_attaService detailservice, IDBAuthService dBAuthService)
         {
             _service = service;
             _logger = logger;
             _detailservice = detailservice;
+            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -56,6 +58,12 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> Grid(PageView<Sale_contract_atta> model)
         {
+            // [v10] 数据权限过滤
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype == 0)
+            {
+                return "{\"code\":0,\"data\":[],\"count\":0}";
+            }
             Expression<Func<Sale_contract_atta, bool>> exp = a => a.contract_id == Request.Query["id"];
 
             //if (!string.IsNullOrWhiteSpace(Request.Query["T_name"]))
