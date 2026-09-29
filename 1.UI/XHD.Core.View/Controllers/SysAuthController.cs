@@ -12,6 +12,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.AspNetCore.Authorization;
+using System.Security.Claims;
 
 namespace XHD.Core.View.Controllers
 {
@@ -22,17 +23,20 @@ namespace XHD.Core.View.Controllers
         private readonly ISys_MenuService _MenuService;
         private readonly ISys_ButtonService _ButtonService;
         private readonly ISys_authorityService _authorityService;
+        private readonly IDBAuthService _dBAuthService;
 
         public SysAuthController(ILogger<SysAuthController> logger,
              ISys_MenuService MenuService,
              ISys_ButtonService ButtonService,
-             ISys_authorityService authorityService
+             ISys_authorityService authorityService,
+             IDBAuthService dBAuthService
             )
         {
             _MenuService = MenuService;
             _authorityService = authorityService;
             _ButtonService = ButtonService;
             _logger = logger;
+            _dBAuthService = dBAuthService;
         }
 
         public async Task<string> Grid()
@@ -163,6 +167,11 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> save()
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sys_auth|save"))
+            {
+                return XHDResult.Error("无操作权限");
+            }
+
             Expression<Func<Sys_authority, bool>> exp = a => a.Role_id == Request.Form["role_id"] && a.Auth_id == Request.Form["auth_id"];
 
             await _authorityService.DeleteAsync(exp);
@@ -187,7 +196,8 @@ namespace XHD.Core.View.Controllers
                 }
 
 
-                await _authorityService.AddAsync(models);
+                var addResult = await _authorityService.AddAsync(models);
+                if (addResult <= 0) { return XHDResult.Error("保存失败").ToString(); }
             }
 
             return XHDResult.Success().ToString();
