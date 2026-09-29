@@ -1,4 +1,4 @@
-﻿# ==========================================================================
+# ==========================================================================
 # XHD CRM 3.1 - docker-compose.yml
 # ==========================================================================
 # 使用:
@@ -30,7 +30,7 @@ services:
     container_name: xhd-crm-web
     restart: unless-stopped
     ports:
-      - "5001:5001"
+      - "127.0.0.1:5001:5001"
     environment:
       ASPNETCORE_ENVIRONMENT: "Production"
       ASPNETCORE_URLS: "http://+:5001"
@@ -40,10 +40,10 @@ services:
       # DB_TYPE: "MySql"
       # DB_CONNECTION: "Server=mysql;Port=3306;Database=xhdcrm;Uid=root;Pwd=your_pwd;Charset=utf8mb4;Pooling=true;Min Pool Size=1"
     volumes:
+      - ./appsettings.Sqlite.json:/app/appsettings.Production.json:ro
       - xhd-crm-data:/app/Data
       - xhd-crm-uploads:/app/Uploads
       - xhd-crm-logs:/app/Logs
-      - ./appsettings.Sqlite.json:/app/appsettings.Production.json:ro
       # 如需外部挂载自定义 appsettings.json（覆盖 DB 配置），取消注释：
       # - ./appsettings.override.json:/app/appsettings.json:ro
     networks:
