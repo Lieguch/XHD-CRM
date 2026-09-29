@@ -75,7 +75,6 @@ namespace XHD.Core.View.Controllers
         [HttpGet]
         public async Task<string> Login(string uid, string? pwd)
         {
-            //var password = MD5Comm.MD5Hash(pwd);
             pwd = pwd.ToUpper();
 
             Expression<Func<hr_employee, bool>> expwhere = a => a.uid == uid && a.pwd == pwd;
@@ -137,8 +136,6 @@ namespace XHD.Core.View.Controllers
 
                 string decrypttoken = DESEncrypt.Decrypt(encrypttoken);
 
-                //Console.WriteLine(decrypttoken);
-
                 string[] tokenitems = decrypttoken.Split(',');
 
                 string id = "";
@@ -149,11 +146,6 @@ namespace XHD.Core.View.Controllers
                     id = tokenitems[0];
                     tokentime = tokenitems[1];
                 }
-
-                //if (!PageValidate.checkID(id))
-                //{
-                //    return XHDResult.Error(-9, "id格式错误！");
-                //}
 
                 DateTime limittime = DateTime.Parse(tokentime);
 
@@ -1167,7 +1159,6 @@ namespace XHD.Core.View.Controllers
 
             var result = await _SysParamService.GridAsync(exp, "params_order");
 
-            //return JsonConvert.SerializeObject(result, new IsoDateTimeConverter { DateTimeFormat = "yyyy-MM-dd HH:mm:ss" }).ToString();
             return result.ToString();
         }
 
