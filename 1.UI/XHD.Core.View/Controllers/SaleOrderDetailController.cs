@@ -30,26 +30,18 @@ namespace XHD.Core.View.Controllers
     [Authorize]
     public class SaleOrderDetailController : Controller
     {
-        private readonly IDBAuthService _dBAuthService;
         private readonly ILogger<SaleOrderDetailController> _logger;
         private readonly ISale_order_detailsService _service;
 
-        public SaleOrderDetailController(ILogger<SaleOrderDetailController> logger, ISale_order_detailsService service, IDBAuthService dBAuthService)
+        public SaleOrderDetailController(ILogger<SaleOrderDetailController> logger, ISale_order_detailsService service)
         {
             _service = service;
             _logger = logger;
-            _dBAuthService = dBAuthService;
         }
 
         public async Task<string> Grid(PageView<Sale_order_details> model)
         {
-            // [v10] 数据权限过滤
-            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
-            Expression<Func<Sale_order_details, bool>> exp = a => a.order_id == Request.Form["id"];
+            Expression<Func<Sale_order_details, bool>> exp = a => a.order_id == Request.Query["id"];
 
             //if (!string.IsNullOrWhiteSpace(Request.Query["T_name"]))
             //{
