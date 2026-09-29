@@ -516,7 +516,9 @@ namespace XHD.Core.Tests
                 .ReturnsAsync(1);
             calSvc.Setup(s => s.DeleteAsync(It.IsAny<string>())).ReturnsAsync(1);
 
-            var ctrl = new MyCalendarController(calSvc.Object);
+            var authSvc = new Mock<IDBAuthService>();
+            authSvc.Setup(a => a.GetAuth(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+            var ctrl = new MyCalendarController(calSvc.Object, authSvc.Object);
 
             var httpCtx = new Microsoft.AspNetCore.Http.DefaultHttpContext();
             httpCtx.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
