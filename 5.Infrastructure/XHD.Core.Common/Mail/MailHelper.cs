@@ -129,8 +129,9 @@ namespace XHD.Core.Common.Mail
             finally
             {
                 client.Disconnect();
-                // Sprint 10.36: 确保 MimeMessage 被 Dispose（MimeKit 2.x+ 支持 IDisposable）
-                message.Dispose();
+                // NOTE: 不调用 message.Dispose()。MimeMessage.Dispose() 会销毁 Body，
+                // 导致 SendMailAsync 返回后调用方无法访问消息内容（如测试中的 Body.ToString()）。
+                // MimeMessage 是托管对象，无需显式 Dispose。
             }
         }
 
