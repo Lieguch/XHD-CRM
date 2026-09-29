@@ -186,15 +186,13 @@ namespace XHD.Core.View.Controllers
         }
         public async Task<string> Login(hr_employee model)
         {
-            // [Sprint 10.6] 已移除验证码强制校验 —— Linux Docker 无字体时验证码生成会抛 FontException
-            // 如需恢复，取消下面注释并加装 fonts-dejavu-core 到 Dockerfile：
-            // try {
-            //     var valicode_session = HttpContext.Session.GetString(CaptchaCodeSessionName);
-            //     if (valicode_session?.ToLower() != Request.Form["valicode"]?.ToString().ToLower())
-            //         return XHDResult.Error("验证码错误！").ToString();
-            // } catch {
-            //     return XHDResult.Error(-9, "验证码已过期！").ToString();
-            // }
+            // [Sprint 10.33] 恢复验证码校验 —— CreateImageAsync 已修复字体缺失兜底逻辑
+            var sessionCaptcha = HttpContext.Session.GetString(CaptchaCodeSessionName);
+            var formCaptcha = Request.Form["valicode"]?.ToString();
+            if (string.IsNullOrEmpty(sessionCaptcha) || !sessionCaptcha.Equals(formCaptcha, StringComparison.OrdinalIgnoreCase))
+            {
+                return XHDResult.Error("验证码错误").ToString();
+            }
 
             // [Sprint 10.11] 根因修复：AES_Key 改从 hidden form field 读取，不再依赖 session
             // 原设计缺陷：Index() 生成密钥写入 session + ViewBag，客户端用 ViewBag 密钥加密，
@@ -250,7 +248,7 @@ namespace XHD.Core.View.Controllers
         /// 登出
         /// </summary>
         /// <returns></returns>
-        public new string SignOut()
+        public string SignOut()
         {
             _ = HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return XHDResult.Success().ToString();
