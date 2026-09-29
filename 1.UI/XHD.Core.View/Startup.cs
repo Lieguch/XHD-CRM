@@ -121,18 +121,19 @@ namespace XHD.Core.View
                  services.AddRazorPages().AddRazorRuntimeCompilation();
             #endif
 
-            //跨域 — Sprint 10.36: 生产环境禁止 AllowAnyOrigin，改用白名单
+            //跨域 — Sprint 10.37: 从配置读取 CORS 白名单，无配置时允许所有来源
             services.AddCors(options =>
             {
                 options.AddPolicy("CorsPolicy", builder =>
                 {
-                    if (_env.IsDevelopment())
+                    var corsOrigins = Configuration.GetSection("CorsOrigins").Get<string[]>();
+                    if (_env.IsDevelopment() || corsOrigins == null || corsOrigins.Length == 0)
                     {
                         builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
                     }
                     else
                     {
-                        builder.WithOrigins("https://your-domain.com")
+                        builder.WithOrigins(corsOrigins)
                                .AllowAnyMethod()
                                .AllowAnyHeader();
                     }
