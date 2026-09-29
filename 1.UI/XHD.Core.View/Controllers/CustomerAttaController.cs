@@ -99,7 +99,6 @@ namespace XHD.Core.View.Controllers
                     if (Request.Form.Any(a => a.Key == "chunks" ))
                     {
                         //分片上传
-                        //var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/upload/contract/{ Request.Form["guid"] }-{Request.Form["id"]}/");
                         var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/customer/{Request.Form["guid"]}-{Request.Form["id"]}/");
 
                         if (!Directory.Exists(basePath))
@@ -171,7 +170,6 @@ namespace XHD.Core.View.Controllers
 
             var customer_id = HttpContext.Session.GetString("newCustomerID");
 
-            //var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/upload/contract/{ Request.Form["guid"] }/{Request.Form["id"]}/");
             var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/customer/");
             var savePath = Path.GetDirectoryName($"{basePath}/{ customer_id }/");
 
@@ -199,7 +197,6 @@ namespace XHD.Core.View.Controllers
                 var out_trad_id = BitConverter.ToInt64(buffer, 0).ToString();
 
                 var finalFilePath = Path.Combine(savePath, $"{ out_trad_id }{fileExt}");//最终的文件名
-                //var fs = new FileStream(finalFilePath, FileMode.Create);
                 using (var fs = new FileStream(finalFilePath, FileMode.Create))
                 {
                     foreach (var part in files.OrderBy(x => x.Length).ThenBy(x => x))
