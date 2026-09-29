@@ -26,6 +26,7 @@ using XHD.Core.View.Configs;
 
 namespace XHD.Core.View.Controllers
 {
+    [Authorize]
     public class MyCalendarController : Controller
     {
         private readonly IMy_CalendarService _service;
@@ -133,11 +134,11 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> Delete(string id)
         {
-            var result = 0;
-
-            result = await _service.DeleteAsync(id);
-
-
+            var result = await _service.DeleteAsync(id);
+            if (result == 0)
+            {
+                return XHDResult.Error("删除失败").ToString();
+            }
             return XHDResult.Success().ToString();
         }
 
