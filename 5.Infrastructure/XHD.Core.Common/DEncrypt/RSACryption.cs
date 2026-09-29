@@ -21,7 +21,7 @@ namespace XHD.Core.Common.DEncrypt
         /// <param name="xmlPublicKey"></param>
         public void RSAKey(out string xmlKeys, out string xmlPublicKey)
         {
-            var rsa = new RSACryptoServiceProvider();
+            using var rsa = new RSACryptoServiceProvider(2048);
             xmlKeys = rsa.ToXmlString(true);
             xmlPublicKey = rsa.ToXmlString(false);
         }
@@ -42,7 +42,7 @@ namespace XHD.Core.Common.DEncrypt
             byte[] PlainTextBArray;
             byte[] CypherTextBArray;
             string Result;
-            var rsa = new RSACryptoServiceProvider();
+            using var rsa = new RSACryptoServiceProvider(2048);
             rsa.FromXmlString(xmlPublicKey);
             PlainTextBArray = (new UnicodeEncoding()).GetBytes(m_strEncryptString);
             CypherTextBArray = rsa.Encrypt(PlainTextBArray, false);
@@ -55,7 +55,7 @@ namespace XHD.Core.Common.DEncrypt
         {
             byte[] CypherTextBArray;
             string Result;
-            var rsa = new RSACryptoServiceProvider();
+            using var rsa = new RSACryptoServiceProvider(2048);
             rsa.FromXmlString(xmlPublicKey);
             CypherTextBArray = rsa.Encrypt(EncryptString, false);
             Result = Convert.ToBase64String(CypherTextBArray);
@@ -72,7 +72,7 @@ namespace XHD.Core.Common.DEncrypt
             byte[] PlainTextBArray;
             byte[] DypherTextBArray;
             string Result;
-            var rsa = new RSACryptoServiceProvider();
+            using var rsa = new RSACryptoServiceProvider(2048);
             rsa.FromXmlString(xmlPrivateKey);
             PlainTextBArray = Convert.FromBase64String(m_strDecryptString);
             DypherTextBArray = rsa.Decrypt(PlainTextBArray, false);
@@ -85,7 +85,7 @@ namespace XHD.Core.Common.DEncrypt
         {
             byte[] DypherTextBArray;
             string Result;
-            var rsa = new RSACryptoServiceProvider();
+            using var rsa = new RSACryptoServiceProvider(2048);
             rsa.FromXmlString(xmlPrivateKey);
             DypherTextBArray = rsa.Decrypt(DecryptString, false);
             Result = (new UnicodeEncoding()).GetString(DypherTextBArray);
@@ -105,11 +105,11 @@ namespace XHD.Core.Common.DEncrypt
         {
             //从字符串中取得Hash描述 
             byte[] Buffer;
-            // Sprint 10.30: SYSLIB0045 — HashAlgorithm.Create("MD5") → MD5.Create()
-            using (var md5 = MD5.Create())
+            // Sprint 10.30: SYSLIB0045; Sprint 10.36: MD5 → SHA256
+            using (var sha256 = SHA256.Create())
             {
                 Buffer = Encoding.GetEncoding("GB2312").GetBytes(m_strSource);
-                HashData = md5.ComputeHash(Buffer);
+                HashData = sha256.ComputeHash(Buffer);
             }
 
             return true;
@@ -121,11 +121,11 @@ namespace XHD.Core.Common.DEncrypt
             //从字符串中取得Hash描述 
             byte[] Buffer;
             byte[] HashData;
-            // Sprint 10.30: SYSLIB0045 — HashAlgorithm.Create("MD5") → MD5.Create()
-            using (var md5 = MD5.Create())
+            // Sprint 10.30: SYSLIB0045; Sprint 10.36: MD5 → SHA256
+            using (var sha256 = SHA256.Create())
             {
                 Buffer = Encoding.GetEncoding("GB2312").GetBytes(m_strSource);
-                HashData = md5.ComputeHash(Buffer);
+                HashData = sha256.ComputeHash(Buffer);
             }
 
             strHashData = Convert.ToBase64String(HashData);
@@ -136,10 +136,10 @@ namespace XHD.Core.Common.DEncrypt
         public bool GetHash(FileStream objFile, ref byte[] HashData)
         {
             //从文件中取得Hash描述 
-            // Sprint 10.30: SYSLIB0045 — HashAlgorithm.Create("MD5") → MD5.Create()
-            using (var md5 = MD5.Create())
+            // Sprint 10.30: SYSLIB0045; Sprint 10.36: MD5 → SHA256
+            using (var sha256 = SHA256.Create())
             {
-                HashData = md5.ComputeHash(objFile);
+                HashData = sha256.ComputeHash(objFile);
             }
             objFile.Dispose();
 
@@ -151,10 +151,10 @@ namespace XHD.Core.Common.DEncrypt
         {
             //从文件中取得Hash描述 
             byte[] HashData;
-            // Sprint 10.30: SYSLIB0045 — HashAlgorithm.Create("MD5") → MD5.Create()
-            using (var md5 = MD5.Create())
+            // Sprint 10.30: SYSLIB0045; Sprint 10.36: MD5 → SHA256
+            using (var sha256 = SHA256.Create())
             {
-                HashData = md5.ComputeHash(objFile);
+                HashData = sha256.ComputeHash(objFile);
             }
             objFile.Dispose();
 
@@ -171,12 +171,12 @@ namespace XHD.Core.Common.DEncrypt
         public bool SignatureFormatter(string p_strKeyPrivate, byte[] HashbyteSignature,
             ref byte[] EncryptedSignatureData)
         {
-            var RSA = new RSACryptoServiceProvider();
+            using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPrivate);
-            var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
-            //设置签名的算法为MD5 
-            RSAFormatter.SetHashAlgorithm("MD5");
+            using var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
+            //设置签名的算法为SHA256
+            RSAFormatter.SetHashAlgorithm("SHA256");
             //执行签名 
             EncryptedSignatureData = RSAFormatter.CreateSignature(HashbyteSignature);
 
@@ -189,12 +189,12 @@ namespace XHD.Core.Common.DEncrypt
         {
             byte[] EncryptedSignatureData;
 
-            var RSA = new RSACryptoServiceProvider();
+            using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPrivate);
-            var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
-            //设置签名的算法为MD5 
-            RSAFormatter.SetHashAlgorithm("MD5");
+            using var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
+            //设置签名的算法为SHA256
+            RSAFormatter.SetHashAlgorithm("SHA256");
             //执行签名 
             EncryptedSignatureData = RSAFormatter.CreateSignature(HashbyteSignature);
 
@@ -210,12 +210,12 @@ namespace XHD.Core.Common.DEncrypt
             byte[] HashbyteSignature;
 
             HashbyteSignature = Convert.FromBase64String(m_strHashbyteSignature);
-            var RSA = new RSACryptoServiceProvider();
+            using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPrivate);
-            var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
-            //设置签名的算法为MD5 
-            RSAFormatter.SetHashAlgorithm("MD5");
+            using var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
+            //设置签名的算法为SHA256
+            RSAFormatter.SetHashAlgorithm("SHA256");
             //执行签名 
             EncryptedSignatureData = RSAFormatter.CreateSignature(HashbyteSignature);
 
@@ -230,12 +230,12 @@ namespace XHD.Core.Common.DEncrypt
             byte[] EncryptedSignatureData;
 
             HashbyteSignature = Convert.FromBase64String(m_strHashbyteSignature);
-            var RSA = new RSACryptoServiceProvider();
+            using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPrivate);
-            var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
-            //设置签名的算法为MD5 
-            RSAFormatter.SetHashAlgorithm("MD5");
+            using var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
+            //设置签名的算法为SHA256
+            RSAFormatter.SetHashAlgorithm("SHA256");
             //执行签名 
             EncryptedSignatureData = RSAFormatter.CreateSignature(HashbyteSignature);
 
@@ -250,12 +250,12 @@ namespace XHD.Core.Common.DEncrypt
 
         public bool SignatureDeformatter(string p_strKeyPublic, byte[] HashbyteDeformatter, byte[] DeformatterData)
         {
-            var RSA = new RSACryptoServiceProvider();
+            using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPublic);
-            var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
-            //指定解密的时候HASH算法为MD5 
-            RSADeformatter.SetHashAlgorithm("MD5");
+            using var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
+            //指定解密的时候HASH算法为SHA256
+            RSADeformatter.SetHashAlgorithm("SHA256");
 
             if (RSADeformatter.VerifySignature(HashbyteDeformatter, DeformatterData))
             {
@@ -270,12 +270,12 @@ namespace XHD.Core.Common.DEncrypt
 
             HashbyteDeformatter = Convert.FromBase64String(p_strHashbyteDeformatter);
 
-            var RSA = new RSACryptoServiceProvider();
+            using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPublic);
-            var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
-            //指定解密的时候HASH算法为MD5 
-            RSADeformatter.SetHashAlgorithm("MD5");
+            using var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
+            //指定解密的时候HASH算法为SHA256
+            RSADeformatter.SetHashAlgorithm("SHA256");
 
             if (RSADeformatter.VerifySignature(HashbyteDeformatter, DeformatterData))
             {
@@ -288,12 +288,12 @@ namespace XHD.Core.Common.DEncrypt
         {
             byte[] DeformatterData;
 
-            var RSA = new RSACryptoServiceProvider();
+            using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPublic);
-            var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
-            //指定解密的时候HASH算法为MD5 
-            RSADeformatter.SetHashAlgorithm("MD5");
+            using var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
+            //指定解密的时候HASH算法为SHA256
+            RSADeformatter.SetHashAlgorithm("SHA256");
 
             DeformatterData = Convert.FromBase64String(p_strDeformatterData);
 
@@ -311,12 +311,12 @@ namespace XHD.Core.Common.DEncrypt
             byte[] HashbyteDeformatter;
 
             HashbyteDeformatter = Convert.FromBase64String(p_strHashbyteDeformatter);
-            var RSA = new RSACryptoServiceProvider();
+            using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPublic);
-            var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
-            //指定解密的时候HASH算法为MD5 
-            RSADeformatter.SetHashAlgorithm("MD5");
+            using var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
+            //指定解密的时候HASH算法为SHA256
+            RSADeformatter.SetHashAlgorithm("SHA256");
 
             DeformatterData = Convert.FromBase64String(p_strDeformatterData);
 
