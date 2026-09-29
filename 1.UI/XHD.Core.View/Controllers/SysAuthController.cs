@@ -169,7 +169,7 @@ namespace XHD.Core.View.Controllers
         {
             if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sys_auth|save"))
             {
-                return XHDResult.Error("无操作权限");
+                return XHDResult.Error("无操作权限").ToString();
             }
 
             Expression<Func<Sys_authority, bool>> exp = a => a.Role_id == Request.Form["role_id"] && a.Auth_id == Request.Form["auth_id"];
