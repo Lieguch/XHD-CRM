@@ -106,7 +106,8 @@ namespace XHD.Core.View.Controllers
                         {
                             Directory.CreateDirectory(basePath);
                         }
-                        var filePath = basePath + "/" + Request.Form["chunk"];
+                        var chunkName = Path.GetFileName(Request.Form["chunk"].ToString());
+                        var filePath = basePath + "/" + chunkName;
                         using (var stream = new FileStream(filePath, FileMode.Create))
                         {
                             await formFile.CopyToAsync(stream);
@@ -183,15 +184,14 @@ namespace XHD.Core.View.Controllers
                     Directory.CreateDirectory(savePath);
                 }
 
-                var temporary = Path.GetDirectoryName($"{basePath}/{ Request.Form["guid"] }-{Request.Form["id"]}/");//临时文件夹
-
-                if (!Directory.Exists(savePath))
+                var temporary = Path.GetDirectoryName($"{basePath}/{Path.GetFileName(Request.Form["guid"])}-{Path.GetFileName(Request.Form["id"])}//");
+                if (!Directory.Exists(temporary))
                 {
                     //临时文件夹不存在，说明文件应该不是分片上传，无需合并
                     return XHDResult.Success().ToString();
                 }
 
-                string fileName = Request.Form["name"];//文件名
+                string fileName = Path.GetFileName(Request.Form["name"]);//文件名（净化）
                 string fileExt = Path.GetExtension(fileName);//获取文件后缀
                 var files = Directory.GetFiles(temporary);//获得下面的所有文件
 
