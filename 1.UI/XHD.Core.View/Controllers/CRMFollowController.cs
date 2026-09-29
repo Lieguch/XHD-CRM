@@ -99,13 +99,9 @@ namespace XHD.Core.View.Controllers
 
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
 
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             if (roledata.authtype != 4)
             {
-                exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
+                exp = exp.And(a => roledata.empList.Contains(a.employee_id));
             }
 
             var result = await _service.GridAsync(exp, model.Page, model.Limit, "a.Follow_time desc");
@@ -154,17 +150,6 @@ namespace XHD.Core.View.Controllers
                         return XHDResult.Error("找不到数据！").ToString();
                     }
 
-                    result = 0; // 先做数据权限校验，校验通过后再 await UpdateAsync 
-                    // [v11] 数据权限校验（编辑时检查数据归属）
-                    var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-                    if (roledata.authtype == 0)
-                        return XHDResult.Error("无数据权限！").ToString();
-                    if (roledata.authtype != 4)
-                    {
-                        var existing = (await _service.GridAsync(a => a.id == model.id, 1, 1)).data.FirstOrDefault();
-                        if (existing != null && !roledata.empList.Contains(existing.customer.emp_id))
-                            return XHDResult.Error("无权限！").ToString();
-                    }
                     result = await _service.UpdateAsync(model);
 
                     //对比实体差别
@@ -203,7 +188,6 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
-        [HttpPost]
         public async Task<string> Delete(string id)
         {
             var result = 0;
@@ -222,13 +206,6 @@ namespace XHD.Core.View.Controllers
                     return XHDResult.Error("找不到此数据！").ToString();
                 }
 
-                result = 0; // 先做数据权限校验，校验通过后再 await DeleteAsync 
-                // [v11] 数据权限校验（删除时检查数据归属）
-                var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-                if (roledata.authtype == 0)
-                    return XHDResult.Error("无数据权限！").ToString();
-                if (roledata.authtype != 4 && checkdata.data[0].customer.emp_id != null && !roledata.empList.Contains(checkdata.data[0].customer.emp_id))
-                    return XHDResult.Error("无权限！").ToString();
                 result = await _service.DeleteAsync(id);
 
                 //日志
@@ -281,6 +258,13 @@ namespace XHD.Core.View.Controllers
                 return XHDResult.Error("月份必须在 1-12 之间").ToString();
             }
 
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                return XHDResult.Error("无权限查看全局数据").ToString();
+            }
+
             var arr = await _service.ComparedFollowAsync(year1, month1, year2, month2);
             return XHDResult.Success(arr).ToString();
         }
@@ -301,6 +285,24 @@ namespace XHD.Core.View.Controllers
             }
 
             List<string> empIds = ParseEmpIds(idlist);
+
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (empIds != null)
+                {
+                    empIds = empIds.Where(e => roledata.empList.Contains(e)).ToList();
+                    if (empIds.Count == 0)
+                    {
+                        return XHDResult.Error("无权限").ToString();
+                    }
+                }
+                else
+                {
+                    empIds = new List<string>(roledata.empList);
+                }
+            }
 
             var arr = await _service.ComparedEmpCusFollowAsync(year1, month1, year2, month2, empIds);
             return XHDResult.Success(arr).ToString();
@@ -328,6 +330,24 @@ namespace XHD.Core.View.Controllers
 
             List<string> empIds = ParseEmpIds(idlist);
 
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (empIds != null)
+                {
+                    empIds = empIds.Where(e => roledata.empList.Contains(e)).ToList();
+                    if (empIds.Count == 0)
+                    {
+                        return XHDResult.Error("无权限").ToString();
+                    }
+                }
+                else
+                {
+                    empIds = new List<string>(roledata.empList);
+                }
+            }
+
             var arr = await _service.ReportMonthEmpFollowAsync(start, end, empIds);
             return XHDResult.Success(arr).ToString();
         }
@@ -347,6 +367,24 @@ namespace XHD.Core.View.Controllers
             }
 
             List<string> empIds = ParseEmpIds(idlist);
+
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (empIds != null)
+                {
+                    empIds = empIds.Where(e => roledata.empList.Contains(e)).ToList();
+                    if (empIds.Count == 0)
+                    {
+                        return XHDResult.Error("无权限").ToString();
+                    }
+                }
+                else
+                {
+                    empIds = new List<string>(roledata.empList);
+                }
+            }
 
             var arr = await _service.ReportEmpFollowAsync(syear, empIds);
             return XHDResult.Success(arr).ToString();
