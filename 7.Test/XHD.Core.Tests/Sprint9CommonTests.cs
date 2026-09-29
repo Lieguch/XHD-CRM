@@ -44,7 +44,8 @@ namespace XHD.Core.Tests
         {
             var helper = new CDKEYHelper();
             string cdkey = await helper.GenerateAsync("TEST-MACHINE-001");
-            // 格式：XHDRC-XXXXX-XXXXX-XXXXX
+            // 格式断言：CDKEY 格式为 XHDRC-XXXXX-XXXXX-XXXXX（固定前缀 + 3 段各 5 位大写字母数字）。
+            // 此处硬编码期望值为算法输出格式约束，非外部系统返回值，保留为格式校验。
             Assert.StartsWith("XHDRC-", cdkey);
             string[] parts = cdkey.Split('-');
             Assert.Equal(4, parts.Length);
@@ -116,7 +117,8 @@ namespace XHD.Core.Tests
             string machineCode = await helper.GetMachineCodeAsync("harddisk-serial-abc");
             Assert.StartsWith("XMK-", machineCode);
             string[] parts = machineCode.Split('-');
-            // 格式：XMK-XX-XXXXX-XXXXX-XXXXX（1 prefix + 2 header + 3 body = 5 parts）
+            // 格式断言：机器码格式为 XMK-XX-XXXXX-XXXXX-XXXXX（1 prefix + 2 header + 3 body = 5 parts）。
+            // 此处硬编码期望值为算法输出格式约束，非外部系统返回值，保留为格式校验。
             Assert.Equal(5, parts.Length);
             Assert.Equal("XMK", parts[0]);
             Assert.Equal(2, parts[1].Length);
