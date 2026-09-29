@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SystemSecurityRsa = System.Security.Cryptography.RSA;
@@ -15,6 +16,13 @@ namespace XHD.Core.Common.RSA
     /// </summary>
     public class RSACryptionHelper : IRSACryptionHelper
     {
+        private readonly ILogger _logger;
+
+        public RSACryptionHelper(ILogger logger)
+        {
+            _logger = logger;
+        }
+
         public Task<RsaKeyPair> GenerateKeyPairAsync(int keySize = 2048)
         {
             if (keySize < 512 || keySize > 65536)
@@ -50,8 +58,9 @@ namespace XHD.Core.Common.RSA
                 byte[] cipherBytes = rsa.Encrypt(plainBytes, System.Security.Cryptography.RSAEncryptionPadding.Pkcs1);
                 return Task.FromResult(Convert.ToBase64String(cipherBytes));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger?.LogError(ex, "RSACryptionHelper.EncryptAsync failed");
                 return Task.FromResult(string.Empty);
             }
         }
@@ -70,8 +79,9 @@ namespace XHD.Core.Common.RSA
                 byte[] plainBytes = rsa.Decrypt(cipherBytes, System.Security.Cryptography.RSAEncryptionPadding.Pkcs1);
                 return Task.FromResult(Encoding.UTF8.GetString(plainBytes));
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger?.LogError(ex, "RSACryptionHelper.DecryptAsync failed");
                 return Task.FromResult(string.Empty);
             }
         }
@@ -101,8 +111,9 @@ namespace XHD.Core.Common.RSA
                 File.WriteAllBytes(filePath, bytes);
                 return Task.FromResult(bytes.Length);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger?.LogError(ex, "RSACryptionHelper.SaveKeyAsync failed");
                 return Task.FromResult(0);
             }
         }
