@@ -92,8 +92,6 @@
                     //showLine: false,
                     id: "params_type",
                     click: function (node) {
-                        console.log(node);
-
                         category_id = node.data.id;
 
                         table.reload("munu-table", {
@@ -184,7 +182,6 @@
             if (edit) {
                 tit = "编辑";
             }
-            console.log(edit);
             var index = layui.layer.open({
                 title: tit,
                 type: 2,
@@ -221,8 +218,6 @@
                     //监听提交
                     iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
                         var field = data.field; //获取提交的字段
-
-                        console.log(data.field);
 
                         layer.close(index); //关闭弹层
 
