@@ -19,6 +19,7 @@ using XHD.Core.Common;
 
 namespace XHD.Core.View.Controllers
 {
+    [Authorize]
     public class UploadController : Controller
     {
         private readonly ICRM_Customer_attaService _customerattaservice;
