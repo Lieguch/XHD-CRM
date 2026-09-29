@@ -30,9 +30,11 @@ namespace XHD.Core.View.Controllers
     public class MyCalendarController : Controller
     {
         private readonly IMy_CalendarService _service;
-        public MyCalendarController(IMy_CalendarService service)
+        private readonly IDBAuthService _dBAuthService;
+        public MyCalendarController(IMy_CalendarService service, IDBAuthService dBAuthService)
         {
             _service = service;
+            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -53,6 +55,11 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> Save()
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "my_calendar|save"))
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
             string requestBody = await new StreamReader(Request.Body).ReadToEndAsync();
             var model = JsonConvert.DeserializeObject<My_Calendar>(requestBody);
 
@@ -134,6 +141,29 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> Delete(string id)
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "my_calendar|del"))
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
+            var userId = User.FindFirst(ClaimTypes.Sid).Value;
+
+            // 查询记录，校验归属
+            Expression<Func<My_Calendar, bool>> exp = a => a.id == id;
+            var calendardata = await _service.GridAsync(exp, 1, 1);
+
+            if (calendardata.count == 0)
+            {
+                return XHDResult.Error("找不到数据").ToString();
+            }
+
+            // 仅允许删除自己的日历（admin 除外）
+            var roledata = await _dBAuthService.GetDataAuth(userId);
+            if (roledata.authtype != 4 && calendardata.data[0].emp_id != userId)
+            {
+                return XHDResult.Error("无权限删除他人日程").ToString();
+            }
+
             var result = await _service.DeleteAsync(id);
             if (result == 0)
             {
