@@ -142,7 +142,9 @@ namespace XHD.Core.Repository
                 return new List<string>();
             }
 
-            return await GetEmpIdsByRoleIdAsync(roleId);
+            var roleEmpIds = await GetEmpIdsByRoleIdAsync(roleId);
+            var allEmpIds = await _fsql.Select<hr_employee>().Where(a => a.isDelete == 0).ToListAsync(a => a.id);
+            return allEmpIds.Where(id => !roleEmpIds.Contains(id)).ToList();
         }
     }
 }
