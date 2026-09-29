@@ -126,7 +126,7 @@ namespace XHD.Core.View
             {
                 options.AddPolicy("CorsPolicy", builder =>
                 {
-                    if (env.IsDevelopment())
+                    if (_env.IsDevelopment())
                     {
                         builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
                     }
