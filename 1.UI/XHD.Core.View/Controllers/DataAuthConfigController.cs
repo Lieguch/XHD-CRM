@@ -60,6 +60,12 @@ namespace XHD.Core.View.Controllers
         [HttpGet("Grid")]
         public async Task<string> Grid()
         {
+            var userId = GetUserId();
+            if (!await _dBAuthService.GetAuth(userId, "sys_role|edit"))
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
             var result = await _roleService.GridAsync(r => true, "RoleSort");
             var roles = result.data ?? new System.Collections.Generic.List<Sys_role>();
 
