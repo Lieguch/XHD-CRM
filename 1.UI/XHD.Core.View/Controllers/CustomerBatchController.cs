@@ -90,7 +90,11 @@ namespace XHD.Core.View.Controllers
             }
 
             //权限
-
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                exp = exp.And(a => roledata.empList.Contains(a.old_emp_id) || roledata.empList.Contains(a.new_emp_id));
+            }
 
             var result = await _service.GridAsync(exp, model.Page, model.Limit, "a.create_time desc");
 
