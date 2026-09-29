@@ -1,4 +1,4 @@
-﻿
+
 
 using FreeSql;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -121,17 +121,23 @@ namespace XHD.Core.View
                  services.AddRazorPages().AddRazorRuntimeCompilation();
             #endif
 
-            //跨域
-            services.AddCors(options => options.AddPolicy("CorsPolicy",
-               builder =>
-               {
-                   builder.AllowAnyMethod()
-                       .AllowAnyHeader()
-                       //.SetIsOriginAllowed(origin => origin.StartsWith("http://192.168.*.*"));
-                       .AllowAnyOrigin();  //测试环境才用这个
-                       //.WithOrigins("https://sfs.huilongtech.com");
-
-               }));
+            //跨域 — Sprint 10.36: 生产环境禁止 AllowAnyOrigin，改用白名单
+            services.AddCors(options =>
+            {
+                options.AddPolicy("CorsPolicy", builder =>
+                {
+                    if (env.IsDevelopment())
+                    {
+                        builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+                    }
+                    else
+                    {
+                        builder.WithOrigins("https://your-domain.com")
+                               .AllowAnyMethod()
+                               .AllowAnyHeader();
+                    }
+                });
+            });
 
             
         }
@@ -159,10 +165,12 @@ namespace XHD.Core.View
                         var ex = exHeader.Error;
                         if (ex != default)
                         {
-                            await context.Response.WriteAsJsonAsync(new { code = 500, errPath = exHeader.Path, msg = $"服务器内部错误->{ex.Message}" });
+                            string msg = env.IsDevelopment()
+                                ? $"服务器内部错误->{ex.Message}"
+                                : "服务器内部错误";
+                            await context.Response.WriteAsJsonAsync(new { code = 500, errPath = exHeader.Path, msg });
                         }
 
-                        //NLogger.WriteLog("sys_Error1_", ex.Message);
                         NLogger.WriteLog("sys_Error_", ex.ToString());
 
                     });
