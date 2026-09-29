@@ -101,6 +101,11 @@ namespace XHD.Core.View.Controllers
         {
             var result = 0;
 
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "customer|save"))
+            {
+                return XHDResult.Error("无操作权限");
+            }
+
             model.id = UUIDNext.Uuid.NewSequential().ToString();
             model.create_time = DateTime.Now;
             model.create_id= User.FindFirst(ClaimTypes.Sid).Value;            
@@ -143,6 +148,7 @@ namespace XHD.Core.View.Controllers
             model.cus_count = count;
 
             result = await _service.AddAsync(model);
+            if (result <= 0) { return XHDResult.Error("保存失败").ToString(); }
 
             return XHDResult.Success().ToString();
         }
