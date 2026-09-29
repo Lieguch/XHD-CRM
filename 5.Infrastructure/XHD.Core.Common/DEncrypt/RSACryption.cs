@@ -141,7 +141,7 @@ namespace XHD.Core.Common.DEncrypt
             {
                 HashData = md5.ComputeHash(objFile);
             }
-            objFile.Close();
+            objFile.Dispose();
 
             return true;
         }
@@ -156,7 +156,7 @@ namespace XHD.Core.Common.DEncrypt
             {
                 HashData = md5.ComputeHash(objFile);
             }
-            objFile.Close();
+            objFile.Dispose();
 
             strHashData = Convert.ToBase64String(HashData);
 
