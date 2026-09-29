@@ -20,12 +20,14 @@ namespace XHD.Core.Common.DEncrypt
             if (string.IsNullOrEmpty(str)) return null;
             Byte[] toEncryptArray = Encoding.UTF8.GetBytes(str);
 
-            // Sprint 10.30: SYSLIB0022 — RijndaelManaged → Aes.Create()（保留 ECB/PKCS7 语义）
+            // Sprint 10.30: SYSLIB0022 — RijndaelManaged → Aes.Create(); Sprint 10.36: ECB → CBC
             using (Aes aes = Aes.Create())
             {
                 aes.Key = Encoding.UTF8.GetBytes(key);
-                aes.Mode = CipherMode.ECB;
+                aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.PKCS7;
+                // Sprint 10.36: IV derived from key suffix (last 16 chars); caller MUST supply key >= 16 chars
+                aes.IV = Encoding.ASCII.GetBytes(key.Substring(Math.Max(0, key.Length - 16)));
 
                 using (var cTransform = aes.CreateEncryptor())
                 {
@@ -46,12 +48,14 @@ namespace XHD.Core.Common.DEncrypt
             if (string.IsNullOrEmpty(str)) return null;
             Byte[] toEncryptArray = Convert.FromBase64String(str);
 
-            // Sprint 10.30: SYSLIB0022 — RijndaelManaged → Aes.Create()
+            // Sprint 10.30: SYSLIB0022 — RijndaelManaged → Aes.Create(); Sprint 10.36: ECB → CBC
             using (Aes aes = Aes.Create())
             {
                 aes.Key = Encoding.UTF8.GetBytes(key);
-                aes.Mode = CipherMode.ECB;
+                aes.Mode = CipherMode.CBC;
                 aes.Padding = PaddingMode.PKCS7;
+                // Sprint 10.36: IV derived from key suffix (last 16 chars)
+                aes.IV = Encoding.ASCII.GetBytes(key.Substring(Math.Max(0, key.Length - 16)));
 
                 using (var cTransform = aes.CreateDecryptor())
                 {
