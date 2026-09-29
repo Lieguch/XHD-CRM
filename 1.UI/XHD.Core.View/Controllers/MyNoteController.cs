@@ -25,12 +25,15 @@ using XHD.Core.View.Configs;
 
 namespace XHD.Core.View.Controllers
 {
+    [Authorize]
     public class MyNoteController : Controller
     {
         private readonly IMy_NoteService _service;
-        public MyNoteController(IMy_NoteService service)
+        private readonly IDBAuthService _dBAuthService;
+        public MyNoteController(IMy_NoteService service, IDBAuthService dBAuthService)
         {
             _service = service;
+            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -51,17 +54,30 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> Save(My_Note model)
         {
+            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "my_note|save");
+            if (!authbtn)
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
             model.id = UUIDNext.Uuid.NewSequential().ToString();
             model.Note_time = DateTime.Now;
             model.emp_id = User.FindFirst(ClaimTypes.Sid).Value;
 
-            await _service.AddAsync(model);
+            var result = await _service.AddAsync(model);
+            if (result <= 0) { return XHDResult.Error("保存失败").ToString(); }
 
             return XHDResult.Success(model.id).ToString();
         }
 
         public async Task<string> Update(My_Note model)
         {
+            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "my_note|update");
+            if (!authbtn)
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
             Expression<Func<My_Note, My_Note>> expnote = a => new My_Note { 
                 content=model.content,
                 color=model.color
@@ -69,7 +85,8 @@ namespace XHD.Core.View.Controllers
 
             Expression<Func<My_Note, bool>> expwhere = a => a.id == model.id;
 
-            await _service.UpdateAsync(expnote, expwhere);
+            var result = await _service.UpdateAsync(expnote, expwhere);
+            if (result <= 0) { return XHDResult.Error("保存失败").ToString(); }
 
             return XHDResult.Success(model.id).ToString();
         }
@@ -84,7 +101,8 @@ namespace XHD.Core.View.Controllers
 
             Expression<Func<My_Note, bool>> expwhere = a => a.id == model.id;
 
-            await _service.UpdateAsync(expnote, expwhere);
+            var result = await _service.UpdateAsync(expnote, expwhere);
+            if (result <= 0) { return XHDResult.Error("保存失败").ToString(); }
 
             return XHDResult.Success(model.id).ToString();
         }
@@ -93,8 +111,14 @@ namespace XHD.Core.View.Controllers
         {
             var result = 0;            
 
-            result = await _service.DeleteAsync(id);
+            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "my_note|del");
+            if (!authbtn)
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
 
+            result = await _service.DeleteAsync(id);
+            if (result <= 0) { return XHDResult.Error("删除失败").ToString(); }
 
             return XHDResult.Success().ToString();
         }
