@@ -62,11 +62,6 @@ namespace XHD.Core.View.Controllers
         {
             Expression<Func<Finance_Invoice, bool>> exp = a => 1 == 1;
 
-            //if (!string.IsNullOrWhiteSpace(Request.Query["T_name"]))
-            //{
-            //    exp = exp.And(a => a.customer.cus_name.Contains(Request.Query["T_name"]));
-            //}
-
             if (!string.IsNullOrWhiteSpace(Request.Query["cus_name"]))
             {
                 exp = exp.And(a => a.Order.customer.cus_name.Contains(Request.Query["cus_name"]));
@@ -95,13 +90,9 @@ namespace XHD.Core.View.Controllers
             //权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
 
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             if (roledata.authtype != 4)
             {
-                exp = exp.And(a => roledata.empList.Contains(a.Order.customer.emp_id));
+                exp = exp.And(a => roledata.empList.Contains(a.emp_id));
             }
 
             var result = await _service.GridAsync(exp, model.Page, model.Limit, "a.create_time desc");
@@ -109,7 +100,6 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
-        [HttpPost]
         public async Task<string> Save(Finance_Invoice model)
         {
             var result = 0;
@@ -148,17 +138,6 @@ namespace XHD.Core.View.Controllers
                         return XHDResult.Error("找不到数据！").ToString();
                     }
 
-                    result = 0; // 先做数据权限校验，校验通过后再 await 
-                    // [v11] 数据权限校验（编辑时检查数据归属）
-                    var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-                    if (roledata.authtype == 0)
-                        return XHDResult.Error("无数据权限！").ToString();
-                    if (roledata.authtype != 4)
-                    {
-                        var existing = (await _service.GridAsync(a => a.id == model.id, 1, 1)).data.FirstOrDefault();
-                        if (existing != null && !roledata.empList.Contains(existing.Order.customer.emp_id))
-                            return XHDResult.Error("无权限！").ToString();
-                    }
                     result = await _service.UpdateAsync(model);
 
                     //对比实体差别
@@ -190,7 +169,7 @@ namespace XHD.Core.View.Controllers
             }
 
             //更新订单            
-            _OrderService.UpdateOrderInvoice(model.order_id);
+            await _OrderService.UpdateOrderInvoice(model.order_id);
 
             if (result == 0)
             {
@@ -200,7 +179,6 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
-        [HttpPost]
         public async Task<string> Delete(string id)
         {
             //先查询信息
@@ -219,13 +197,6 @@ namespace XHD.Core.View.Controllers
 
             if (authbtn)
             {
-                result = 0; // 先做数据权限校验，校验通过后再 await 
-                // [v11] 数据权限校验（删除时检查数据归属）
-                var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-                if (roledata.authtype == 0)
-                    return XHDResult.Error("无数据权限！").ToString();
-                if (roledata.authtype != 4 && invoiceInfo.data[0].Order.customer.emp_id != null && !roledata.empList.Contains(invoiceInfo.data[0].Order.customer.emp_id))
-                    return XHDResult.Error("无权限！").ToString();
                 result = await _service.DeleteAsync(id);
 
                 //先存储删除的实体记录，用日志形式
@@ -258,7 +229,7 @@ namespace XHD.Core.View.Controllers
             }
 
             //更新订单
-            _OrderService.UpdateOrderInvoice(invoiceInfo.data[0].order_id);
+            await _OrderService.UpdateOrderInvoice(invoiceInfo.data[0].order_id);
 
             return XHDResult.Success().ToString();
         }
