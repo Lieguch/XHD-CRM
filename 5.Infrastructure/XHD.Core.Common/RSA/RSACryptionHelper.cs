@@ -18,7 +18,7 @@ namespace XHD.Core.Common.RSA
     {
         private readonly ILogger _logger;
 
-        public RSACryptionHelper(ILogger logger)
+        public RSACryptionHelper(ILogger logger = null)
         {
             _logger = logger;
         }
