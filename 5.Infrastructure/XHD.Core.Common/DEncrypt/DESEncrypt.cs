@@ -41,18 +41,20 @@ namespace XHD.Core.Common.DEncrypt
 
                 des.Key = Encoding.ASCII.GetBytes(md5SKey);
                 des.IV = Encoding.ASCII.GetBytes(md5SKey);
-                var ms = new MemoryStream();
-                using (var cs = new CryptoStream(ms, des.CreateEncryptor(), CryptoStreamMode.Write))
+                using (var ms = new MemoryStream())
                 {
-                    cs.Write(inputByteArray, 0, inputByteArray.Length);
-                    cs.FlushFinalBlock();
+                    using (var cs = new CryptoStream(ms, des.CreateEncryptor(), CryptoStreamMode.Write))
+                    {
+                        cs.Write(inputByteArray, 0, inputByteArray.Length);
+                        cs.FlushFinalBlock();
+                    }
+                    var ret = new StringBuilder();
+                    foreach (byte b in ms.ToArray())
+                    {
+                        ret.AppendFormat("{0:X2}", b);
+                    }
+                    return ret.ToString();
                 }
-                var ret = new StringBuilder();
-                foreach (byte b in ms.ToArray())
-                {
-                    ret.AppendFormat("{0:X2}", b);
-                }
-                return ret.ToString();
             }
         }
 
@@ -95,13 +97,15 @@ namespace XHD.Core.Common.DEncrypt
 
                 des.Key = Encoding.ASCII.GetBytes(md5SKey);
                 des.IV = Encoding.ASCII.GetBytes(md5SKey);
-                var ms = new MemoryStream();
-                using (var cs = new CryptoStream(ms, des.CreateDecryptor(), CryptoStreamMode.Write))
+                using (var ms = new MemoryStream())
                 {
-                    cs.Write(inputByteArray, 0, inputByteArray.Length);
-                    cs.FlushFinalBlock();
+                    using (var cs = new CryptoStream(ms, des.CreateDecryptor(), CryptoStreamMode.Write))
+                    {
+                        cs.Write(inputByteArray, 0, inputByteArray.Length);
+                        cs.FlushFinalBlock();
+                    }
+                    return Encoding.Default.GetString(ms.ToArray());
                 }
-                return Encoding.Default.GetString(ms.ToArray());
             }
         }
 
