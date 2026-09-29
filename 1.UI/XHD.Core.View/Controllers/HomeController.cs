@@ -42,17 +42,6 @@ namespace XHD.Core.View.Controllers
             _fsql = fsql;
             _Customerservice = Customerservice;
             _infoservice = infoservice;
-
-            ////检查是否已配置
-            //IConfigurationBuilder builder = new ConfigurationBuilder().AddJsonFile("appsettings.json", false, true);
-            //IConfigurationRoot root = builder.Build();
-
-            //var isConfig = root["isConfig"];
-
-            //if (!isConfig.ToString().Equals("1"))
-            //{
-            //    Response.Redirect("/SysConfig/index");
-            //}
         }
 
         public IActionResult Index()
