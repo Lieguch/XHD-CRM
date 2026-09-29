@@ -24,7 +24,10 @@ namespace XHD.Core.View
             Host.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((hostingContext, config) =>
                 {
+                    var env = hostingContext.HostingEnvironment;
                     config.AddJsonFile("appsettings.json", true, true);
+                    // Sprint 10.36: 加载环境专属配置（appsettings.Production.json 等）
+                    config.AddJsonFile($"appsettings.{env.EnvironmentName}.json", optional: !env.IsDevelopment(), reloadOnChange: true);
                 })
                 
                 .ConfigureWebHostDefaults(webBuilder =>
