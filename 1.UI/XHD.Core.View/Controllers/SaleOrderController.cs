@@ -106,13 +106,9 @@ namespace XHD.Core.View.Controllers
             //权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
 
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             if (roledata.authtype != 4)
             {
-                exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
+                exp = exp.And(a => roledata.empList.Contains(a.emp_id));
             }
 
             var result = await _service.GridAsync(exp, model.Page, model.Limit, "a.create_time desc");
@@ -120,7 +116,6 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
-        [HttpPost]
         public async Task<string> Save(Sale_order model)
         {
             var result = 0;
@@ -163,20 +158,9 @@ namespace XHD.Core.View.Controllers
                         return XHDResult.Error("找不到数据！").ToString();
                     }
 
-                    result = 0; // 先做数据权限校验，校验通过后再 await 
-                    // [v11] 数据权限校验（编辑时检查数据归属）
-                    var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-                    if (roledata.authtype == 0)
-                        return XHDResult.Error("无数据权限！").ToString();
-                    if (roledata.authtype != 4)
-                    {
-                        var existing = (await _service.GridAsync(a => a.id == model.id, 1, 1)).data.FirstOrDefault();
-                        if (existing != null && !roledata.empList.Contains(existing.emp_id))
-                            return XHDResult.Error("无权限！").ToString();
-                    }
                     result = await _service.UpdateAsync(model);
                     await _service.UpdateArrearsMoney(model.id);
-                     _service.UpdateOrderInvoice(model.id);
+                    await _service.UpdateOrderInvoice(model.id);
                     //对比实体差别
 
                     var content = logext.LogContent(checknulldata.data[0], model);
@@ -236,7 +220,6 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
-        [HttpPost]
         public async Task<string> Delete(string id)
         {
             //判断是否有发票
@@ -275,13 +258,6 @@ namespace XHD.Core.View.Controllers
                     return XHDResult.Error("找不到此数据！").ToString();
                 }
 
-                result = 0; // 先做数据权限校验，校验通过后再 await 
-                // [v11] 数据权限校验（删除时检查数据归属）
-                var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-                if (roledata.authtype == 0)
-                    return XHDResult.Error("无数据权限！").ToString();
-                if (roledata.authtype != 4 && checkdata.data[0].emp_id != null && !roledata.empList.Contains(checkdata.data[0].emp_id))
-                    return XHDResult.Error("无权限！").ToString();
                 result = await _service.DeleteAsync(id);
 
                 //先存储删除的实体记录，用日志形式
@@ -350,13 +326,9 @@ namespace XHD.Core.View.Controllers
 
             // 数据权限过滤：参考 CRMFollowController.Grid 模式
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             if (roledata.authtype != 4)
             {
-                exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
+                exp = exp.And(a => roledata.empList.Contains(a.emp_id));
             }
 
             var result = await _service.GridAsync(exp, page, limit, "a.Order_date desc");
@@ -379,6 +351,24 @@ namespace XHD.Core.View.Controllers
             }
 
             List<string> empIds = ParseEmpIds(idlist);
+
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (empIds != null)
+                {
+                    empIds = empIds.Where(e => roledata.empList.Contains(e)).ToList();
+                    if (empIds.Count == 0)
+                    {
+                        return XHDResult.Error("无权限").ToString();
+                    }
+                }
+                else
+                {
+                    empIds = new List<string>(roledata.empList);
+                }
+            }
 
             var arr = await _service.ComparedEmpCusOrderAsync(year1, month1, year2, month2, empIds);
             return XHDResult.Success(arr).ToString();
@@ -406,6 +396,24 @@ namespace XHD.Core.View.Controllers
 
             List<string> empIds = ParseEmpIds(idlist);
 
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (empIds != null)
+                {
+                    empIds = empIds.Where(e => roledata.empList.Contains(e)).ToList();
+                    if (empIds.Count == 0)
+                    {
+                        return XHDResult.Error("无权限").ToString();
+                    }
+                }
+                else
+                {
+                    empIds = new List<string>(roledata.empList);
+                }
+            }
+
             var arr = await _service.ReportMonthEmpOrderAsync(start, end, empIds);
             return XHDResult.Success(arr).ToString();
         }
@@ -425,6 +433,24 @@ namespace XHD.Core.View.Controllers
             }
 
             List<string> empIds = ParseEmpIds(idlist);
+
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (empIds != null)
+                {
+                    empIds = empIds.Where(e => roledata.empList.Contains(e)).ToList();
+                    if (empIds.Count == 0)
+                    {
+                        return XHDResult.Error("无权限").ToString();
+                    }
+                }
+                else
+                {
+                    empIds = new List<string>(roledata.empList);
+                }
+            }
 
             var arr = await _service.ReportEmpOrderAsync(syear, empIds);
             return XHDResult.Success(arr).ToString();
