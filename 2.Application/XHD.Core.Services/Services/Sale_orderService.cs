@@ -42,14 +42,14 @@ namespace XHD.Core.Services
             return await _irepository.UpdateAsync(expData, expID);
         }
 
-        public void UpdateOrderInvoice(string order_id)
+        public async Task UpdateOrderInvoice(string order_id)
         {
-            repositorySelf.UpdateOrderInvoice(order_id);
+            await repositorySelf.UpdateOrderInvoice(order_id);
         }
 
-        public void UpdateOrderReceive(string order_id)
+        public async Task UpdateOrderReceive(string order_id)
         {
-            repositorySelf.UpdateOrderReceive(order_id);
+            await repositorySelf.UpdateOrderReceive(order_id);
         }
 
         public async Task<JArray> ReportYear(Expression<Func<Sale_order, bool>> expWhere)
