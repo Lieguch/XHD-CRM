@@ -169,7 +169,7 @@ namespace XHD.Core.Repository
         /// </summary>
         /// <param name="order_id"></param>
         /// <returns></returns>
-        public async void UpdateOrderInvoice(string order_id)
+        public async Task UpdateOrderInvoice(string order_id)
         {
             //更新订单发票总额
             var invoiceamount = await _fsql.Select<Finance_Invoice>().Where(a => a.order_id == order_id).SumAsync(a => a.invoice_amount);
@@ -184,7 +184,7 @@ namespace XHD.Core.Repository
         /// </summary>
         /// <param name="order_id"></param>
         /// <returns></returns>
-        public async void UpdateOrderReceive(string order_id)
+        public async Task UpdateOrderReceive(string order_id)
         {
             //更新订单收款总额
             var receiveamount = await _fsql.Select<Finance_Receive>().Where(a => a.order_id == order_id).SumAsync(a => a.Receive_amount);
