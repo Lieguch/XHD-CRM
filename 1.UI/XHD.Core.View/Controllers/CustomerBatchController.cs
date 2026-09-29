@@ -103,7 +103,7 @@ namespace XHD.Core.View.Controllers
 
             if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "customer|save"))
             {
-                return XHDResult.Error("无操作权限");
+                return XHDResult.Error("无操作权限").ToString();
             }
 
             model.id = UUIDNext.Uuid.NewSequential().ToString();
