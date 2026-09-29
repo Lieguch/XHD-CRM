@@ -106,17 +106,11 @@ namespace XHD.Core.View.Controllers
             //exp = exp.And(a => _fsql.Select<hr_employee>().As("b").ToList(b => b.id).Contains(a.create_id));
 
             //权限
-            //var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
 
-            if (roledata.authtype == 0)
-            {
-                // 无权限：返回空结果
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             if (roledata.authtype != 4)
             {
-                exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
+                exp = exp.And(a => roledata.empList.Contains(a.create_id));
             }
 
 
@@ -125,7 +119,6 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
-        [HttpPost]
         public async Task<string> Save(CRM_Contact model)
         {
             var result = 0;
@@ -164,17 +157,6 @@ namespace XHD.Core.View.Controllers
                         return XHDResult.Error("找不到数据！").ToString();
                     }
 
-                    result = 0; // 先做数据权限校验，校验通过后再 await 
-                    // [v11] 数据权限校验（编辑时检查数据归属）
-                    var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-                    if (roledata.authtype == 0)
-                        return XHDResult.Error("无数据权限！").ToString();
-                    if (roledata.authtype != 4)
-                    {
-                        var existing = (await _service.GridAsync(a => a.id == model.id, 1, 1)).data.FirstOrDefault();
-                        if (existing != null && !roledata.empList.Contains(existing.customer.emp_id))
-                            return XHDResult.Error("无权限！").ToString();
-                    }
                     result = await _service.UpdateAsync(model);
 
                     //对比实体差别
@@ -216,7 +198,6 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
-        [HttpPost]
         public async Task<string> Delete(string id)
         {
             //判断是否有跟进
@@ -244,13 +225,6 @@ namespace XHD.Core.View.Controllers
                     return XHDResult.Error("找不到此数据！").ToString();
                 }
 
-                result = 0; // 先做数据权限校验，校验通过后再 await 
-                // [v11] 数据权限校验（删除时检查数据归属）
-                var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-                if (roledata.authtype == 0)
-                    return XHDResult.Error("无数据权限！").ToString();
-                if (roledata.authtype != 4 && checkdata.data[0].customer.emp_id != null && !roledata.empList.Contains(checkdata.data[0].customer.emp_id))
-                    return XHDResult.Error("无权限！").ToString();
                 result = await _service.DeleteAsync(id);
 
                 //日志
@@ -279,8 +253,6 @@ namespace XHD.Core.View.Controllers
             {
                 return XHDResult.Error("无权限！").ToString();
             }
-
-            //var result = await _service.Delete(id);
 
             if (result == 0)
             {
@@ -324,14 +296,9 @@ namespace XHD.Core.View.Controllers
 
             // 2. 权限校验逻辑完全保留
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype == 0)
-            {
-                // 无权限：返回空结果
-                return new JsonResult("{\"code\":0,\"data\":[],\"count\":0}");
-            }
             if (roledata.authtype != 4)
             {
-                exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
+                exp = exp.And(a => roledata.empList.Contains(a.create_id));
             }
 
             // 3. 获取数据
