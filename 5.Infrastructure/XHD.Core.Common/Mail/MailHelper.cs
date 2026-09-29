@@ -66,7 +66,7 @@ namespace XHD.Core.Common.Mail
             try
             {
                 var message = BuildMessage(recipient, subject, body, isBodyHtml, attachments);
-                return SendAsync(message);
+                return SendAsyncWithDispose(message);
             }
             catch (Exception ex)
             {
@@ -114,21 +114,23 @@ namespace XHD.Core.Common.Mail
             return message;
         }
 
-        private Task<bool> SendAsync(MimeMessage message)
+        private async Task<bool> SendAsyncWithDispose(MimeMessage message)
         {
             var client = _smtpFactory.Create(_host, _port, _useTls, _username, _password);
             if (client == null)
             {
                 _logger?.LogWarning("MailHelper: SmtpClientFactory 返回 null，跳过发送");
-                return Task.FromResult(false);
+                return false;
             }
             try
             {
-                return client.SendMailAsync(message);
+                return await client.SendMailAsync(message);
             }
             finally
             {
                 client.Disconnect();
+                // Sprint 10.36: 确保 MimeMessage 被 Dispose（MimeKit 2.x+ 支持 IDisposable）
+                message.Dispose();
             }
         }
 
