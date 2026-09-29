@@ -91,7 +91,6 @@
                         data: res,
                         //showLine: false,
                         click: function (node) {
-                            console.log(node);
                             var $select = $($(this)[0].elem).parents(".layui-form-select");
                             $select.removeClass("layui-form-selected").find(".layui-select-title span").html(node.data.title).end().find("input:hidden[name='category_id']").val(node.data.id);
                         }
