@@ -135,9 +135,6 @@
             },
             onMove: function(id, left, top) {
                 // 移动结束后调用接口保存位置
-                console.group('📍 AJAX 模拟 - 保存位置');
-                console.log('PATCH /api/notes/' + id + '/position', { left: left, top: top });
-                console.groupEnd();
 
                 $.ajax({
                     type: 'POST',
@@ -245,6 +242,5 @@
             });
         }
 
-        console.log('组件已启动，所有弹窗由外部控制，控制台可见完整 AJAX 模拟日志');
     });
 </script>
