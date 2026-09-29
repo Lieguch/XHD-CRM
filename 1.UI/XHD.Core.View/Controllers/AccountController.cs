@@ -188,7 +188,7 @@ namespace XHD.Core.View.Controllers
         {
             // [Sprint 10.33] 恢复验证码校验 —— CreateImageAsync 已修复字体缺失兜底逻辑
             var sessionCaptcha = HttpContext.Session.GetString(CaptchaCodeSessionName);
-            var formCaptcha = Request.Form["valicode"]?.ToString();
+            var formCaptcha = Request.Form["valicode"].ToString();
             if (string.IsNullOrEmpty(sessionCaptcha) || !sessionCaptcha.Equals(formCaptcha, StringComparison.OrdinalIgnoreCase))
             {
                 return XHDResult.Error("验证码错误").ToString();
