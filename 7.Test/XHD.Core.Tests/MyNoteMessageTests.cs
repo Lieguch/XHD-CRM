@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -108,7 +108,7 @@ namespace XHD.Core.Tests
             calSvc.Setup(s => s.GridAsync(It.IsAny<Expression<Func<My_Calendar, bool>>>(), It.IsAny<int>(), It.IsAny<int>()))
                 .Returns((Expression<Func<My_Calendar, bool>> e, int p, int l) => _calRepo.GridAsync(e, p, l));
 
-            var ctrl = new MyCalendarController(calSvc.Object);
+            var ctrl = new MyCalendarController(calSvc.Object, CreateFullAuth().Object);
             var httpCtx = new Microsoft.AspNetCore.Http.DefaultHttpContext();
             httpCtx.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
             var claims = new[]
