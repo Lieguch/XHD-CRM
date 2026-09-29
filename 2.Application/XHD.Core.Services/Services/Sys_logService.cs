@@ -39,13 +39,13 @@ internal class Sys_logService : BaseService<Sys_log>, ISys_logService
         //更新日志
         public async Task<int> UpdateLog(Sys_log models)
         {
-           return await _irepository.AddAsync(models);
+           return await _irepository.UpdateAsync(models);
         }
 
         //删除日志
         public async Task<int> DeleteLog(Sys_log models)
         {
-            return await _irepository.AddAsync(models);
+            return await _irepository.DeleteAsync(models.id);
         }
 
         //登录日志
