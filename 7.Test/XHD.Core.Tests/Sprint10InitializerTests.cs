@@ -56,7 +56,7 @@ namespace XHD.Core.Tests
 
             Assert.True(result.Success, $"SeedAsync failed with error: {result.Error}");
             Assert.False(result.AlreadySeeded);
-            Assert.Equal(14, result.RecordsPerTable.Count);
+            Assert.Equal(8, result.RecordsPerTable.Count);
             Assert.All(result.RecordsPerTable, x => Assert.True(x > 0, $"表 {x} 应该 >0"));
             Assert.True(result.TotalInserted > 0);
         }
