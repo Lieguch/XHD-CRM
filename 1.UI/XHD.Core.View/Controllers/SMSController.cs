@@ -76,12 +76,6 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         public async Task<string> Grid(PageView<SMS> model)
         {
-            // [v10] 数据权限过滤
-            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             Expression<Func<SMS, bool>> exp = a => true;
 
             // 可选：按标题模糊
@@ -146,6 +140,11 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         public async Task<string> Save(SMS model)
         {
+            if (!await _dBAuthService.GetAuth(GetUserId(), "sms|save"))
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
             if (model == null)
             {
                 return XHDResult.Error("参数无效").ToString();
@@ -226,6 +225,11 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         public async Task<string> Delete(string id)
         {
+            if (!await _dBAuthService.GetAuth(GetUserId(), "sms|del"))
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
             if (string.IsNullOrWhiteSpace(id))
             {
                 return XHDResult.Error("短信ID无效").ToString();
@@ -277,6 +281,11 @@ namespace XHD.Core.View.Controllers
             if (string.IsNullOrWhiteSpace(userId))
             {
                 return XHDResult.Error("登录状态已过期").ToString();
+            }
+
+            if (!await _dBAuthService.GetAuth(userId, "sms|send"))
+            {
+                return XHDResult.Error("无操作权限").ToString();
             }
 
             var result = await _service.SendAsync(id ?? string.Empty, userId);
