@@ -68,7 +68,6 @@ namespace XHD.Core.View.Controllers
 
             var result = await _service.GridAsync(exp, model.Page, model.Limit);
 
-            //return JsonConvert.SerializeObject(result, new IsoDateTimeConverter { DateTimeFormat = "yyyy-MM-dd HH:mm:ss" }).ToString();
             return result.ToString();
         }
 
@@ -201,8 +200,6 @@ namespace XHD.Core.View.Controllers
             {
                 return XHDResult.Error("无权限！").ToString();
             }
-
-            //var result = await _service.Delete(id);
 
             if (result == 0)
             {
