@@ -394,6 +394,13 @@ namespace XHD.Core.Tests
         public async Task GetEmpIdsNotInRole_ExcludesRoleMembers()
         {
             var roleId = Guid.NewGuid().ToString();
+            // Create hr_employee records
+            await _fsql.Insert(new List<hr_employee>
+            {
+                new hr_employee { id = "EMP1", isDelete = 0 },
+                new hr_employee { id = "EMP2", isDelete = 0 }
+            }).ExecuteAffrowsAsync();
+            // EMP1 is in the role
             await _fsql.Insert(new List<Sys_role_emp>
             {
                 new Sys_role_emp { id = Guid.NewGuid().ToString(), role_id = roleId, emp_id = "EMP1" }
@@ -401,8 +408,9 @@ namespace XHD.Core.Tests
 
             var notInRole = await _roleEmpRepo.GetEmpIdsNotInRoleAsync(roleId);
 
+            // Should return only EMP2 (not EMP1 who is in the role)
             Assert.Single(notInRole);
-            Assert.Equal("EMP1", notInRole[0]); // 该角色下的员工（供上层做差集）
+            Assert.Equal("EMP2", notInRole[0]);
         }
 
         [Fact]
@@ -623,6 +631,14 @@ namespace XHD.Core.Tests
         public async Task SysRoleEmp_RoleMembership_QueriesCorrectly_Integration()
         {
             var roleId = Guid.NewGuid().ToString();
+            // Create hr_employee records
+            await _fsql.Insert(new List<hr_employee>
+            {
+                new hr_employee { id = "EMP1", isDelete = 0 },
+                new hr_employee { id = "EMP2", isDelete = 0 },
+                new hr_employee { id = "EMP3", isDelete = 0 }
+            }).ExecuteAffrowsAsync();
+            // Role memberships
             await _fsql.Insert(new List<Sys_role_emp>
             {
                 new Sys_role_emp { id = Guid.NewGuid().ToString(), role_id = roleId, emp_id = "EMP1" },
@@ -630,17 +646,14 @@ namespace XHD.Core.Tests
                 new Sys_role_emp { id = Guid.NewGuid().ToString(), role_id = "OTHER_ROLE", emp_id = "EMP3" }
             }).ExecuteAffrowsAsync();
 
-            // 按角色查员工（#113 语义）
+            // Get members of roleId
             var roleMemberIds = await _roleEmpRepo.GetEmpIdsByRoleIdAsync(roleId);
             Assert.Equal(2, roleMemberIds.Count);
 
-            // 按角色查"外部"员工集合作为差集来源（#112 语义）
+            // Get employees NOT in roleId
             var notInRoleIds = await _roleEmpRepo.GetEmpIdsNotInRoleAsync(roleId);
-            Assert.Equal(2, notInRoleIds.Count);
-            // 两种查询返回同一集合（本 Repository 层实现）
-            Assert.Equal(
-                roleMemberIds.OrderBy(s => s),
-                notInRoleIds.OrderBy(s => s));
+            Assert.Single(notInRoleIds);
+            Assert.Equal("EMP3", notInRoleIds[0]);
         }
 
         [Fact]
