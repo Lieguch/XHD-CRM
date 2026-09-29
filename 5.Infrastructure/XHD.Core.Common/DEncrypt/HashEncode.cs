@@ -7,6 +7,7 @@ namespace XHD.Core.Common.DEncrypt
     /// <summary>
     ///     得到随机安全码（哈希加密）。
     /// </summary>
+    [Obsolete("Dead code - not used anywhere. Replace with MD5Comm.Get32MD5One() if needed.")]
     public class HashEncode
     {
         /// <summary>
