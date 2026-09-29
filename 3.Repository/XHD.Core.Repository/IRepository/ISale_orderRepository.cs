@@ -17,9 +17,9 @@ namespace XHD.Core.IRepository
 {
     public interface ISale_orderRepository: IXHDBaseRepository<Sale_order>
     {
-        void UpdateOrderInvoice(string order_id);
+        Task UpdateOrderInvoice(string order_id);
 
-        void UpdateOrderReceive(string order_id);
+        Task UpdateOrderReceive(string order_id);
 
         Task<JArray> ReportYear(Expression<Func<Sale_order, bool>> expWhere);
 
