@@ -75,9 +75,6 @@ namespace XHD.Core.View.Controllers
             ViewData["company"] = infodata.data[0].sys_value;
 
             return View();
-
-
-            //return View();
         }
 
         public IActionResult home()
@@ -140,15 +137,6 @@ namespace XHD.Core.View.Controllers
                     { "image", sys_logo },
                     { "href",""}
                     });
-
-
-                //objinfo.Add("logoInfo", new JObject{
-                //    { "title",sys_name},
-                //    { "image", "/layuimini/images/logo.png" },
-                //    { "href",""}
-                //    });
-
-
 
 
                 //开始构建目录树
