@@ -30,8 +30,6 @@ namespace XHD.Core.View
                 //Log.Debug($"ManagedThreadId:{Thread.CurrentThread.ManagedThreadId}: FullName:{e.EntityType.FullName}" +
                 //          $" ElapsedMilliseconds:{e.ElapsedMilliseconds}ms, {e.Sql}");
 
-                //Console.WriteLine(e.Sql);
-
                 //NLogger.WriteLog("SQL_", $"FullName:{e.EntityType.FullName} ElapsedMilliseconds:{e.ElapsedMilliseconds}ms, {e.Sql}");
 
                 if (e.ElapsedMilliseconds > 200)
