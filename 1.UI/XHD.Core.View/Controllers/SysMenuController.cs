@@ -27,6 +27,7 @@ using XHD.Core.Models;
 
 namespace XHD.Core.View.Controllers
 {
+    [Authorize]
     public class SysMenuController : Controller
     {
         private readonly ILogger<SysMenuController> _logger;
