@@ -57,19 +57,28 @@ namespace XHD.Core.View.Controllers
             _dBAuthService = dBAuthService;
         }
 
-        public async Task<IActionResult> Index()
+        public IActionResult Index()
         {
-            // [v10] 数据权限检查
-            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype == 0)
-                return View();
-
             return View();
         }
 
         public async Task<string> ReportYear()
         {
             Expression<Func<Finance_Receive, bool>> exp = a => 1 == 1;
+
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (roledata.empList != null && roledata.empList.Count > 0)
+                {
+                    exp = exp.And(a => roledata.empList.Contains(a.Payee_id));
+                }
+                else
+                {
+                    return XHDResult.Error("无权限").ToString();
+                }
+            }
 
             if (!string.IsNullOrWhiteSpace(Request.Query["year"]))
             {
@@ -126,6 +135,20 @@ namespace XHD.Core.View.Controllers
         {
             Expression<Func<Finance_Receive, bool>> exp = a => 1 == 1;
 
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (roledata.empList != null && roledata.empList.Count > 0)
+                {
+                    exp = exp.And(a => roledata.empList.Contains(a.Payee_id));
+                }
+                else
+                {
+                    return XHDResult.Error("无权限").ToString();
+                }
+            }
+
             if (!string.IsNullOrWhiteSpace(Request.Query["year"]))
             {
                 exp = exp.And(a => a.Receive_date.Value.Year == Request.Query["year"]);
@@ -180,6 +203,20 @@ namespace XHD.Core.View.Controllers
         {
             Expression<Func<Finance_Receive, bool>> exp = a => 1 == 1;
 
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (roledata.empList != null && roledata.empList.Count > 0)
+                {
+                    exp = exp.And(a => roledata.empList.Contains(a.Payee_id));
+                }
+                else
+                {
+                    return XHDResult.Error("无权限").ToString();
+                }
+            }
+
             if (!string.IsNullOrWhiteSpace(Request.Query["year"]))
             {
                 exp = exp.And(a => a.Receive_date.Value.Year == Request.Query["year"]);
@@ -223,6 +260,20 @@ namespace XHD.Core.View.Controllers
         public async Task<string> ReportInvoice()
         {
             Expression<Func<Finance_Invoice, bool>> exp = a => 1 == 1;
+
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (roledata.empList != null && roledata.empList.Count > 0)
+                {
+                    exp = exp.And(a => roledata.empList.Contains(a.emp_id));
+                }
+                else
+                {
+                    return XHDResult.Error("无权限").ToString();
+                }
+            }
 
             if (!string.IsNullOrWhiteSpace(Request.Query["year"]))
             {
@@ -278,6 +329,20 @@ namespace XHD.Core.View.Controllers
         {
             Expression<Func<Finance_Invoice, bool>> exp = a => 1 == 1;
 
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (roledata.empList != null && roledata.empList.Count > 0)
+                {
+                    exp = exp.And(a => roledata.empList.Contains(a.emp_id));
+                }
+                else
+                {
+                    return XHDResult.Error("无权限").ToString();
+                }
+            }
+
             if (!string.IsNullOrWhiteSpace(Request.Query["year"]))
             {
                 exp = exp.And(a => a.invoice_date.Value.Year == Request.Query["year"]);
@@ -331,6 +396,20 @@ namespace XHD.Core.View.Controllers
         public async Task<string> ReportInvoiceType()
         {
             Expression<Func<Finance_Invoice, bool>> exp = a => 1 == 1;
+
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (roledata.empList != null && roledata.empList.Count > 0)
+                {
+                    exp = exp.And(a => roledata.empList.Contains(a.emp_id));
+                }
+                else
+                {
+                    return XHDResult.Error("无权限").ToString();
+                }
+            }
 
             if (!string.IsNullOrWhiteSpace(Request.Query["year"]))
             {
