@@ -73,7 +73,13 @@ namespace XHD.Core.Common
                         string infoData = tempQueue[i][2] + Environment.NewLine + "--------------------------------------------" + Environment.NewLine;
                         WriteText(logPath, infoData);
                     }
-                    if (writeQueue.Count > 0 || readQueue.Count > 0)
+                    // Sprint 10.36: 修复 — writeQueue/readQueue 访问需在 lock 内，避免线程安全遗漏
+                    bool hasPending;
+                    lock (queueLock)
+                    {
+                        hasPending = writeQueue.Count > 0 || readQueue.Count > 0;
+                    }
+                    if (hasPending)
                     {
                         pause.Set();
                     }
