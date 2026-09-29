@@ -186,7 +186,7 @@ namespace XHD.Core.View.Controllers
 
         }
 
-        public async Task<string> ModifyPWD(string pwd)
+        public async Task<string> ModifyPWD(string oldpwd, string pwd)
         {
             //身份验证
             var userresult = checkToken();
@@ -196,12 +196,22 @@ namespace XHD.Core.View.Controllers
                 return userresult.ToString();
             }
 
+            // 校验原密码
+            var empData = await _empservice.GridAsync(a => a.id == employee.id);
+            var emp = empData.data.FirstOrDefault();
+            if (emp == null || !emp.pwd.Equals(MD5Comm.MD5Hash(oldpwd), StringComparison.OrdinalIgnoreCase))
+            {
+                return XHDResult.Error("原密码不正确").ToString();
+            }
+
             Expression<Func<hr_employee, hr_employee>> exppwd = a => new hr_employee { pwd = MD5Comm.MD5Hash(pwd) };
             Expression<Func<hr_employee, bool>> expwhere = a => a.id == employee.id;
-
-            await _empservice.UpdateAsync(exppwd, expwhere);
-
-            return XHDResult.Success("修改成功！").ToString();
+            var result = await _empservice.UpdateAsync(exppwd, expwhere);
+            if (result <= 0)
+            {
+                return XHDResult.Error("修改失败").ToString();
+            }
+            return XHDResult.Success("修改成功").ToString();
         }
 
         #endregion
@@ -670,6 +680,14 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> OrderDetails(string order_id)
         {
+            //身份验证
+            var userresult = checkToken();
+
+            if (userresult.Value<int>("code") != 0)
+            {
+                return userresult.ToString();
+            }
+
             Expression<Func<Sale_order_details, bool>> exp = a => a.order_id == order_id;
 
             var result = await _OrderDetailsService.GridAsync(exp);
@@ -855,6 +873,14 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> ContractAtta(string contract_id)
         {
+            //身份验证
+            var userresult = checkToken();
+
+            if (userresult.Value<int>("code") != 0)
+            {
+                return userresult.ToString();
+            }
+
             Expression<Func<Sale_contract_atta, bool>> exp = a => a.contract_id == contract_id;
 
             var result = await _contractattaservice.GridAsync(exp);
@@ -1129,6 +1155,14 @@ namespace XHD.Core.View.Controllers
         /// <returns></returns>
         public async Task<string> paramsCombo(string type)
         {
+            //身份验证
+            var userresult = checkToken();
+
+            if (userresult.Value<int>("code") != 0)
+            {
+                return userresult.ToString();
+            }
+
             Expression<Func<Sys_Param, bool>> exp = a => a.params_type == type;
 
             var result = await _SysParamService.GridAsync(exp, "params_order");
@@ -1144,6 +1178,14 @@ namespace XHD.Core.View.Controllers
         /// <returns></returns>
         public async Task<string> ProductList(string? serchtxt, int page = 1, int limit = 10)
         {
+            //身份验证
+            var userresult = checkToken();
+
+            if (userresult.Value<int>("code") != 0)
+            {
+                return userresult.ToString();
+            }
+
             //查询数据
             Expression<Func<Product, bool>> exp = a => 1 == 1;
 
