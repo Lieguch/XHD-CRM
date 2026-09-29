@@ -192,8 +192,6 @@ namespace XHD.Core.View.Controllers
                 return XHDResult.Error("无权限！").ToString();
             }
 
-            //var result = await _service.Delete(id);
-
             if (result == 0)
             {
                 return XHDResult.Error("删除失败！").ToString();
