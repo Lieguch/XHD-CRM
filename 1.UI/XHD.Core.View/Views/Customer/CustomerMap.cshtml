@@ -22,7 +22,7 @@
 </style>
 
 
-<!-- 天地图JS API -->
+<!-- 天地图JS API — TODO(P2): Token 应从 appsettings.json 或环境变量读取，避免硬编码泄露 -->
 <script src="https://api.tianditu.gov.cn/api?v=4.0&tk=0267810f3111fb11793fbb516ca78e92"></script>
 
 <div class="map-top-bar">
@@ -80,7 +80,6 @@ layui.use(['layer', 'jquery'], function(){
                 // mapType: map.getMapType()
             };
             safeSetItem('tianditu_map_state', state);
-            console.log('地图状态已保存:', state);
         } catch (e) {
             console.warn('保存地图状态失败:', e);
         }
@@ -98,13 +97,11 @@ layui.use(['layer', 'jquery'], function(){
             if (!isNaN(lng) && !isNaN(lat) && !isNaN(zoom) && zoom >= 1 && zoom <= 18) {
                 const center = new T.LngLat(lng, lat);
                 map.centerAndZoom(center, zoom);
-                console.log('已恢复上次地图状态:', savedState);
                 return true;
             }
         }
         // 没有有效的存储数据，使用默认值
         map.centerAndZoom(new T.LngLat(defaultCenter.lng, defaultCenter.lat), defaultZoom);
-        console.log('使用默认地图状态');
         return false;
     }
 
