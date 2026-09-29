@@ -169,7 +169,7 @@ namespace XHD.Core.View.Controllers
 
             if (!string.IsNullOrWhiteSpace(Request.Query["emp_id"]))
             {
-                string[] empArray = Request.Query["emp_id"].Split(',', StringSplitOptions.RemoveEmptyEntries);
+                string[] empArray = Request.Query["emp_id"].ToString().Split(',', StringSplitOptions.RemoveEmptyEntries);
                 if (empArray.Length > 0)
                 {
                     exp = exp.And(a => empArray.Contains(a.employee_id));
