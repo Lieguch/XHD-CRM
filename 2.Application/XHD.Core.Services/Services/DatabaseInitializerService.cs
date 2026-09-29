@@ -52,7 +52,7 @@ namespace XHD.Core.Services
 
             // 1) 幂等判断
             var alreadySeeded = await IsSeededAsync(fsql);
-            Console.WriteLine($"[SEED DEBUG] SeedAsync called: force={force}, alreadySeeded={alreadySeeded}");
+            _logger.LogInformation("[SEED DEBUG] SeedAsync called: force={Force}, alreadySeeded={AlreadySeeded}", force, alreadySeeded);
             if (alreadySeeded && !force)
             {
                 _logger.LogInformation("数据库已初始化，跳过重复执行。");
@@ -68,7 +68,7 @@ namespace XHD.Core.Services
                     _logger.LogWarning("已按 force=true 清理旧种子数据。");
                     // Diagnostic: verify clean worked
                     long menuCountAfterClean = await fsql.Select<Sys_Menu>().CountAsync();
-                    Console.WriteLine($"[SEED DEBUG] After clean: Sys_Menu count = {menuCountAfterClean}");
+                    _logger.LogInformation("[SEED DEBUG] After clean: Sys_Menu count = {Count}", menuCountAfterClean);
                 }
                 catch (Exception ex)
                 {
@@ -95,7 +95,7 @@ namespace XHD.Core.Services
                     }
                     catch (Exception mex)
                     {
-                        Console.WriteLine($"[SEED DEBUG] Menu insert failed at row {menuCount+1}: id={m.id}, parentid={m.parentid}, error={mex.Message}");
+                        _logger.LogError("[SEED DEBUG] Menu insert failed at row {Row}: id={Id}, parentid={ParentId}, error={Error}", menuCount+1, m.id, m.parentid, mex.Message);
                         throw;
                     }
                 }
@@ -127,30 +127,6 @@ namespace XHD.Core.Services
 
                 tableName = "Sys_info";
                 var infos = SeedData.Infos().ToList();
-                tableName = "hr_department";
-                var departments = SeedData.Departments().ToList();
-                perTable.Add(await fsql.Insert(departments).ExecuteAffrowsAsync());
-
-                tableName = "hr_position";
-                var positions = SeedData.Positions().ToList();
-                perTable.Add(await fsql.Insert(positions).ExecuteAffrowsAsync());
-
-                tableName = "hr_post";
-                var posts = SeedData.Posts().ToList();
-                perTable.Add(await fsql.Insert(posts).ExecuteAffrowsAsync());
-
-                tableName = "Sys_role_emp";
-                var roleEmps = SeedData.RoleEmps().ToList();
-                perTable.Add(await fsql.Insert(roleEmps).ExecuteAffrowsAsync());
-
-                tableName = "Sys_log_Err";
-                var logErrs = SeedData.LogErrs().ToList();
-                perTable.Add(await fsql.Insert(logErrs).ExecuteAffrowsAsync());
-
-                tableName = "Sys_Param";
-                var paramsList = SeedData.Params().ToList();
-                perTable.Add(await fsql.Insert(paramsList).ExecuteAffrowsAsync());
-
                 perTable.Add(await fsql.Insert(infos).ExecuteAffrowsAsync());
 
                 // 4) 最后写入"已初始化"标记
@@ -167,7 +143,7 @@ namespace XHD.Core.Services
 
                 sw.Stop();
                 _logger.LogInformation(
-                    "数据库初始化成功：14 表插入 {Rows} 行（+1 标记行），耗时 {Elapsed}ms。",
+                    "数据库初始化成功：8 表插入 {Rows} 行（+1 标记行），耗时 {Elapsed}ms。",
                     totalWithMarker, sw.ElapsedMilliseconds);
 
                 return SeedResult.SuccessResult(totalWithMarker, perTable);
@@ -175,10 +151,10 @@ namespace XHD.Core.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "数据库初始化失败（表: {Table}）。", tableName);
-                Console.WriteLine($"[SEED DEBUG] Failed at table '{tableName}': {ex.GetType().Name}: {ex.Message}");
+                _logger.LogError("[SEED DEBUG] Failed at table '{Table}': {ExceptionType}: {Message}", tableName, ex.GetType().Name, ex.Message);
                 if (ex.InnerException != null)
-                    Console.WriteLine($"[SEED DEBUG] Inner: {ex.InnerException.GetType().Name}: {ex.InnerException.Message}");
-                Console.WriteLine($"[SEED DEBUG] Stack: {ex.StackTrace?.Substring(0, Math.Min(300, ex.StackTrace.Length))}");
+                    _logger.LogError("[SEED DEBUG] Inner: {InnerType}: {InnerMessage}", ex.InnerException.GetType().Name, ex.InnerException.Message);
+                _logger.LogError("[SEED DEBUG] Stack: {Stack}", ex.StackTrace?.Substring(0, Math.Min(300, ex.StackTrace.Length)));
                 return SeedResult.FailedResult($"[{tableName}] {ex.Message}");
             }
         }
@@ -200,12 +176,6 @@ namespace XHD.Core.Services
             await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_Param_Type");
             await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_role");
             await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM hr_employee");
-            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_Param");
-            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_role_emp");
-            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_log_Err");
-            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM hr_department");
-            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM hr_position");
-            await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM hr_post");
             await fsql.Ado.ExecuteNonQueryAsync("DELETE FROM Sys_info");
         }
     }
