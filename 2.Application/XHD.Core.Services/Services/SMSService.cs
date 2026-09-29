@@ -85,6 +85,7 @@ namespace XHD.Core.Services
             }
             catch (Exception ex)
             {
+                _logger?.LogError(ex, "短信发送系统异常");
                 return XHDResult.Error("短信发送异常：" + ex.Message).ToString();
             }
 
@@ -113,8 +114,9 @@ namespace XHD.Core.Services
             {
                 return _helper.GetBalance(serialNo, key);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger?.LogError(ex, "GetBalance 异常");
                 return 0;
             }
         }
@@ -178,7 +180,7 @@ namespace XHD.Core.Services
                 else if (row.sys_key == "sms_key")
                 {
                     try { key = DESEncrypt.Decrypt(row.sys_value ?? ""); }
-                    catch { key = ""; }
+                    catch (Exception ex) { _logger?.LogError(ex, "SMS 凭据解密异常"); key = ""; }
                 }
             }
             return (serialNo, key);
