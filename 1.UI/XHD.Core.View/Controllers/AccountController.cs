@@ -204,21 +204,16 @@ namespace XHD.Core.View.Controllers
                 AES_Key = HttpContext.Session.GetString("AES_Key");
             if (string.IsNullOrWhiteSpace(AES_Key))
             {
-                // 密钥缺失时不抛异常，直接透传密码（仅本地开发/无 HTTPS 时可能用到）
-                // 生产环境必须走 HTTPS，密码在传输层已加密
-                model.pwd = model.pwd ?? string.Empty;
+                return XHDResult.Error("加密密钥缺失，请刷新页面重试").ToString();
             }
-            else
+            try
             {
-                try
-                {
-                    var depwd = AESEncrypt.AesDecrypt(model.pwd, AES_Key);
-                    model.pwd = depwd;
-                }
-                catch
-                {
-                    return XHDResult.Error(-9, "系统错误！").ToString();
-                }
+                var depwd = AESEncrypt.AesDecrypt(model.pwd, AES_Key);
+                model.pwd = depwd;
+            }
+            catch
+            {
+                return XHDResult.Error(-9, "系统错误！").ToString();
             }
             var result = await _service.Login(model);
             if (result.Value<int>("code") == 0)
