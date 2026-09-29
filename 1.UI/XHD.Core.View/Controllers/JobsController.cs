@@ -29,13 +29,16 @@ using XHD.Core.View.Configs;
 
 namespace XHD.Core.View.Controllers
 {
+    [Authorize]
     public class JobsController : Controller
     {
         private readonly IJobsService _service;
+        private readonly IDBAuthService _dBAuthService;
 
-        public JobsController(IJobsService service)
+        public JobsController(IJobsService service, IDBAuthService dBAuthService)
         {
             _service = service;
+            _dBAuthService = dBAuthService;
         }
 
         //管理页
@@ -67,6 +70,12 @@ namespace XHD.Core.View.Controllers
         public async Task<string> Save(Jobs model)
         {
             var result = 0;
+
+            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "jobs|save");
+            if (!authbtn)
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
 
             if (string.IsNullOrWhiteSpace(model.id))
             {
@@ -113,6 +122,12 @@ namespace XHD.Core.View.Controllers
         public async Task<string> Delete(string id)
         {
             var result = 0;
+
+            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "jobs|del");
+            if (!authbtn)
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
 
             //判断是否有数据
             Expression<Func<Jobs, bool>> exp = a => a.id == id;
