@@ -127,7 +127,7 @@ namespace XHD.Core.Tests
             noteSvc.Setup(s => s.RemindAsync(It.IsAny<string>(), It.IsAny<int>()))
                 .Returns((string empId, int limit) => _noteRepo.RemindAsync(empId, limit));
 
-            var ctrl = new MyNoteController(noteSvc.Object);
+            var ctrl = new MyNoteController(noteSvc.Object, new Moq.Mock<IDBAuthService>().Object);
             var httpCtx = new Microsoft.AspNetCore.Http.DefaultHttpContext();
             httpCtx.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
             var claims = new[]
