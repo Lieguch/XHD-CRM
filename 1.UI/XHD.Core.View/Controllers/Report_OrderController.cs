@@ -68,6 +68,20 @@ namespace XHD.Core.View.Controllers
         {
             Expression<Func<Sale_order, bool>> exp = a => 1 == 1;
 
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (roledata.empList != null && roledata.empList.Count > 0)
+                {
+                    exp = exp.And(a => roledata.empList.Contains(a.emp_id));
+                }
+                else
+                {
+                    return XHDResult.Error("无权限").ToString();
+                }
+            }
+
             if (!string.IsNullOrWhiteSpace(Request.Query["year"]))
             {
                 exp = exp.And(a => a.Order_date.Value.Year == Request.Query["year"]);
@@ -121,6 +135,20 @@ namespace XHD.Core.View.Controllers
         public async Task<string> ReportYearSum()
         {
             Expression<Func<Sale_order, bool>> exp = a => 1 == 1;
+
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (roledata.empList != null && roledata.empList.Count > 0)
+                {
+                    exp = exp.And(a => roledata.empList.Contains(a.emp_id));
+                }
+                else
+                {
+                    return XHDResult.Error("无权限").ToString();
+                }
+            }
 
             if (!string.IsNullOrWhiteSpace(Request.Query["year"]))
             {
@@ -176,6 +204,20 @@ namespace XHD.Core.View.Controllers
         {
             Expression<Func<Sale_order, bool>> exp = a => 1 == 1;
 
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (roledata.empList != null && roledata.empList.Count > 0)
+                {
+                    exp = exp.And(a => roledata.empList.Contains(a.emp_id));
+                }
+                else
+                {
+                    return XHDResult.Error("无权限").ToString();
+                }
+            }
+
             if (!string.IsNullOrWhiteSpace(Request.Query["year"]))
             {
                 exp = exp.And(a => a.Order_date.Value.Year == Request.Query["year"]);
@@ -219,6 +261,20 @@ namespace XHD.Core.View.Controllers
         public async Task<string> ReportPayType()
         {
             Expression<Func<Sale_order, bool>> exp = a => 1 == 1;
+
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (roledata.empList != null && roledata.empList.Count > 0)
+                {
+                    exp = exp.And(a => roledata.empList.Contains(a.emp_id));
+                }
+                else
+                {
+                    return XHDResult.Error("无权限").ToString();
+                }
+            }
 
             if (!string.IsNullOrWhiteSpace(Request.Query["year"]))
             {
@@ -268,12 +324,31 @@ namespace XHD.Core.View.Controllers
         [HttpGet("ReportEmpOrder")]
         public async Task<string> ReportEmpOrder(int? year, [FromQuery] List<string> empIds = null)
         {
-            // [v10] 数据权限过滤
+            // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype == 0)
+            if (roledata.authtype != 4)
             {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
+                if (empIds != null)
+                {
+                    empIds = empIds.Where(e => roledata.empList.Contains(e)).ToList();
+                    if (empIds.Count == 0)
+                    {
+                        return XHDResult.Error("无权限").ToString();
+                    }
+                }
+                else
+                {
+                    if (roledata.empList != null && roledata.empList.Count > 0)
+                    {
+                        empIds = new List<string>(roledata.empList);
+                    }
+                    else
+                    {
+                        return XHDResult.Error("无权限").ToString();
+                    }
+                }
             }
+
             int y = year ?? DateTime.Now.Year;
             var data = await _service.ReportEmpOrderAsync(y, empIds);
             return data.ToString();
@@ -291,6 +366,31 @@ namespace XHD.Core.View.Controllers
             DateTime? end,
             [FromQuery] List<string> empIds = null)
         {
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (empIds != null)
+                {
+                    empIds = empIds.Where(e => roledata.empList.Contains(e)).ToList();
+                    if (empIds.Count == 0)
+                    {
+                        return XHDResult.Error("无权限").ToString();
+                    }
+                }
+                else
+                {
+                    if (roledata.empList != null && roledata.empList.Count > 0)
+                    {
+                        empIds = new List<string>(roledata.empList);
+                    }
+                    else
+                    {
+                        return XHDResult.Error("无权限").ToString();
+                    }
+                }
+            }
+
             var data = await _service.ReportMonthEmpOrderAsync(start ?? DateTime.Now.AddMonths(-1), end ?? DateTime.Now, empIds);
             return data.ToString();
         }
@@ -309,6 +409,31 @@ namespace XHD.Core.View.Controllers
             int? endMonth,
             [FromQuery] List<string> empIds = null)
         {
+            // 权限
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != 4)
+            {
+                if (empIds != null)
+                {
+                    empIds = empIds.Where(e => roledata.empList.Contains(e)).ToList();
+                    if (empIds.Count == 0)
+                    {
+                        return XHDResult.Error("无权限").ToString();
+                    }
+                }
+                else
+                {
+                    if (roledata.empList != null && roledata.empList.Count > 0)
+                    {
+                        empIds = new List<string>(roledata.empList);
+                    }
+                    else
+                    {
+                        return XHDResult.Error("无权限").ToString();
+                    }
+                }
+            }
+
             int y = year ?? DateTime.Now.Year;
             int sm = (startMonth ?? 1);
             int em = (endMonth ?? 12);
