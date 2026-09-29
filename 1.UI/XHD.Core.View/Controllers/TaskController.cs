@@ -1,4 +1,4 @@
-﻿
+
 using System;
 using System.Linq;
 using System.Linq.Expressions;
@@ -28,19 +28,20 @@ namespace XHD.Core.View.Controllers
     [Authorize]
     public class TaskController : Controller
     {
-        private readonly IDBAuthService _dBAuthService;
         private readonly ILogger<TaskController> _logger;
         private readonly ITaskService _service;
         private readonly ITask_followService _followService;
         private readonly ICRM_CustomerService _customerService;
         private readonly ISys_ParamService _paramService;
+        private readonly IDBAuthService _dBAuthService;
 
         public TaskController(
             ILogger<TaskController> logger,
             ITaskService service,
             ITask_followService followService,
             ICRM_CustomerService customerService,
-            ISys_ParamService paramService, IDBAuthService dBAuthService)
+            ISys_ParamService paramService,
+            IDBAuthService dBAuthService)
         {
             _logger = logger;
             _service = service;
@@ -76,12 +77,6 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         public async Task<string> Grid(PageView<TaskInfo> model)
         {
-            // [v10] 数据权限过滤
-            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             Expression<Func<TaskInfo, bool>> exp = t => true;
 
             if (!string.IsNullOrWhiteSpace(Request.Query["task_title"]))
@@ -121,6 +116,11 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         public async Task<string> Save(TaskInfo model)
         {
+            if (!await _dBAuthService.GetAuth(GetUserId(), "task|save"))
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
             if (model == null || string.IsNullOrWhiteSpace(model.task_title))
             {
                 return XHDResult.Error("任务标题不能为空！").ToString();
@@ -181,6 +181,11 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         public async Task<string> Delete(string id)
         {
+            if (!await _dBAuthService.GetAuth(GetUserId(), "task|del"))
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
             if (string.IsNullOrWhiteSpace(id))
             {
                 return XHDResult.Error("参数错误！").ToString();
@@ -210,6 +215,11 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         public async Task<string> UpdateStatus(string id, int status)
         {
+            if (!await _dBAuthService.GetAuth(GetUserId(), "task|edit"))
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
             if (string.IsNullOrWhiteSpace(id))
             {
                 return XHDResult.Error("参数错误！").ToString();
@@ -257,10 +267,21 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         public async Task<string> MyTodo(string execId)
         {
-            var exec = string.IsNullOrWhiteSpace(execId) ? GetUserId() : execId;
+            var currentUserId = GetUserId();
+            var exec = string.IsNullOrWhiteSpace(execId) ? currentUserId : execId;
             if (string.IsNullOrWhiteSpace(exec))
             {
                 return XHDResult.Error("参数错误！").ToString();
+            }
+
+            // 查看他人待办需要 view_others 权限或 admin
+            if (exec != currentUserId)
+            {
+                var roledata = await _dBAuthService.GetDataAuth(currentUserId);
+                if (roledata.authtype != 4 && !await _dBAuthService.GetAuth(currentUserId, "task|view_others"))
+                {
+                    return XHDResult.Error("无权限查看他人待办").ToString();
+                }
             }
 
             Expression<Func<TaskInfo, bool>> exp = t => t.executive_id == exec && t.task_status_id == 0;
