@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Session;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Newtonsoft;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -42,6 +43,7 @@ namespace XHD.Core.View.Controllers
         private readonly ISys_Param_TypeService _typeService;
         private readonly ISys_logService _LogService;
         private readonly ISys_infoService _infoservice;
+        private readonly ILogger<AccountController> _logger;
         public AccountController(
             Ihr_employeeService service,
             ISys_MenuService menuService,
@@ -50,9 +52,11 @@ namespace XHD.Core.View.Controllers
             ISys_Param_CityService _cityService,
             ISys_Param_TypeService typeService,
             ISys_logService LogService,
-            ISys_infoService infoservice)
+            ISys_infoService infoservice,
+            ILogger<AccountController> logger)
         {
             _service = service;
+            _logger = logger;
             _LogService = LogService;
             _infoservice = infoservice;
             _menuService = menuService;
@@ -320,8 +324,7 @@ namespace XHD.Core.View.Controllers
                     // 字体缺失兜底：直接用 image[x,y] 设像素画色块
                     // 完全绕开 SixLabors.Drawing API，避免 2.x 命名空间冲突
                     // （Drawing.SolidBrush 与 Processing.SolidBrush 同名，编译器选错重载）
-                    Console.WriteLine("[WARN] SystemFonts.Families is empty. " +
-                        "Install fonts-dejavu-core in Docker image to render captcha text.");
+                    _logger.LogWarning("[WARN] SystemFonts.Families is empty. Install fonts-dejavu-core in Docker image to render captcha text.");
                     for (int i = 0; i < code.Length; i++)
                     {
                         var rectColor = GetRandomColor();
