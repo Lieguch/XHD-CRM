@@ -38,6 +38,7 @@
 layui.use(['layer', 'jquery'], function() {
     var layer = layui.layer;
     var $ = layui.jquery;
+    // TODO(P2): Token 应从 appsettings.json 或环境变量读取，避免硬编码泄露
     var TK = '0267810f3111fb11793fbb516ca78e92';
 
     // ---- 地图相关 ----
@@ -214,7 +215,6 @@ layui.use(['layer', 'jquery'], function() {
 
     // ========== 初始化地图 ==========
     function initMap() {
-        console.log("地图初始化开始");
         var mapDom = document.getElementById(mapContainerId);
         if (!mapDom) return;
         if (map) clearMapRes();
@@ -274,7 +274,6 @@ layui.use(['layer', 'jquery'], function() {
             }
         });
 
-        console.log("地图初始化完成");
     }
 
     // ========== 暴露给父页面的方法 ==========
