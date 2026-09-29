@@ -11,7 +11,18 @@
 
 			<!-- 表单字段 -->
 			<view class="form-fields">
-				<!-- 姓名 -->
+				<!-- 原密码 -->
+				<view class="form-item">
+					<view class="form-label">
+						<text class="required">*</text>
+						<text>原密码</text>
+					</view>
+					<view class="form-input">
+						<input type="password" v-model="oldpassword" placeholder="请输入原密码" @focus="onInputFocus"
+							@blur="onInputBlur" class="rounded-input"></input>
+					</view>
+				</view>
+				<!-- 新密码 -->
 				<view class="form-item">
 
 					<view class="form-label">
@@ -88,6 +99,7 @@
 	export default {
 		data() {
 			return {
+				oldpassword: '',
 				password: '',
 				checkpass: '',
 				strength: 0, // 0-3，0表示未输入，1弱，2中，3强
@@ -192,6 +204,15 @@
 				// this.hasNumbers = false;
 				// this.hasSymbols = false;
 
+				if (!this.oldpassword) {
+					uni.showToast({
+						title: '请输入原密码!',
+						icon: 'none',
+						duration: 2000
+					});
+					return;
+				}
+
 				if (!this.hasMinLength || !this.hasLetters || !this.hasNumbers || !this.hasSymbols) {
 					uni.showToast({
 						title: '密码强度不正确!',
@@ -226,7 +247,7 @@
 
 
 
-				this.$request("/api/ModifyPWD", {"pwd":this.password})
+				this.$request("/api/ModifyPWD", {"oldpwd":this.oldpassword,"pwd":this.password})
 					.then(res => {
 						console.log(res);
 
