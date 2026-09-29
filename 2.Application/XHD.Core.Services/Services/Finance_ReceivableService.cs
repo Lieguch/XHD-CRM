@@ -18,7 +18,7 @@ namespace XHD.Core.Services
 {
     internal class Finance_ReceivableService : BaseService<Finance_Receivable>, IFinance_ReceivableService
     {
-        IFinance_ReceivableRepository irepositorySelf;
+        IFinance_ReceivableRepository _irepositorySelf;
         IFinance_ReceiveRepository _receiveRepository;
         ISale_orderRepository _orderRepository;
 
@@ -28,7 +28,7 @@ namespace XHD.Core.Services
             ISale_orderRepository orderRepository)
         {
             _irepository = repository;
-            irepositorySelf = repository;
+            _irepositorySelf = repository;
             _receiveRepository = receiveRepository;
             _orderRepository = orderRepository;
         }
@@ -42,7 +42,7 @@ namespace XHD.Core.Services
         /// <returns>是否更新成功</returns>
         public async Task<bool> UpdateReceiveAsync(string orderId)
         {
-            return await irepositorySelf.UpdateReceiveAsync(orderId);
+            return await _irepositorySelf.UpdateReceiveAsync(orderId);
         }
     }
 }
