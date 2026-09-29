@@ -464,8 +464,6 @@
                     iframeWindow.layui.form.on('submit(' + submitID + ')', function (data) {
                         var field = data.field; //获取提交的字段
 
-                        console.log(data.field);
-
                         //layer.close(index); //关闭弹层
 
                         $.ajax({
@@ -659,8 +657,6 @@
                     category.html("");
                     category.append('<option value="">请选择</option>');
                     for (var i = 0; i < data.length; i++) {
-
-                        console.log(data[i]);
                         category.append("<option value='" + data[i]["id"] + "'>" + data[i]["title"] + "</option>");
                     }
                     if ($("#City_val").val()) {
@@ -708,7 +704,7 @@
             elem: '#employee',
             checkedKey: 'id',
             table: {
-                url: '/HrEmployee/grid',
+                url: '/HrEmployee/Grid',
                 cols: [[
                     { type: 'radio' },
                     { field: 'name', width: 150, title: '员工姓名' },
