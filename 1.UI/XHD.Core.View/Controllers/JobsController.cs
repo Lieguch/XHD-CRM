@@ -140,8 +140,6 @@ namespace XHD.Core.View.Controllers
 
             result = await _service.DeleteAsync(id);
 
-            //var result = await _service.Delete(id);
-
             if (result == 0)
             {
                 return XHDResult.Error("删除失败！").ToString();
