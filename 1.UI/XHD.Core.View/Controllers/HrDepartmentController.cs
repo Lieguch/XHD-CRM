@@ -65,8 +65,6 @@ namespace XHD.Core.View.Controllers
             Expression<Func<hr_department, bool>> exp = a => true;
             var result = await _service.GridAsync(exp, "dep_order");
 
-            //var json = JsonConvert.SerializeObject(result, new IsoDateTimeConverter { DateTimeFormat = "yyyy-MM-dd HH:mm:ss" });
-
             return result.ToString();
         }
 
@@ -240,8 +238,6 @@ namespace XHD.Core.View.Controllers
             {
                 return XHDResult.Error("无权限！").ToString();
             }
-
-            //var result = await _service.Delete(id);
 
             if (result == 0)
             {
