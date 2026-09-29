@@ -45,8 +45,10 @@ namespace XHD.Core.View.Controllers
             return View();
         }
 
-        public IActionResult Add()
+        public async Task<IActionResult> Add()
         {
+            var result = await _service.LogType();
+            ViewData["logTypes"] = result.data;
             return View();
         }
 
