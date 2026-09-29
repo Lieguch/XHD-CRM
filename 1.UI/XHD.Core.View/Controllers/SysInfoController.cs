@@ -27,6 +27,7 @@ using XHD.Core.Models;
 
 namespace XHD.Core.View.Controllers
 {
+    [Authorize]
     public class SysInfoController : Controller
     {
         private readonly ILogger<SysLogController> _logger;
