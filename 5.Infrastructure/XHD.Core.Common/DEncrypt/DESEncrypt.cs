@@ -20,6 +20,7 @@ namespace XHD.Core.Common.DEncrypt
         /// <returns></returns>
         public static string Encrypt(string Text)
         {
+            // Sprint 10.36: 硬编码密钥 "XHD" 不安全，建议通过配置系统注入密钥
             return Encrypt(Text, "XHD");
         }
 
@@ -37,10 +38,11 @@ namespace XHD.Core.Common.DEncrypt
                 byte[] inputByteArray;
                 inputByteArray = Encoding.Default.GetBytes(Text);
 
-                string md5SKey = MD5Comm.Get32MD5One(sKey).Substring(0, 8);
-
-                des.Key = Encoding.ASCII.GetBytes(md5SKey);
-                des.IV = Encoding.ASCII.GetBytes(md5SKey);
+                string md5Hash = MD5Comm.Get32MD5One(sKey);
+                // Sprint 10.36: Key 和 IV 使用不同值（之前相同）
+                des.Key = Encoding.ASCII.GetBytes(md5Hash.Substring(0, 8));
+                des.IV = Encoding.ASCII.GetBytes(md5Hash.Substring(8, 8));
+                des.Mode = CipherMode.CBC;
                 using (var ms = new MemoryStream())
                 {
                     using (var cs = new CryptoStream(ms, des.CreateEncryptor(), CryptoStreamMode.Write))
@@ -69,6 +71,7 @@ namespace XHD.Core.Common.DEncrypt
         /// <returns></returns>
         public static string Decrypt(string Text)
         {
+            // Sprint 10.36: 硬编码密钥 "XHD" 不安全，建议通过配置系统注入密钥
             return Decrypt(Text, "XHD");
         }
 
@@ -93,10 +96,11 @@ namespace XHD.Core.Common.DEncrypt
                     inputByteArray[x] = (byte)i;
                 }
 
-                string md5SKey = MD5Comm.Get32MD5One(sKey).Substring(0, 8);
-
-                des.Key = Encoding.ASCII.GetBytes(md5SKey);
-                des.IV = Encoding.ASCII.GetBytes(md5SKey);
+                string md5Hash = MD5Comm.Get32MD5One(sKey);
+                // Sprint 10.36: Key 和 IV 使用不同值（之前相同）
+                des.Key = Encoding.ASCII.GetBytes(md5Hash.Substring(0, 8));
+                des.IV = Encoding.ASCII.GetBytes(md5Hash.Substring(8, 8));
+                des.Mode = CipherMode.CBC;
                 using (var ms = new MemoryStream())
                 {
                     using (var cs = new CryptoStream(ms, des.CreateDecryptor(), CryptoStreamMode.Write))
