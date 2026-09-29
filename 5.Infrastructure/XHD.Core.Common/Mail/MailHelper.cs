@@ -212,8 +212,9 @@ namespace XHD.Core.Common.Mail
                 _client.Send(message);
                 return Task.FromResult(true);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.Error.WriteLine($"[MailHelper] SendMailAsync failed: {ex.Message}");
                 return Task.FromResult(false);
             }
             finally
