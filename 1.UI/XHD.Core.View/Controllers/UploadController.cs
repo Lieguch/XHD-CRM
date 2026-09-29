@@ -23,10 +23,12 @@ namespace XHD.Core.View.Controllers
     public class UploadController : Controller
     {
         private readonly ICRM_Customer_attaService _customerattaservice;
+        private readonly ILogger<UploadController> _logger;
 
-        public UploadController(ICRM_Customer_attaService customerattaservice)
+        public UploadController(ICRM_Customer_attaService customerattaservice, ILogger<UploadController> logger)
         {
             _customerattaservice = customerattaservice;
+            _logger = logger;
         }
 
         public async Task<string> Image()
@@ -148,7 +150,7 @@ namespace XHD.Core.View.Controllers
 
             string serverFilePath = $"{Directory.GetCurrentDirectory()}/wwwroot/upload/customer/{data.cus_id}/{data.real_name}";
 
-            Console.WriteLine(serverFilePath);
+            _logger.LogInformation("Server file path: {Path}", serverFilePath);
 
             // 2. 验证文件是否存在
             if (!System.IO.File.Exists(serverFilePath))
