@@ -39,29 +39,32 @@ namespace XHD.Core.Common
                     }
 
                     List<string[]> tempQueue = new List<string[]>();
-                    while (true)
+                    lock (queueLock)
                     {
-                        if (readQueue.Count > 0)
+                        while (true)
                         {
-                            string[] qItem = readQueue.Dequeue() as string[];
-                            totalCount = totalCount + 1;
-                            string[] tempItem = tempQueue.Find(d => d[0] == qItem[0] && d[1] == qItem[1]);
-                            if (tempItem == null)
+                            if (readQueue.Count > 0)
                             {
-                                tempQueue.Add(qItem);
+                                string[] qItem = readQueue.Dequeue() as string[];
+                                Interlocked.Increment(ref totalCount);
+                                string[] tempItem = tempQueue.Find(d => d[0] == qItem[0] && d[1] == qItem[1]);
+                                if (tempItem == null)
+                                {
+                                    tempQueue.Add(qItem);
+                                }
+                                else
+                                {
+                                    tempItem[2] = string.Concat(tempItem[2], Environment.NewLine, qItem[2]);
+                                    if (tempItem[2].Length > 64 * 1024)  //(1 * 1024 * 1024 = 1M);
+                                    {
+                                        break;
+                                    }
+                                }
                             }
                             else
                             {
-                                tempItem[2] = string.Concat(tempItem[2], Environment.NewLine, qItem[2]);
-                                if (tempItem[2].Length > 64 * 1024)  //(1 * 1024 * 1024 = 1M);
-                                {
-                                    break;
-                                }
+                                break;
                             }
-                        }
-                        else
-                        {
-                            break;
                         }
                     }
                     for (int i = 0; i < tempQueue.Count; i++)
@@ -178,10 +181,6 @@ namespace XHD.Core.Common
             {
                 // Sprint 10.32: 修复空 catch — 日志写入失败时至少输出到控制台，不再静默丢失
                 Console.Error.WriteLine($"[NLogger] WriteText failed: {ex.Message}");
-            }
-            finally
-            {
-
             }
         }
     }
