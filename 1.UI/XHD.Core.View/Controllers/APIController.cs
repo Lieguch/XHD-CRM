@@ -28,9 +28,10 @@ using XHD.Core.View.Configs;
 
 namespace XHD.Core.View.Controllers
 {
+    [Authorize]
     public class APIController : Controller
     {
-        private static hr_employee employee = null;
+        private hr_employee employee = null;
         private readonly Ihr_employeeService _empservice;
         private readonly ICRM_CustomerService _customerservice;
         private readonly ICRM_followService _followservice;
@@ -195,8 +196,6 @@ namespace XHD.Core.View.Controllers
                 return userresult.ToString();
             }
 
-            Console.WriteLine($"pwd=>{pwd}");
-
             Expression<Func<hr_employee, hr_employee>> exppwd = a => new hr_employee { pwd = MD5Comm.MD5Hash(pwd) };
             Expression<Func<hr_employee, bool>> expwhere = a => a.id == employee.id;
 
@@ -238,10 +237,6 @@ namespace XHD.Core.View.Controllers
 
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             if (roledata.authtype != 4)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.emp_id) || a.isPrivate == 1);
@@ -385,13 +380,9 @@ namespace XHD.Core.View.Controllers
 
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             if (roledata.authtype != 4)
             {
-                exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
+                exp = exp.And(a => roledata.empList.Contains(a.create_id));
             }
 
             var result = await _contactservice.GridAsync(exp, page, limit, "a.create_time desc");
@@ -523,13 +514,9 @@ namespace XHD.Core.View.Controllers
 
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             if (roledata.authtype != 4)
             {
-                exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
+                exp = exp.And(a => roledata.empList.Contains(a.create_id));
             }
 
 
@@ -668,13 +655,9 @@ namespace XHD.Core.View.Controllers
 
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             if (roledata.authtype != 4)
             {
-                exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
+                exp = exp.And(a => roledata.empList.Contains(a.create_id));
             }
 
 
@@ -859,13 +842,9 @@ namespace XHD.Core.View.Controllers
             //权限
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             if (roledata.authtype != 4)
             {
-                exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
+                exp = exp.And(a => roledata.empList.Contains(a.create_id));
             }
 
             var result = await _contractservice.GridAsync(exp, page, limit, "a.create_time desc");
@@ -1010,13 +989,9 @@ namespace XHD.Core.View.Controllers
             //权限
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             if (roledata.authtype != 4)
             {
-                exp = exp.And(a => roledata.empList.Contains(a.Order.customer.emp_id));
+                exp = exp.And(a => roledata.empList.Contains(a.create_id));
             }
 
 
@@ -1203,10 +1178,6 @@ namespace XHD.Core.View.Controllers
             //权限
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             if (roledata.authtype != 4)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.id));
