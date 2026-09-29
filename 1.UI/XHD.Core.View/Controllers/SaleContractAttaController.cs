@@ -33,17 +33,15 @@ namespace XHD.Core.View.Controllers
     [Authorize]
     public class SaleContractAttaController : Controller
     {
-        private readonly IDBAuthService _dBAuthService;
         private readonly ILogger<SaleContractAttaController> _logger;
         private readonly ISale_contractService _service;
         private readonly ISale_contract_attaService _detailservice;
 
-        public SaleContractAttaController(ILogger<SaleContractAttaController> logger, ISale_contractService service, ISale_contract_attaService detailservice, IDBAuthService dBAuthService)
+        public SaleContractAttaController(ILogger<SaleContractAttaController> logger, ISale_contractService service, ISale_contract_attaService detailservice)
         {
             _service = service;
             _logger = logger;
             _detailservice = detailservice;
-            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -58,18 +56,7 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> Grid(PageView<Sale_contract_atta> model)
         {
-            // [v10] 数据权限过滤
-            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             Expression<Func<Sale_contract_atta, bool>> exp = a => a.contract_id == Request.Query["id"];
-
-            //if (!string.IsNullOrWhiteSpace(Request.Query["T_name"]))
-            //{
-            //    exp = exp.And(a => a.customer.cus_name.Contains(Request.Query["T_name"]));
-            //}
 
             var result = await _detailservice.GridAsync(exp, model.Page, model.Limit, "a.create_time desc");
 
@@ -100,7 +87,6 @@ namespace XHD.Core.View.Controllers
                     if (Request.Form.Any(a => a.Key == "chunk"))
                     {
                         //分片上传
-                        //var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/upload/contract/{ Request.Form["guid"] }-{Request.Form["id"]}/");
                         var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/contract/{Request.Form["guid"]}-{Request.Form["id"]}/");
 
                         if (!Directory.Exists(basePath))
@@ -165,7 +151,6 @@ namespace XHD.Core.View.Controllers
             var emp_name = claimIdentity.FindFirst(ClaimTypes.Name).Value;
             var uid = claimIdentity.FindFirst("uid").Value;
 
-            //var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/upload/contract/{ Request.Form["guid"] }/{Request.Form["id"]}/");
             var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/contract/");
             var savePath = Path.GetDirectoryName($"{basePath}/{Request.Form["contract_id"]}/");
 
@@ -194,7 +179,6 @@ namespace XHD.Core.View.Controllers
                 var out_trad_id = BitConverter.ToInt64(buffer, 0).ToString();
 
                 var finalFilePath = Path.Combine(savePath, $"{ out_trad_id }{fileExt}");//最终的文件名
-                //var fs = new FileStream(finalFilePath, FileMode.Create);
                 using (var fs = new FileStream(finalFilePath, FileMode.Create))
                 {
                     foreach (var part in files.OrderBy(x => x.Length).ThenBy(x => x))
