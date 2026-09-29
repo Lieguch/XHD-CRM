@@ -95,12 +95,6 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> Grid(PageView<hr_employee> model)
         {
-            // [v10] 数据权限过滤
-            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
             Expression<Func<hr_employee, bool>> exp = a => a.id != "admin";
 
             if (Request.Query["id"].Equals("me"))
@@ -350,14 +344,14 @@ namespace XHD.Core.View.Controllers
 
             if (data.count == 0)
             {
-                return XHDResult.Success("系统错误，找不到此用户！").ToString();
+                return XHDResult.Error("系统错误，找不到此用户！").ToString();
             }
 
             var checkpwd = Common.DEncrypt.MD5Comm.MD5Hash(oldpassword);
 
             if (!data.data[0].pwd.Equals(checkpwd))
             {
-                return XHDResult.Success("原密码不正确！").ToString();
+                return XHDResult.Error("原密码不正确！").ToString();
             }
 
             var password = Request.Form["password"];
@@ -375,10 +369,33 @@ namespace XHD.Core.View.Controllers
             var password = Request.Form["password"];
             var id = Request.Form["id"];
 
+            // 权限检查：需要 hr_employee|edit 权限
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.Sid).Value;
+            if (!await _dBAuthService.GetAuth(userId, "hr_employee|edit"))
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
+            // 只能重置自己的密码（admin 可重置任何人）
+            var currentEmpData = await _service.GridAsync(a => a.id == userId);
+            if (currentEmpData.count == 0)
+            {
+                return XHDResult.Error("找不到当前用户").ToString();
+            }
+            var currentEmp = currentEmpData.data[0];
+            if (currentEmp.id != "admin" && id != userId)
+            {
+                return XHDResult.Error("只能修改自己的密码").ToString();
+            }
+
             Expression<Func<hr_employee, hr_employee>> exppwd = a => new hr_employee { pwd = Common.DEncrypt.MD5Comm.MD5Hash(password) };
             Expression<Func<hr_employee, bool>> expwhere = a => a.id == id;
 
-            await _service.UpdateAsync(exppwd, expwhere);
+            var result = await _service.UpdateAsync(exppwd, expwhere);
+            if (result <= 0)
+            {
+                return XHDResult.Error("修改失败").ToString();
+            }
 
             return XHDResult.Success("修改成功！").ToString();
         }
