@@ -113,7 +113,7 @@ namespace XHD.Core.Models {
         /// <summary>
 		/// 员工密码
 		/// </summary>
-		[JsonProperty, Column(StringLength = 50)]
+		[JsonIgnore, Column(StringLength = 50)]
 		public string pwd { get; set; } = string.Empty;
 
         /// <summary>
