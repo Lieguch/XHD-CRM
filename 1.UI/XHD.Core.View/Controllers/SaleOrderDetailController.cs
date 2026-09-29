@@ -43,10 +43,6 @@ namespace XHD.Core.View.Controllers
         {
             Expression<Func<Sale_order_details, bool>> exp = a => a.order_id == Request.Query["id"];
 
-            //if (!string.IsNullOrWhiteSpace(Request.Query["T_name"]))
-            //{
-            //    exp = exp.And(a => a.customer.cus_name.Contains(Request.Query["T_name"]));
-            //}
 
             var result = await _service.GridAsync(exp);
 
