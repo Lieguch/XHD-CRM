@@ -516,7 +516,7 @@ namespace XHD.Core.View.Controllers
 
             if (roledata.authtype != 4)
             {
-                exp = exp.And(a => roledata.empList.Contains(a.create_id));
+                exp = exp.And(a => roledata.empList.Contains(a.employee_id));
             }
 
 
