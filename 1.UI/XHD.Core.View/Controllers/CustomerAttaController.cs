@@ -25,7 +25,6 @@ using XHD.Core.Models;
 
 using Newtonsoft.Json.Converters;
 using System.Collections;
-using Microsoft.AspNetCore.Hosting.Server;
 
 
 namespace XHD.Core.View.Controllers
@@ -33,17 +32,15 @@ namespace XHD.Core.View.Controllers
     [Authorize]
     public class CustomerAttaController : Controller
     {
-        private readonly IDBAuthService _dBAuthService;
         private readonly ILogger<CustomerAttaController> _logger;
         private readonly ICRM_CustomerService _service;
         private readonly ICRM_Customer_attaService _detailservice;
 
-        public CustomerAttaController(ILogger<CustomerAttaController> logger, ICRM_CustomerService service, ICRM_Customer_attaService detailservice, IDBAuthService dBAuthService)
+        public CustomerAttaController(ILogger<CustomerAttaController> logger, ICRM_CustomerService service, ICRM_Customer_attaService detailservice)
         {
             _service = service;
             _logger = logger;
             _detailservice = detailservice;
-            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -58,13 +55,7 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> Grid(PageView<CRM_Customer_atta> model)
         {
-            // [v10] 数据权限过滤
-            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype == 0)
-            {
-                return "{\"code\":0,\"data\":[],\"count\":0}";
-            }
-            Expression<Func<CRM_Customer_atta, bool>> exp = a => 1==2;
+            Expression<Func<CRM_Customer_atta, bool>> exp = a => 1 == 1;
 
             if (!string.IsNullOrWhiteSpace(Request.Query["id"]))
             {
@@ -78,10 +69,6 @@ namespace XHD.Core.View.Controllers
                 }
             }
 
-            //if (!string.IsNullOrWhiteSpace(Request.Query["T_name"]))
-            //{
-            //    exp = exp.And(a => a.customer.cus_name.Contains(Request.Query["T_name"]));
-            //}
 
             var result = await _detailservice.GridAsync(exp, model.Page, model.Limit, "a.create_time desc");
 
@@ -155,7 +142,11 @@ namespace XHD.Core.View.Controllers
                             model.create_time = DateTime.Now;
                             model.create_id = emp_id;
 
-                            await _detailservice.AddAsync(model);
+                            var addResult = await _detailservice.AddAsync(model);
+                            if (addResult <= 0)
+                            {
+                                return XHDResult.Error("文件保存失败").ToString();
+                            }
                         }
 
                         
@@ -230,7 +221,11 @@ namespace XHD.Core.View.Controllers
                     model.create_time = DateTime.Now;
                     model.create_id = emp_id;
 
-                    await _detailservice.AddAsync(model);
+                    var addResult = await _detailservice.AddAsync(model);
+                    if (addResult <= 0)
+                    {
+                        return XHDResult.Error("保存失败").ToString();
+                    }
 
                 }
 
@@ -244,13 +239,42 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
+public async Task<string> Save()
+        {
+            var claimIdentity = (ClaimsIdentity)User.Identity;
+            var emp_id = claimIdentity.FindFirst(ClaimTypes.Sid).Value;
+
+            var id = Request.Form["id"];
+            var cus_id = Request.Form["cus_id"];
+            var file_name = Request.Form["file_name"];
+            var real_name = Request.Form["real_name"];
+            var file_size_str = Request.Form["file_size"];
+            int file_size = 0;
+            int.TryParse(file_size_str, out file_size);
+
+            CRM_Customer_atta model = new CRM_Customer_atta();
+            model.id = id;
+            model.cus_id = cus_id;
+            model.file_name = file_name;
+            model.real_name = real_name;
+            model.file_size = file_size;
+            model.create_time = DateTime.Now;
+            model.create_id = emp_id;
+
+            var addResult = await _detailservice.AddAsync(model);
+            if (addResult <= 0) { return XHDResult.Error("保存失败").ToString(); }
+
+            return XHDResult.Success().ToString();
+        }
+
         public async Task<string> Del(string id)
         {
             Expression<Func<CRM_Customer_atta, bool>> exp = a => a.id == id;
 
             var data = await _detailservice.GridAsync(exp);
 
-            await _detailservice.DeleteAsync(exp);
+            var delResult = await _detailservice.DeleteAsync(exp);
+            if (delResult <= 0) { return XHDResult.Error("删除失败").ToString(); }
 
             var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/customer/");
             var savePath = Path.GetDirectoryName($"{basePath}/{Request.Form["cus_id"]}/");
