@@ -25,6 +25,7 @@ using System.Linq.Expressions;
 
 namespace XHD.Core.View.Controllers
 {
+    [Authorize]
     public class SysButtonController : Controller
     {
         private readonly ILogger<SysButtonController> _logger;
