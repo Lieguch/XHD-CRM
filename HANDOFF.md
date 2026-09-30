@@ -182,24 +182,25 @@ Moq loose mock 默认返回 `false`，把我新加的 `CheckAuthAsync("edit")` �
 - [x] 静态复核修掉 `XHDResult.Error` code=-1 断言错误（3 处）
 - [x] 新增 13 个回归测试：Customer 7 个（Claimlist 非池/重复 ID、AbanDon 越权/全公司/重复 ID、
       Count 范围外/authtype=0）、MyNote 6 个（UpdateXY 越权/本人/不存在、Delete 越权/本人/全公司）
-- [ ] **本地 5 个提交领先远端，尚未推**：`8d05305` / `a5f0f57` / `b0dfa9d` / `885ca52` / `81911d1`
-      （+ 本轮 assertion fix）
+- [x] **已推远端 `7554272`**（含两个测试文件 + HANDOFF.md）
+- [x] **CI run `36684904702`（#295）= success** — 独立复核 TRX 确认：
+      **404 passed / 0 failed**（391 → 404，正好 +13）。13 个新回归测试逐个核对全部在列且通过。
+- [x] **已解除的唯一风险**：`List<string>.Contains` 在 FreeSql 表达式树里的翻译（→ `IN`）
+      此前从未被任何测试覆盖。本轮新增的受限权限测试是**首次**让 `empList.Contains` 在 SQLite 上跑
+      —— 7/7 通过，翻译正常，**风险已消除**（后续改数据权限过滤时不再有盲区）。
+- [x] 临时产物已归档到 `D:/output/xhdcrm/scratch_1038/`
+- [ ] `push_main.py` / `_probe_remote.py` / `_watch_ci.py` / `_art_295.py` 均在仓库外
+      （`D:/output/xhdcrm/`）。若下个 agent 需要长期用，建议入库到 `tools/`。
+      用法速查：
       ```bash
-      cd D:/output/xhdcrm && python3 push_main.py --repo Lieguch/XHD-CRM --branch main \
-        --repo-dir "D:/output/xhdcrm/work_sprint10.38" --message "Sprint 10.38: CI test fixes + auth regression tests + HANDOFF" \
-        --paths "7.Test/XHD.Core.Tests/CustomerControllerTests.cs" \
-                 "7.Test/XHD.Core.Tests/MyNoteMessageTests.cs" \
-                 "HANDOFF.md"
+      # 推送（本地改动 → 远端单提交）
+      python3 push_main.py --repo Lieguch/XHD-CRM --branch main \
+        --repo-dir "D:/output/xhdcrm/work_sprint10.38" --message "..." --paths "p1" "p2"
+      # 探活 + 远端 tip + 最近 CI
+      python3 _probe_remote.py
+      # 等某个 run 结束并打印 job/step 结论
+      python3 _watch_ci.py <run_id>
+      # 下载 test-results artifact 并解析 TRX（curl -ksSL，禁用 urllib）
+      python3 _art_295.py <run_id>
       ```
-      推完 `GET /repos/Lieguch/XHD-CRM/actions/runs?per_page=3` 找新 run，
-      确认 `dotnet test` 通过（预期 391 → 404 测试）；若仍失败，
-      下载 `test-results` artifact（`curl -ksSL -o`，**不要用 urllib**——跟随 302 会带上 Bearer 头导致 401），
-      解 TRX 继续迭代。
-- [ ] **已知风险（首次执行）**：`List<string>.Contains` 在 FreeSql 表达式树里的翻译
-      （→ `IN`）从未被现有测试覆盖（既有测试全用 authtype=4 跳过 empList 分支）。
-      本轮新增的受限权限测试是**首次**让 `empList.Contains` 在 SQLite 上跑。
-      若 FreeSql 翻译失败，报错会是 SQL 生成异常而非断言失败——需按异常迭代。
-- [ ] `push_main.py` 本身未入库（在 `D:/output/xhdcrm/`，仓库外）；
-      若下个 agent 需要长期用，建议入库到 `tools/` 并去掉对 remote token 的依赖说明
 - [ ] 任务 #176（SysButtons 种子缺口）需单独排期
-- [ ] 清理 `D:/output/xhdcrm/` 临时产物：`ci_artifact.zip`、`ci_artifact/`、`ci_log.txt`、`_probe_remote.py`
