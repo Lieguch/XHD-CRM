@@ -6,11 +6,13 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System.Security.Claims;
 using XHD.Core.Common;
 using XHD.Core.Common.Cache;
 using XHD.Core.Common.CDKEY;
 using XHD.Core.Common.Mail;
 using XHD.Core.Common.RSA;
+using XHD.Core.IServices;
 
 namespace XHD.Core.View.Controllers
 {
@@ -33,19 +35,40 @@ namespace XHD.Core.View.Controllers
         private readonly IMailHelper _mail;
         private readonly IRSACryptionHelper _rsa;
         private readonly IDataCacheHelper _cache;
+        private readonly IDBAuthService _dBAuthService;
 
         public SystemController(
             ILogger<SystemController> logger,
             ICDKEYHelper cdkey,
             IMailHelper mail,
             IRSACryptionHelper rsa,
-            IDataCacheHelper cache)
+            IDataCacheHelper cache,
+            IDBAuthService dBAuthService)
         {
             _logger = logger;
             _cdkey = cdkey;
             _mail = mail;
             _rsa = rsa;
             _cache = cache;
+            _dBAuthService = dBAuthService;
+        }
+
+        /// <summary>
+        /// 系统工具端点仅超级管理员可用（authtype == 4）。
+        /// </summary>
+        private async Task<string> CheckAdminAsync()
+        {
+            var sid = User.FindFirst(ClaimTypes.Sid)?.Value;
+            if (string.IsNullOrWhiteSpace(sid))
+            {
+                return XHDResult.Error("登录状态已过期").ToString();
+            }
+            var roledata = await _dBAuthService.GetDataAuth(sid);
+            if (roledata.authtype != 4)
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+            return null;
         }
 
         /// <summary>
@@ -56,6 +79,9 @@ namespace XHD.Core.View.Controllers
         [HttpPost("GenerateCDKey")]
         public async Task<string> GenerateCDKey([FromBody] GenerateCDKeyRequest req)
         {
+            var deny = await CheckAdminAsync();
+            if (deny != null) return deny;
+
             if (req == null || string.IsNullOrWhiteSpace(req.MachineCode))
             {
                 return XHDResult.Error("machineCode 不能为空").ToString();
@@ -81,6 +107,9 @@ namespace XHD.Core.View.Controllers
         [HttpPost("VerifyCDKey")]
         public async Task<string> VerifyCDKey([FromBody] VerifyCDKeyRequest req)
         {
+            var deny = await CheckAdminAsync();
+            if (deny != null) return deny;
+
             if (req == null || string.IsNullOrWhiteSpace(req.MachineCode) || string.IsNullOrWhiteSpace(req.Cdkey))
             {
                 return XHDResult.Error("machineCode 和 cdkey 均不能为空").ToString();
@@ -112,6 +141,9 @@ namespace XHD.Core.View.Controllers
         [HttpPost("SendMail")]
         public async Task<string> SendMail([FromBody] SendMailRequest req)
         {
+            var deny = await CheckAdminAsync();
+            if (deny != null) return deny;
+
             if (req == null || string.IsNullOrWhiteSpace(req.Recipient) || string.IsNullOrWhiteSpace(req.Subject))
             {
                 return XHDResult.Error("recipient 和 subject 不能为空").ToString();
@@ -138,6 +170,9 @@ namespace XHD.Core.View.Controllers
         [HttpGet("Rsa/GenerateKeyPair")]
         public async Task<string> GenerateRsaKeyPair(int keySize = 2048)
         {
+            var deny = await CheckAdminAsync();
+            if (deny != null) return deny;
+
             try
             {
                 var pair = await _rsa.GenerateKeyPairAsync(keySize);
@@ -164,6 +199,9 @@ namespace XHD.Core.View.Controllers
         [HttpPost("Rsa/Encrypt")]
         public async Task<string> RsaEncrypt([FromBody] RsaEncryptRequest req)
         {
+            var deny = await CheckAdminAsync();
+            if (deny != null) return deny;
+
             if (req == null || string.IsNullOrWhiteSpace(req.PublicKey) || req.PlainText == null)
             {
                 return XHDResult.Error("publicKey 和 plainText 不能为空").ToString();
@@ -193,6 +231,9 @@ namespace XHD.Core.View.Controllers
         [HttpPost("Rsa/Decrypt")]
         public async Task<string> RsaDecrypt([FromBody] RsaDecryptRequest req)
         {
+            var deny = await CheckAdminAsync();
+            if (deny != null) return deny;
+
             if (req == null || string.IsNullOrWhiteSpace(req.PrivateKey) || string.IsNullOrWhiteSpace(req.Cipher))
             {
                 return XHDResult.Error("privateKey 和 cipher 不能为空").ToString();
@@ -222,6 +263,9 @@ namespace XHD.Core.View.Controllers
         [HttpGet("Cache/Get")]
         public async Task<string> CacheGet(string key)
         {
+            var deny = await CheckAdminAsync();
+            if (deny != null) return deny;
+
             if (string.IsNullOrWhiteSpace(key))
             {
                 return XHDResult.Error("key 不能为空").ToString();

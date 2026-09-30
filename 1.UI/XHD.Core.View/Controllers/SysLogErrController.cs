@@ -26,13 +26,16 @@ namespace XHD.Core.View.Controllers
     {
         private readonly ILogger<SysLogErrController> _logger;
         private readonly ISys_log_ErrService _service;
+        private readonly IDBAuthService _dBAuthService;
 
         public SysLogErrController(
             ILogger<SysLogErrController> logger,
-            ISys_log_ErrService service)
+            ISys_log_ErrService service,
+            IDBAuthService dBAuthService)
         {
             _logger = logger;
             _service = service;
+            _dBAuthService = dBAuthService;
         }
 
         /// <summary>
@@ -51,6 +54,18 @@ namespace XHD.Core.View.Controllers
         [HttpGet("GetLogtype")]
         public async Task<string> GetLogtype()
         {
+            var sid = User.FindFirst(ClaimTypes.Sid)?.Value;
+            if (string.IsNullOrWhiteSpace(sid))
+            {
+                return XHDResult.Error("登录状态已过期").ToString();
+            }
+
+            var roledata = await _dBAuthService.GetDataAuth(sid);
+            if (roledata.authtype != 4)
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
             var list = await _service.GetLogtypeAsync();
             var arr = new JArray();
 
@@ -72,6 +87,18 @@ namespace XHD.Core.View.Controllers
         [HttpGet("Grid")]
         public async Task<string> Grid(PageView<Sys_log_Err> model)
         {
+            var sid = User.FindFirst(ClaimTypes.Sid)?.Value;
+            if (string.IsNullOrWhiteSpace(sid))
+            {
+                return XHDResult.Error("登录状态已过期").ToString();
+            }
+
+            var roledata = await _dBAuthService.GetDataAuth(sid);
+            if (roledata.authtype != 4)
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
             Expression<Func<Sys_log_Err, bool>> exp = a => true;
 
             // 错误类型筛选：typeid 命中即匹配

@@ -93,6 +93,32 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> UpdateXY(My_Note model)
         {
+            if (model == null || string.IsNullOrWhiteSpace(model.id))
+            {
+                return XHDResult.Error("参数错误！").ToString();
+            }
+
+            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "my_note|update");
+            if (!authbtn)
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
+            var userId = User.FindFirst(ClaimTypes.Sid).Value;
+
+            // 归属校验：只能移动自己的便签（全公司权限 authtype==4 不受限），与 Delete 口径一致
+            var existing = await _service.GridAsync(a => a.id == model.id);
+            if (existing.count == 0)
+            {
+                return XHDResult.Error("找不到数据").ToString();
+            }
+
+            var roledata = await _dBAuthService.GetDataAuth(userId);
+            if (roledata.authtype != 4 && existing.data[0].emp_id != userId)
+            {
+                return XHDResult.Error("无权限修改他人便签").ToString();
+            }
+
             Expression<Func<My_Note, My_Note>> expnote = a => new My_Note
             {
                 top= model.top,
@@ -115,6 +141,21 @@ namespace XHD.Core.View.Controllers
             if (!authbtn)
             {
                 return XHDResult.Error("无操作权限").ToString();
+            }
+
+            var userId = User.FindFirst(ClaimTypes.Sid).Value;
+
+            // 归属校验：只能删除自己的便签（全公司权限 authtype==4 不受限），与 MyCalendarController.Delete 口径一致
+            var existing = await _service.GridAsync(a => a.id == id);
+            if (existing.count == 0)
+            {
+                return XHDResult.Error("找不到数据").ToString();
+            }
+
+            var roledata = await _dBAuthService.GetDataAuth(userId);
+            if (roledata.authtype != 4 && existing.data[0].emp_id != userId)
+            {
+                return XHDResult.Error("无权限删除他人便签").ToString();
             }
 
             result = await _service.DeleteAsync(id);

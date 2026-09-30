@@ -417,6 +417,12 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> Excute()
         {
+            // 与 Save/SetIntention 口径一致：客户新增/编辑表单调用此端点校验重名
+            if (!await CheckAuthAsync("edit"))
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
             var cusName = Request.Form["cus_name"].ToString();
             var currentId = Request.Form["id"].ToString();
 
@@ -470,6 +476,30 @@ namespace XHD.Core.View.Controllers
             {
                 resp["code"] = 1;
                 resp["msg"] = "认领失败或参数为空";
+                resp["data"] = null;
+                return resp.ToString();
+            }
+
+            // 去重：重复 id 会让 list.Count 大于去重后条数，导致下方 "poolData.data.Count < list.Count" 误拒正常请求；
+            // 底层 ClaimlistAsync 走 IN 参数化，重复 id 无副作用，去重后 resp["data"] 与实际影响条数一致。
+            list = list.Distinct().ToList();
+
+            // 按钮权限校验（与 Save/SetIntention 口径一致，复用 CRM_Customer|edit）
+            if (!await CheckAuthAsync("edit"))
+            {
+                resp["code"] = 1;
+                resp["msg"] = "无操作权限";
+                resp["data"] = null;
+                return resp.ToString();
+            }
+
+            // 数据权限校验：只允许认领真正在公共池（state==1）里的客户。
+            // 底层 ClaimlistAsync 无 state/归属过滤，必须在此预筛，防止越权重认领他人私有客户。
+            var poolData = await _service.GridAsync(c => list.Contains(c.id) && c.state == 1);
+            if (poolData.data.Count < list.Count)
+            {
+                resp["code"] = 1;
+                resp["msg"] = "包含不可认领的客户";
                 resp["data"] = null;
                 return resp.ToString();
             }
@@ -546,6 +576,43 @@ namespace XHD.Core.View.Controllers
             {
                 resp["code"] = 1;
                 resp["msg"] = "放弃失败或参数为空";
+                resp["data"] = null;
+                return resp.ToString();
+            }
+
+            // 去重：同 Claimlist，避免重复 id 让 ownData.data.Count < list.Count 误拒正常请求。
+            list = list.Distinct().ToList();
+
+            // 按钮权限校验（与 Delete 口径一致）
+            if (!await CheckAuthAsync("edit"))
+            {
+                resp["code"] = 1;
+                resp["msg"] = "无操作权限";
+                resp["data"] = null;
+                return resp.ToString();
+            }
+
+            // 数据权限校验：只能放弃自己名下的客户（全公司权限 authtype==4 不受限）。
+            // 底层 AbanDonAsync 无归属过滤，必须在此预筛。
+            var roledata = await _dBAuthService.GetDataAuth(empId);
+            Expression<Func<CRM_Customer, bool>> ownExp = c => list.Contains(c.id) && c.state == 0;
+            if (roledata.authtype == 0)
+            {
+                resp["code"] = 1;
+                resp["msg"] = "无操作权限";
+                resp["data"] = null;
+                return resp.ToString();
+            }
+            if (roledata.authtype != 4)
+            {
+                ownExp = ownExp.And(c => roledata.empList.Contains(c.emp_id));
+            }
+
+            var ownData = await _service.GridAsync(ownExp);
+            if (ownData.data.Count < list.Count)
+            {
+                resp["code"] = 1;
+                resp["msg"] = "包含非本人名下的客户";
                 resp["data"] = null;
                 return resp.ToString();
             }
@@ -747,6 +814,20 @@ namespace XHD.Core.View.Controllers
             {
                 int isPrivate = int.Parse(q.isPrivate);
                 exp = exp.And(a => a.isPrivate == isPrivate);
+            }
+
+            // 数据权限过滤（口径同 BuildCustomerQueryExpression）：
+            // authtype=0 直接返回 0；1/2/3 叠加 empList 过滤；4 不过滤。
+            // 与 empList 取交集后，客户端传入的 q.emp_id 只能限定在本人可见范围内。
+            var roledata = await _dBAuthService.GetDataAuth(GetUserId());
+            if (roledata.authtype == 0)
+            {
+                return XHDResult.Result(0, "", new JArray(), 0).ToString();
+            }
+
+            if (roledata.authtype != 4)
+            {
+                exp = exp.And(a => roledata.empList.Contains(a.emp_id));
             }
 
             int total = await _service.CountAsync(exp);

@@ -31,16 +31,30 @@ namespace XHD.Core.View.Controllers
         private readonly ILogger<SysButtonController> _logger;
         private readonly ISys_ButtonService _service;
         private readonly ISys_ButtonRepository _repository;
+        private readonly IDBAuthService _dBAuthService;
 
-        public SysButtonController(ILogger<SysButtonController> logger, ISys_ButtonService service, ISys_ButtonRepository repository)
+        public SysButtonController(ILogger<SysButtonController> logger, ISys_ButtonService service, ISys_ButtonRepository repository, IDBAuthService dBAuthService)
         {
             _service = service;
             _repository = repository;
             _logger = logger;
+            _dBAuthService = dBAuthService;
         }
 
         public async Task<string> Grid()
         {
+            var sid = User.FindFirst(ClaimTypes.Sid)?.Value;
+            if (string.IsNullOrWhiteSpace(sid))
+            {
+                return XHDResult.Error("登录状态已过期").ToString();
+            }
+
+            var roledata = await _dBAuthService.GetDataAuth(sid);
+            if (roledata.authtype != 4)
+            {
+                return XHDResult.Error("无操作权限").ToString();
+            }
+
             Expression<Func<Sys_Button, bool>> exp = a => true;
             var result = await _service.GridAsync(exp);
 
