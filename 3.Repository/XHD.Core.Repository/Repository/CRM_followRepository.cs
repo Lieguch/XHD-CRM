@@ -161,7 +161,6 @@ namespace XHD.Core.Repository
                 .GroupBy(a => new { xmonth = a.follow_time.Value.ToString("MM") })
                 .ToListAsync(a => new { a.Key.xmonth, count = a.Count() });
 
-            //return data.Select(a => (dynamic)a).ToList();
             JArray arr = new JArray();
             foreach (var item in data)
             {

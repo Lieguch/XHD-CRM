@@ -62,8 +62,7 @@ namespace XHD.Core.Common.DEncrypt
                 return sBuilder.ToString().ToUpper();
             }
         }
-        //// <summary>
-        /// </summary>
+
         /// <param name="strSource">需要加密的明文</param>
         /// <returns>返回32位加密结果，该结果取32位加密结果的第9位到25位</returns>
         public static string Get32MD5Two(string source)
@@ -80,8 +79,7 @@ namespace XHD.Core.Common.DEncrypt
                 return strResult.ToUpper();
             }
         }
-        //// <summary>
-        /// </summary>
+
         /// <param name="strSource">需要加密的明文</param>
         /// <returns>返回16位加密结果，该结果取32位加密结果的第9位到25位</returns>
         public static string Get16MD5Two(string source)

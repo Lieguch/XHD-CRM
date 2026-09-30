@@ -1,4 +1,4 @@
-
+﻿
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -21,9 +21,7 @@ namespace XHD.Core.Models {
 		public string id { get; set; } = string.Empty;
 
         /// <summary>
-        /// <summary>
         /// 创建人id
-        /// </summary>
         /// </summary>
 		[JsonProperty, Column(StringLength = 50)]
 		public string create_id { get; set; } = string.Empty;

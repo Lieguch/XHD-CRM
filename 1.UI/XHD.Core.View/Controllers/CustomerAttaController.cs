@@ -208,7 +208,6 @@ namespace XHD.Core.View.Controllers
                         bytes = null;
                         System.IO.File.Delete(part);//删除分块
                     }
-                    //Directory.Delete(temporaryID);//删除文件夹
                     Directory.Delete(temporary, true);//删除文件夹
 
                     CRM_Customer_atta model = new CRM_Customer_atta();

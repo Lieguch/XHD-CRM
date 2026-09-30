@@ -47,6 +47,7 @@ namespace XHD.Core.Models
 
         /// <summary>
         /// 上坐标
+        /// </summary>
         [JsonProperty]
         public int? top { get; set; }
 

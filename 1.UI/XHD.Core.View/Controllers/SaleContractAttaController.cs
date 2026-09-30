@@ -194,7 +194,6 @@ namespace XHD.Core.View.Controllers
                         bytes = null;
                         System.IO.File.Delete(part);//删除分块
                     }
-                    //Directory.Delete(temporaryID);//删除文件夹
                     Directory.Delete(temporary, true);//删除文件夹
 
                     Sale_contract_atta model = new Sale_contract_atta();

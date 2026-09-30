@@ -161,7 +161,6 @@ namespace XHD.Core.Repository
                 .GroupBy(a => new { xmonth = a.Receive_date.Value.ToString("MM") })
                 .ToListAsync(a => new { a.Key.xmonth, count = a.Count() });
 
-            //return data.Select(a => (dynamic)a).ToList();
             JArray arr = new JArray();
             foreach (var item in data)
             {
@@ -182,7 +181,6 @@ namespace XHD.Core.Repository
                 .GroupBy(a => new { xmonth = a.Receive_date.Value.ToString("MM") })
                 .ToListAsync(a => new { a.Key.xmonth, count = a.Sum(a.Value.Receive_amount) });
 
-            //return data.Select(a => (dynamic)a).ToList();
             JArray arr = new JArray();
             foreach (var item in data)
             {
@@ -204,7 +202,6 @@ namespace XHD.Core.Repository
                 .GroupBy(a => new { xmonth = a.PayType.params_name })
                 .ToListAsync(a => new { a.Key.xmonth, count = a.Count() });
 
-            //return data.Select(a => (dynamic)a).ToList();
             JArray arr = new JArray();
             foreach (var item in data)
             {

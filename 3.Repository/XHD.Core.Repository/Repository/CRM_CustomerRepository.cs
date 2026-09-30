@@ -244,7 +244,6 @@ namespace XHD.Core.Repository
                 .GroupBy(a => new { xmonth = a.create_time.Value.ToString("MM") })
                 .ToListAsync(a => new { a.Key.xmonth, count = a.Count() });
 
-            //return data.Select(a => (dynamic)a).ToList();
             JArray arr = new JArray();
             foreach (var item in data)
             {
@@ -265,7 +264,6 @@ namespace XHD.Core.Repository
                 .GroupBy(a => new { xmonth = a.cus_industry.params_name })
                 .ToListAsync(a => new { a.Key.xmonth, count = a.Count() });
 
-            //return data.Select(a => (dynamic)a).ToList();
             JArray arr = new JArray();
             foreach (var item in data)
             {
@@ -296,7 +294,6 @@ namespace XHD.Core.Repository
                 .GroupBy(a => new { xmonth = a.cus_type.params_name })
                 .ToListAsync(a => new { a.Key.xmonth, count = a.Count() });
 
-            //return data.Select(a => (dynamic)a).ToList();
             JArray arr = new JArray();
             foreach (var item in data)
             {
@@ -327,7 +324,6 @@ namespace XHD.Core.Repository
                 .GroupBy(a => new { xmonth = a.cus_level.params_name })
                 .ToListAsync(a => new { a.Key.xmonth, count = a.Count() });
 
-            //return data.Select(a => (dynamic)a).ToList();
             JArray arr = new JArray();
             foreach (var item in data)
             {
@@ -358,7 +354,6 @@ namespace XHD.Core.Repository
                 .GroupBy(a => new { xmonth = a.cus_source.params_name })
                 .ToListAsync(a => new { a.Key.xmonth, count = a.Count() });
 
-            //return data.Select(a => (dynamic)a).ToList();
             JArray arr = new JArray();
             foreach (var item in data)
             {
@@ -390,7 +385,6 @@ namespace XHD.Core.Repository
                 .GroupBy(a => new { xmonth = a.Provinces.Provinces })
                 .ToListAsync(a => new { a.Key.xmonth, count = a.Count() });
 
-            //return data.Select(a => (dynamic)a).ToList();
             JArray arr = new JArray();
             foreach (var item in data)
             {
@@ -418,7 +412,6 @@ namespace XHD.Core.Repository
                 .GroupBy(a => new { xmonth = a.City.City })
                 .ToListAsync(a => new { a.Key.xmonth, count = a.Count() });
 
-            //return data.Select(a => (dynamic)a).ToList();
             JArray arr = new JArray();
             foreach (var item in data)
             {

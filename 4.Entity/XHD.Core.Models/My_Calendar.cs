@@ -41,6 +41,7 @@ namespace XHD.Core.Models
 
         /// <summary>
         /// 日程开始时间
+        /// </summary>
         [JsonProperty, Column(StringLength = 50)]
         public string startDate { get; set; } = string.Empty;
 
