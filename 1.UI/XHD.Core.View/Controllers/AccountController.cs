@@ -247,9 +247,9 @@ namespace XHD.Core.View.Controllers
         /// 登出
         /// </summary>
         /// <returns></returns>
-        public string SignOut()
+        public async Task<string> SignOut()
         {
-            _ = HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return XHDResult.Success().ToString();
         }
         #region 生成验证码

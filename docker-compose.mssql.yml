@@ -1,4 +1,4 @@
-# =============================================================================
+﻿# =============================================================================
 # docker-compose.mssql.yml — MSSQL 生产部署
 #
 # [Sprint 10.14] 本文件从 `docker-compose.yml` 重命名而来。默认部署路径改为
@@ -135,7 +135,7 @@ services:
       # 中文排序规则（可选，按需调整）
       MSSQL_COLLATION: "Chinese_PRC_CI_AS"
     ports:
-      - "${DB_HOST_PORT:-1433}:1433"
+      - "${DB_HOST_PORT:-127.0.0.1:1433}:1433"
     volumes:
       - xhdcrm3-mssql:/var/opt/mssql
       - xhdcrm3-mssql-data:/var/opt/mssql/data

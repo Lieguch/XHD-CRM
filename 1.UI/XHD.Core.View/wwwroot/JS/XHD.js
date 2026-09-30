@@ -266,9 +266,12 @@ function encryptAES(plainText, secretKey) {
     // 将密钥转换为 CryptoJS 需要的格式
     var key = CryptoJS.enc.Utf8.parse(secretKey);
 
-    // ECB模式加密
+    // CBC模式加密 — IV从密钥后缀推导（与C# AESEncrypt.cs一致）
+    var ivStr = secretKey.substring(Math.max(0, secretKey.length - 16));
+    var iv = CryptoJS.enc.Utf8.parse(ivStr);
     var encrypted = CryptoJS.AES.encrypt(plainText, key, {
-        mode: CryptoJS.mode.ECB,
+        iv: iv,
+        mode: CryptoJS.mode.CBC,
         padding: CryptoJS.pad.Pkcs7
     });
 

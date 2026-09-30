@@ -164,7 +164,7 @@
                     }
                     text += "}";
 
-                    var infos = eval('(' + text + ')');
+                    var infos = JSON.parse(text);
 
                     console.log(infos);
 

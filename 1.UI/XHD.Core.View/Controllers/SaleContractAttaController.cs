@@ -91,7 +91,12 @@ namespace XHD.Core.View.Controllers
                     if (Request.Form.Any(a => a.Key == "chunk"))
                     {
                         //分片上传
-                        var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/contract/{Request.Form["guid"]}-{Request.Form["id"]}/");
+                        // Sprint 10.38: 路径遍历防护
+                        string guid = Path.GetFileName(Request.Form["guid"]);
+                        string attId = Path.GetFileName(Request.Form["id"]);
+                        if (guid.Contains("..") || attId.Contains("..") || guid.Contains("/") || attId.Contains("/") || guid.Contains("\"))
+                            return XHDResult.Error("参数非法").ToString();
+                        var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/contract/{guid}-{attId}/");
 
                         if (!Directory.Exists(basePath))
                         {
@@ -106,13 +111,19 @@ namespace XHD.Core.View.Controllers
                     else
                     {
                         //普通上传
-                        var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/contract/{ Request.Form["contract_id"] }/");
+                        // Sprint 10.38: 路径遍历防护
+                        string contract_id = Path.GetFileName(Request.Form["contract_id"]);
+                        if (contract_id.Contains("..") || contract_id.Contains("/") || contract_id.Contains("\"))
+                            return XHDResult.Error("参数非法").ToString();
+                        var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/contract/{contract_id}/");
                         
                         if (!Directory.Exists(basePath))
                         {
                             Directory.CreateDirectory(basePath);
                         }
                         string fileName = Request.Form["name"];//文件名
+                        fileName = Path.GetFileName(fileName); // Sprint 10.38: 路径遍历防护
+                        if (fileName.Contains("..")) return XHDResult.Error("参数非法").ToString();
                         string fileExt = Path.GetExtension(fileName);//获取文件后缀
 
                         byte[] buffer = Guid.NewGuid().ToByteArray();
@@ -157,6 +168,10 @@ namespace XHD.Core.View.Controllers
             var emp_name = claimIdentity.FindFirst(ClaimTypes.Name).Value;
             var uid = claimIdentity.FindFirst("uid").Value;
 
+            // Sprint 10.38: 路径遍历防护
+            string contract_id = Path.GetFileName(Request.Form["contract_id"]);
+            if (contract_id.Contains("..") || contract_id.Contains("/") || contract_id.Contains("\"))
+                return XHDResult.Error("参数非法").ToString();
             var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/contract/");
             var savePath = Path.GetDirectoryName($"{basePath}/{Request.Form["contract_id"]}/");
 
@@ -169,7 +184,11 @@ namespace XHD.Core.View.Controllers
                     Directory.CreateDirectory(savePath);
                 }
 
-                var temporary = Path.GetDirectoryName($"{basePath}/{ Request.Form["guid"] }-{Request.Form["id"]}/");//临时文件夹
+                string guid = Path.GetFileName(Request.Form["guid"]);
+                string attId = Path.GetFileName(Request.Form["id"]);
+                if (guid.Contains("..") || attId.Contains(".."))
+                    return XHDResult.Error("参数非法").ToString();
+                var temporary = Path.GetDirectoryName($"{basePath}/{guid}-{attId}/");//临时文件夹
 
                 if (!Directory.Exists(savePath))
                 {
@@ -177,7 +196,8 @@ namespace XHD.Core.View.Controllers
                     return XHDResult.Success().ToString();
                 }
 
-                string fileName = Request.Form["name"];//文件名
+                string fileName = Path.GetFileName(Request.Form["name"]);//文件名
+                if (fileName.Contains("..")) return XHDResult.Error("参数非法").ToString();
                 string fileExt = Path.GetExtension(fileName);//获取文件后缀
                 var files = Directory.GetFiles(temporary);//获得下面的所有文件
 
@@ -213,7 +233,7 @@ namespace XHD.Core.View.Controllers
             }
             catch (Exception ex)
             {
-                NLogger.WriteLog("file_err_", ex.ToString());
+                _logger?.LogError(ex, "[SaleContractAttaController] Meger failed: {Message}", ex.Message);
             }
 
             return XHDResult.Success().ToString();
@@ -229,6 +249,10 @@ namespace XHD.Core.View.Controllers
 
             await _detailservice.DeleteAsync(exp);
 
+            // Sprint 10.38: 路径遍历防护
+            string contract_id = Path.GetFileName(Request.Form["contract_id"]);
+            if (contract_id.Contains("..") || contract_id.Contains("/") || contract_id.Contains("\"))
+                return XHDResult.Error("参数非法").ToString();
             var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/contract/");
             var savePath = Path.GetDirectoryName($"{basePath}/{Request.Form["contract_id"]}/");
             var filePath = Path.Combine(savePath, data.data[0].real_name);
@@ -237,9 +261,9 @@ namespace XHD.Core.View.Controllers
             {
                 System.IO.File.Delete(filePath);
             }
-            catch
+            catch (Exception ex)
             {
-
+                _logger?.LogWarning(ex, "[SaleContractAttaController] Del failed: {Message}", ex.Message);
             }
 
 

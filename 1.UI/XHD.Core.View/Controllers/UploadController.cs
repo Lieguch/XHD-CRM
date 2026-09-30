@@ -15,6 +15,7 @@ using System.Linq.Expressions;
 using System.Threading.Tasks;
 using XHD.Core.IServices;
 using XHD.Core.Models;
+using System.Security.Claims;
 using XHD.Core.Common;
 
 namespace XHD.Core.View.Controllers
@@ -23,16 +24,20 @@ namespace XHD.Core.View.Controllers
     public class UploadController : Controller
     {
         private readonly ICRM_Customer_attaService _customerattaservice;
+        private readonly IDBAuthService _dBAuthService;
         private readonly ILogger<UploadController> _logger;
 
-        public UploadController(ICRM_Customer_attaService customerattaservice, ILogger<UploadController> logger)
+        public UploadController(ICRM_Customer_attaService customerattaservice, IDBAuthService dBAuthService, ILogger<UploadController> logger)
         {
             _customerattaservice = customerattaservice;
+            _dBAuthService = dBAuthService;
             _logger = logger;
         }
 
         public async Task<string> Image()
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "upload|image"))
+                return XHDResult.Error("无操作权限").ToString();
             byte[] buffer = Guid.NewGuid().ToByteArray();
             var out_trad_id = BitConverter.ToInt64(buffer, 0).ToString();
 
@@ -78,6 +83,8 @@ namespace XHD.Core.View.Controllers
         [DisableRequestSizeLimit]
         public async Task<string> FileUp()
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "upload|fileup"))
+                return XHDResult.Error("无操作权限").ToString();
             byte[] buffer = Guid.NewGuid().ToByteArray();
             var out_trad_id = BitConverter.ToInt64(buffer, 0).ToString();
 
@@ -127,8 +134,13 @@ namespace XHD.Core.View.Controllers
         /// <param name="fileName">客户端接收的文件名（如 "我的报告.pdf"）</param>
         /// <returns>文件流</returns>
 
-        public IActionResult DownloadCustomerAtta(string id)
+        public async Task<IActionResult> DownloadCustomerAtta(string id)
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "crm_customer|atta_download"))
+                return BadRequest("无操作权限");
+            id = Path.GetFileName(id);
+            if (string.IsNullOrWhiteSpace(id) || id.Contains("..") || id.Contains("/") || id.Contains("\\"))
+                return BadRequest("非法文件名");
             Expression<Func<CRM_Customer_atta, bool>> exp = a => a.id == id;
 
             var attadata = _customerattaservice.Grid(exp);
@@ -148,7 +160,11 @@ namespace XHD.Core.View.Controllers
             //    "/upload/customer/", data.cus_id, data.real_name  // 服务器存储的原始文件
             //);
 
-            string serverFilePath = $"{Directory.GetCurrentDirectory()}/wwwroot/upload/customer/{data.cus_id}/{data.real_name}";
+            string safeCusId = Path.GetFileName(data.cus_id ?? "");
+            string safeRealName = Path.GetFileName(data.real_name ?? "");
+            if (string.IsNullOrWhiteSpace(safeCusId) || string.IsNullOrWhiteSpace(safeRealName))
+                return NotFound("文件信息异常");
+            string serverFilePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "upload", "customer", safeCusId, safeRealName);
 
             _logger.LogInformation("Server file path: {Path}", serverFilePath);
 
@@ -191,6 +207,8 @@ namespace XHD.Core.View.Controllers
         [HttpPost("cus_import")]
         public async Task<string> CusImport(IFormFile file)
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "crm_customer|cus_import"))
+                return XHDResult.Error("无操作权限").ToString();
             if (file == null || file.Length == 0)
             {
                 return XHDResult.Error("未选择文件").ToString();
@@ -224,6 +242,8 @@ namespace XHD.Core.View.Controllers
         [HttpPost("contact_import")]
         public async Task<string> ContactImport(IFormFile file)
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "crm_contact|contact_import"))
+                return XHDResult.Error("无操作权限").ToString();
             if (file == null || file.Length == 0)
             {
                 return XHDResult.Error("未选择文件").ToString();

@@ -1,4 +1,4 @@
-bin/
+﻿bin/
 obj/
 .vs/
 .idea/
@@ -10,3 +10,7 @@ artifacts/
 archives/
 _logs.txt
 _logs*.txt
+.env
+!*.example
+appsettings.Production.json
+!appsettings.Production.json.example

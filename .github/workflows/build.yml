@@ -1,4 +1,4 @@
-name: build-and-test
+﻿name: build-and-test
 
 'on':
   push:
@@ -14,6 +14,7 @@ jobs:
   build:
     name: build-and-test
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -25,13 +26,17 @@ jobs:
         run: dotnet --version
       - name: dotnet restore
         run: dotnet restore XHDCRM3.sln
+        timeout-minutes: 10
       - name: dotnet build
         run: dotnet build XHDCRM3.sln --no-restore --configuration Release --verbosity normal
+        timeout-minutes: 15
       - name: dotnet test
         run: dotnet test 7.Test/XHD.Core.Tests/XHD.Core.Tests.csproj --no-build --configuration Release --verbosity normal --logger "trx;LogFileName=results.trx"
+        timeout-minutes: 20
       - name: Docker compose build
         run: |
-          docker compose build --no-cache
+          docker compose build
+        timeout-minutes: 20
       - name: Upload test results
         if: always()
         uses: actions/upload-artifact@v4
