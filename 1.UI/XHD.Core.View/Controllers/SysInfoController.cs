@@ -33,12 +33,14 @@ namespace XHD.Core.View.Controllers
         private readonly ILogger<SysLogController> _logger;
         private readonly ISys_infoService _service;
         private readonly ISMSHelper _smsHelper;
+        private readonly IDBAuthService _dBAuthService;
 
-        public SysInfoController(ILogger<SysLogController> logger, ISys_infoService service, ISMSHelper smsHelper)
+        public SysInfoController(ILogger<SysLogController> logger, ISys_infoService service, ISMSHelper smsHelper, IDBAuthService dBAuthService)
         {
             _service = service;
             _logger = logger;
             _smsHelper = smsHelper;
+            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -57,6 +59,8 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> Save(string key,string value)
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sys_info|save"))
+                return XHDResult.Error("无操作权限").ToString();
             Sys_info model=new Sys_info();
 
             model.sys_key = key;

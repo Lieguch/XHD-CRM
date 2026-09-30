@@ -33,12 +33,14 @@ namespace XHD.Core.View.Controllers
         private readonly ILogger<SysMenuController> _logger;
         private readonly ISys_MenuService _service;
         private readonly ISys_ButtonService _serviceBtn;
+        private readonly IDBAuthService _dBAuthService;
 
-        public SysMenuController(ILogger<SysMenuController> logger, ISys_MenuService service, ISys_ButtonService serviceBtn)
+        public SysMenuController(ILogger<SysMenuController> logger, ISys_MenuService service, ISys_ButtonService serviceBtn, IDBAuthService dBAuthService)
         {
             _service = service;
             _serviceBtn = serviceBtn;
             _logger = logger;
+            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -145,6 +147,8 @@ namespace XHD.Core.View.Controllers
         /// <returns></returns>
         public async Task<string> Save(Sys_Menu menu)
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sys_menu|save"))
+                return XHDResult.Error("无操作权限").ToString();
             Expression<Func<Sys_Menu, bool>> expression = a => a.id == menu.id;
             var list = await _service.GridAsync(expression);
 
@@ -257,6 +261,8 @@ namespace XHD.Core.View.Controllers
         /// <returns></returns>
         public async Task<string> Delete(string id)
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sys_menu|del"))
+                return XHDResult.Error("无操作权限").ToString();
             //删除按钮
             Expression<Func<Sys_Button, bool>> exp = a => a.Menu_id == id;
 

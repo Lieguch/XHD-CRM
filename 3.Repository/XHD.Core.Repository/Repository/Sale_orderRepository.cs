@@ -171,12 +171,34 @@ namespace XHD.Core.Repository
         /// <returns></returns>
         public async Task UpdateOrderInvoice(string order_id)
         {
-            //更新订单发票总额
-            var invoiceamount = await _fsql.Select<Finance_Invoice>().Where(a => a.order_id == order_id).SumAsync(a => a.invoice_amount);
-            await _fsql.Update<Sale_order>().Set(a => a.invoice_money == invoiceamount).Where(a => a.id == order_id).ExecuteAffrowsAsync();
-
-            //更新订单发票余额
-            await _fsql.Update<Sale_order>().Set(a => a.arrears_invoice == a.total_amount - a.invoice_money).Where(a => a.id == order_id).ExecuteAffrowsAsync();
+            // Sprint 10.38: 事务保护 — 发票总额+余额更新必须原子
+            using (var conn = _fsql.Ado.MasterPool.Get())
+            using (var tx = conn.Value.BeginTransaction())
+            {
+                try
+                {
+                    var invoiceamount = await _fsql.Select<Finance_Invoice>()
+                        .WithTransaction(tx)
+                        .Where(a => a.order_id == order_id)
+                        .SumAsync(a => a.invoice_amount);
+                    await _fsql.Update<Sale_order>()
+                        .WithTransaction(tx)
+                        .Set(a => a.invoice_money == invoiceamount)
+                        .Where(a => a.id == order_id)
+                        .ExecuteAffrowsAsync();
+                    await _fsql.Update<Sale_order>()
+                        .WithTransaction(tx)
+                        .Set(a => a.arrears_invoice == a.total_amount - a.invoice_money)
+                        .Where(a => a.id == order_id)
+                        .ExecuteAffrowsAsync();
+                    tx.Commit();
+                }
+                catch
+                {
+                    tx.Rollback();
+                    throw;
+                }
+            }
         }
 
         /// <summary>
@@ -186,12 +208,34 @@ namespace XHD.Core.Repository
         /// <returns></returns>
         public async Task UpdateOrderReceive(string order_id)
         {
-            //更新订单收款总额
-            var receiveamount = await _fsql.Select<Finance_Receive>().Where(a => a.order_id == order_id).SumAsync(a => a.Receive_amount);
-            await _fsql.Update<Sale_order>().Set(a => a.receive_money == receiveamount).Where(a => a.id == order_id).ExecuteAffrowsAsync();
-
-            //更新订单收款余额
-            await _fsql.Update<Sale_order>().Set(a => a.arrears_money == a.total_amount - a.receive_money).Where(a => a.id == order_id).ExecuteAffrowsAsync();
+            // Sprint 10.38: 事务保护 — 收款总额+余额更新必须原子
+            using (var conn = _fsql.Ado.MasterPool.Get())
+            using (var tx = conn.Value.BeginTransaction())
+            {
+                try
+                {
+                    var receiveamount = await _fsql.Select<Finance_Receive>()
+                        .WithTransaction(tx)
+                        .Where(a => a.order_id == order_id)
+                        .SumAsync(a => a.Receive_amount);
+                    await _fsql.Update<Sale_order>()
+                        .WithTransaction(tx)
+                        .Set(a => a.receive_money == receiveamount)
+                        .Where(a => a.id == order_id)
+                        .ExecuteAffrowsAsync();
+                    await _fsql.Update<Sale_order>()
+                        .WithTransaction(tx)
+                        .Set(a => a.arrears_money == a.total_amount - a.receive_money)
+                        .Where(a => a.id == order_id)
+                        .ExecuteAffrowsAsync();
+                    tx.Commit();
+                }
+                catch
+                {
+                    tx.Rollback();
+                    throw;
+                }
+            }
         }
 
         public async Task<JArray> ReportYear(Expression<Func<Sale_order, bool>> expWhere)

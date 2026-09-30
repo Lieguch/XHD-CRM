@@ -50,6 +50,8 @@ namespace XHD.Core.View.Controllers
         [HttpPost("DeleteWhere")]
         public async Task<string> DeleteWhere(string taskId)
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "task_follow|del"))
+                return XHDResult.Error("无操作权限").ToString();
             if (string.IsNullOrWhiteSpace(taskId))
             {
                 return XHDResult.Error("参数错误！").ToString();
@@ -92,6 +94,8 @@ namespace XHD.Core.View.Controllers
         /// </summary>
         public async Task<string> Save(Task_follow model)
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "task_follow|save"))
+                return XHDResult.Error("无操作权限").ToString();
             if (model == null)
             {
                 return XHDResult.Error("参数错误！").ToString();

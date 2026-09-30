@@ -36,12 +36,14 @@ namespace XHD.Core.View.Controllers
         private readonly ILogger<SaleContractAttaController> _logger;
         private readonly ISale_contractService _service;
         private readonly ISale_contract_attaService _detailservice;
+        private readonly IDBAuthService _dBAuthService;
 
-        public SaleContractAttaController(ILogger<SaleContractAttaController> logger, ISale_contractService service, ISale_contract_attaService detailservice)
+        public SaleContractAttaController(ILogger<SaleContractAttaController> logger, ISale_contractService service, ISale_contract_attaService detailservice, IDBAuthService dBAuthService)
         {
             _service = service;
             _logger = logger;
             _detailservice = detailservice;
+            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -70,6 +72,8 @@ namespace XHD.Core.View.Controllers
         /// <returns></returns>
         public async Task<string> Upload()
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sale_contract|atta"))
+                return XHDResult.Error("无操作权限").ToString();
             var claimIdentity = (ClaimsIdentity)User.Identity;
             var emp_id = claimIdentity.FindFirst(ClaimTypes.Sid).Value;
             var emp_name = claimIdentity.FindFirst(ClaimTypes.Name).Value;
@@ -146,6 +150,8 @@ namespace XHD.Core.View.Controllers
         /// <returns></returns>
         public async Task<string> Meger()
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sale_contract|atta"))
+                return XHDResult.Error("无操作权限").ToString();
             var claimIdentity = (ClaimsIdentity)User.Identity;
             var emp_id = claimIdentity.FindFirst(ClaimTypes.Sid).Value;
             var emp_name = claimIdentity.FindFirst(ClaimTypes.Name).Value;
@@ -216,6 +222,8 @@ namespace XHD.Core.View.Controllers
 
         public async Task<string> Del(string id)
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sale_contract|atta_del"))
+                return XHDResult.Error("无操作权限").ToString();
             Expression<Func<Sale_contract_atta, bool>> exp = a => a.id == id;
 
             var data = await _detailservice.GridAsync(exp);

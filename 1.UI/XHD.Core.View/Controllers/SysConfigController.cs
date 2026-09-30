@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using System;
@@ -29,6 +30,7 @@ namespace XHD.Core.View.Controllers
     /// 本 Controller 只承担 HTTP 层职责：读取用户输入、更新 appsettings.json、
     /// 构造连接并调用初始化服务。事务/幂等/日志均由 Service 处理。
     /// </remarks>
+    [Authorize]
     public class SysConfigController : Controller
     {
         private readonly IDatabaseInitializerService _initializer;

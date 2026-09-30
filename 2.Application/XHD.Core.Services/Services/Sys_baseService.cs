@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Linq.Expressions;
 
+using Microsoft.Extensions.Logging;
 using XHD.Core.Models;
 using XHD.Core.Common;
 using XHD.Core.IRepository;
@@ -27,6 +28,7 @@ namespace XHD.Core.Services
         private readonly ISys_role_empRepository _roleEmpRepo;
         private readonly Ihr_departmentRepository _deptRepo;
         private readonly Ihr_postRepository _postRepo;
+        private readonly ILogger<Sys_baseService> _logger;
 
         public Sys_baseService(
             ISys_MenuRepository menuRepo,
@@ -34,7 +36,8 @@ namespace XHD.Core.Services
             ISys_authorityRepository authRepo,
             ISys_role_empRepository roleEmpRepo,
             Ihr_departmentRepository deptRepo,
-            Ihr_postRepository postRepo)
+            Ihr_postRepository postRepo,
+            ILogger<Sys_baseService> logger = null)
         {
             _menuRepo = menuRepo;
             _onlineRepo = onlineRepo;
@@ -42,6 +45,7 @@ namespace XHD.Core.Services
             _roleEmpRepo = roleEmpRepo;
             _deptRepo = deptRepo;
             _postRepo = postRepo;
+            _logger = logger;
         }
 
         /// <summary>
@@ -269,7 +273,7 @@ namespace XHD.Core.Services
             }
             catch (Exception ex)
             {
-                _ = ex;
+                _logger?.LogWarning(ex, "[Sys_baseService] GetIconsAsync 失败: {Message}", ex.Message);
             }
             return result;
         }

@@ -186,7 +186,7 @@ namespace XHD.Core.Common
             catch (Exception ex)
             {
                 // Sprint 10.32: 修复空 catch — 日志写入失败时至少输出到控制台，不再静默丢失
-                Console.Error.WriteLine($"[NLogger] WriteText failed: {ex.Message}");
+                try { Console.Error.WriteLine($"[NLogger] WriteText failed: {ex.Message}"); } catch { /* 避免二次异常 */ }
             }
         }
     }

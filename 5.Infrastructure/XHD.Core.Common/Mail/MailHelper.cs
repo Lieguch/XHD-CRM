@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -217,7 +217,7 @@ namespace XHD.Core.Common.Mail
             }
             catch (Exception ex)
             {
-                Console.Error.WriteLine($"[MailHelper] SendMailAsync failed: {ex.Message}");
+                try { Console.Error.WriteLine($"[MailHelper] SendMailAsync failed: {ex.Message}"); } catch { /* 避免二次异常 */ }
                 return Task.FromResult(false);
             }
             finally

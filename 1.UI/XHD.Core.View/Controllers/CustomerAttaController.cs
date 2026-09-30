@@ -35,12 +35,14 @@ namespace XHD.Core.View.Controllers
         private readonly ILogger<CustomerAttaController> _logger;
         private readonly ICRM_CustomerService _service;
         private readonly ICRM_Customer_attaService _detailservice;
+        private readonly IDBAuthService _dBAuthService;
 
-        public CustomerAttaController(ILogger<CustomerAttaController> logger, ICRM_CustomerService service, ICRM_Customer_attaService detailservice)
+        public CustomerAttaController(ILogger<CustomerAttaController> logger, ICRM_CustomerService service, ICRM_Customer_attaService detailservice, IDBAuthService dBAuthService)
         {
             _service = service;
             _logger = logger;
             _detailservice = detailservice;
+            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -238,6 +240,8 @@ namespace XHD.Core.View.Controllers
 
 public async Task<string> Save()
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "crm_customer|atta"))
+                return XHDResult.Error("无操作权限").ToString();
             var claimIdentity = (ClaimsIdentity)User.Identity;
             var emp_id = claimIdentity.FindFirst(ClaimTypes.Sid).Value;
 

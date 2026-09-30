@@ -33,11 +33,13 @@ namespace XHD.Core.View.Controllers
     {
         private readonly ILogger<SysLogController> _logger;
         private readonly ISys_logService _service;
+        private readonly IDBAuthService _dBAuthService;
 
-        public SysLogController(ILogger<SysLogController> logger, ISys_logService service)
+        public SysLogController(ILogger<SysLogController> logger, ISys_logService service, IDBAuthService dBAuthService)
         {
             _service = service;
             _logger = logger;
+            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -47,6 +49,8 @@ namespace XHD.Core.View.Controllers
 
         public async Task<IActionResult> Add()
         {
+            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sys_log|add"))
+                return View();
             var result = await _service.LogType();
             ViewData["logTypes"] = result["data"];
             return View();
