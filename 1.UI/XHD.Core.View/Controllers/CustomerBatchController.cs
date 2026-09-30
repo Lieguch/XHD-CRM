@@ -128,34 +128,24 @@ namespace XHD.Core.View.Controllers
                 count = ids.Length;
 
                 // 2. 循环处理每一个客户
-                using var uow = _fsql.CreateUnitOfWork();
-                try
+                foreach (var id in ids)
                 {
-                    foreach (var id in ids)
-                    {
-                        await _fsql.Update<CRM_Customer>().Set(a => a.emp_id == model.new_emp_id).Where(a => a.id == id).ExecuteAffrowsAsync();
+                    await _fsql.Update<CRM_Customer>().Set(a => a.emp_id == model.new_emp_id).Where(a => a.id == id).ExecuteAffrowsAsync();
 
-                        // 4. 记录日志
-                        Sys_log logmodels = new Sys_log();
+                    // 4. 记录日志
+                    Sys_log logmodels = new Sys_log();
 
-                        logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
-                        logmodels.EventType = "[客户]批量转移";
-                        logmodels.EventID = model.id; // 关联本次批量操作的批次ID
-                        logmodels.cus_id = id;        // 记录具体被操作的客户ID
-                        logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
-                        logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
-                        logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
-                        logmodels.EventDate = DateTime.Now;
-                        logmodels.Log_Content = $"将客户{id}从员工 {model.old_emp_id} 转移给员工 {model.new_emp_id}";
+                    logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
+                    logmodels.EventType = "[客户]批量转移";
+                    logmodels.EventID = model.id; // 关联本次批量操作的批次ID
+                    logmodels.cus_id = id;        // 记录具体被操作的客户ID
+                    logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
+                    logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
+                    logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+                    logmodels.EventDate = DateTime.Now;
+                    logmodels.Log_Content = $"将客户{id}从员工 {model.old_emp_id} 转移给员工 {model.new_emp_id}";
 
-                        await _logService.UpdateLog(logmodels);
-                    }
-                    await uow.CommitAsync();
-                }
-                catch (Exception ex)
-                {
-                    await uow.RollbackAsync();
-                    return XHDResult.Error($"批量转移失败: {ex.Message}").ToString();
+                    await _logService.UpdateLog(logmodels);
                 }
             }
 

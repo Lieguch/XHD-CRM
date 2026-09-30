@@ -299,9 +299,6 @@ public async Task<string> Save()
             if (delResult <= 0) { return XHDResult.Error("删除失败").ToString(); }
 
             // Sprint 10.38: 路径遍历防护
-            customer_id = Path.GetFileName(customer_id);
-            if (customer_id.Contains("..") || customer_id.Contains("/") || customer_id.Contains("\\"))
-                return XHDResult.Error("参数非法").ToString();
             var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/customer/");
             var savePath = Path.GetDirectoryName($"{basePath}/{Request.Form["cus_id"]}/");
             var filePath = Path.Combine(savePath, data.data[0].real_name);
