@@ -137,6 +137,11 @@ namespace XHD.Core.Tests
                 .Returns((List<string> ids, string emp) => repo.ClaimlistAsync(ids, 0, emp));
             mock.Setup(s => s.AbanDon(It.IsAny<List<string>>()))
                 .Returns((List<string> ids) => repo.AbanDonAsync(ids, 1));
+            // Sprint 10.38：Claimlist/AbanDon 新增单参 GridAsync(exp) 预筛。
+            // 注意 Service 单参重载返回 XHDData<T>，而 Repository 单参重载返回 List<T>，
+            // 故不能直接桥接到 repo.GridAsync(exp)，改用仓储分页重载（Limit 取大值即等价全量）。
+            mock.Setup(s => s.GridAsync(It.IsAny<Expression<Func<CRM_Customer, bool>>>()))
+                .Returns((Expression<Func<CRM_Customer, bool>> e) => repo.GridAsync(e, 1, 100000));
             return mock;
         }
 
@@ -148,6 +153,26 @@ namespace XHD.Core.Tests
             var auth = new Mock<IDBAuthService>();
             auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
                 .ReturnsAsync(new XHDRoleData { authtype = 4, empList = new List<string>() });
+            // Sprint 10.38：全公司权限应同时放行按钮权限校验。
+            // 不 mock 的话 Moq loose mock 默认返回 false，会把 Claimlist/AbanDon/Excute 的
+            // CheckAuthAsync("edit") 闸门误判为"无操作权限"。
+            auth.Setup(a => a.GetAuth(It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(true);
+            return auth;
+        }
+
+        /// <summary>
+        /// 让 Mock IDBAuthService 返回受限数据权限（默认本部 authtype=2）。
+        /// Sprint 10.38 新增：用于验证 AbanDon / Count 的 empList 数据权限预筛。
+        /// </summary>
+        private static Mock<IDBAuthService> CreateRestrictedAuth(
+            List<string> empList, int authtype = 2)
+        {
+            var auth = new Mock<IDBAuthService>();
+            auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
+                .ReturnsAsync(new XHDRoleData { authtype = authtype, empList = empList });
+            auth.Setup(a => a.GetAuth(It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(true);
             return auth;
         }
 
@@ -790,6 +815,129 @@ namespace XHD.Core.Tests
             var obj = JObject.Parse(json);
             Assert.Equal(0, (int)obj["code"]!);
             Assert.Equal(2, (int)obj["count"]!);
+        }
+
+        // =========================================================
+        // #13 Sprint 10.38 回归：Claimlist / AbanDon / Count 权限预筛
+        // =========================================================
+
+        [Fact]
+        public async Task Controller_Claimlist_WithNonPoolCustomer_ReturnsError()
+        {
+            // 私有客户（state=0）不在公共池，即使有全公司权限也不得认领
+            await InsertAsync(NewCustomer("C1", 0, "他人私有客户", empId: "E999"));
+
+            var svc = CreateServiceMock(_custRepo);
+            var ctrl = CreateController(svc.Object, CreateFullAccessAuth(), userId: "E001");
+
+            var json = await ctrl.Claimlist(new JArray { "C1" });
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(1, (int)obj["code"]!);
+            Assert.Contains("不可认领", (string)obj["msg"]!);
+        }
+
+        [Fact]
+        public async Task Controller_Claimlist_WithDuplicateIds_DoesNotFalseReject()
+        {
+            // 重复 id 不应导致 "data.Count < list.Count" 误拒正常请求
+            await InsertAsync(NewCustomer("C1", 1, "客户1"));
+            await InsertAsync(NewCustomer("C2", 1, "客户2"));
+
+            var svc = CreateServiceMock(_custRepo);
+            var ctrl = CreateController(svc.Object, CreateFullAccessAuth(), userId: "E001");
+
+            var json = await ctrl.Claimlist(new JArray { "C1", "C1", "C2" });
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+            Assert.Equal(2, (int)obj["data"]!);
+        }
+
+        [Fact]
+        public async Task Controller_AbanDon_OtherEmpCustomer_RestrictedUser_ReturnsError()
+        {
+            // 受限用户放弃他人客户应被拒（越权数据破坏）
+            await InsertAsync(NewCustomer("C1", 0, "他人客户", empId: "E999"));
+
+            var svc = CreateServiceMock(_custRepo);
+            var ctrl = CreateController(
+                svc.Object, CreateRestrictedAuth(new List<string> { "E001" }), userId: "E001");
+
+            var json = await ctrl.AbanDon(new JArray { "C1" });
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(1, (int)obj["code"]!);
+            Assert.Contains("非本人", (string)obj["msg"]!);
+        }
+
+        [Fact]
+        public async Task Controller_AbanDon_OtherEmpCustomer_FullAccess_Allows()
+        {
+            // 全公司权限可放弃任何人客户（设计意图）
+            await InsertAsync(NewCustomer("C1", 0, "他人客户", empId: "E999"));
+
+            var svc = CreateServiceMock(_custRepo);
+            var ctrl = CreateController(svc.Object, CreateFullAccessAuth(), userId: "E001");
+
+            var json = await ctrl.AbanDon(new JArray { "C1" });
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+            Assert.Equal(1, (int)obj["data"]!);
+
+            var c1 = await _fsql.Select<CRM_Customer>().Where(a => a.id == "C1").FirstAsync();
+            Assert.Equal(1, c1.state);
+        }
+
+        [Fact]
+        public async Task Controller_AbanDon_WithDuplicateIds_DoesNotFalseReject()
+        {
+            await InsertAsync(NewCustomer("C1", 0, "我的客户", empId: "E001"));
+
+            var svc = CreateServiceMock(_custRepo);
+            var ctrl = CreateController(svc.Object, CreateFullAccessAuth(), userId: "E001");
+
+            var json = await ctrl.AbanDon(new JArray { "C1", "C1" });
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+            Assert.Equal(1, (int)obj["data"]!);
+        }
+
+        [Fact]
+        public async Task Controller_Count_RestrictedUser_EmpIdOutsideScope_ReturnsZero()
+        {
+            // 受限用户用 emp_id 探测范围外员工，交集为空应返回 0
+            await InsertAsync(NewCustomer("C1", 0, "我的客户", empId: "E001"));
+            await InsertAsync(NewCustomer("C2", 0, "范围外客户", empId: "E999"));
+
+            var svc = CreateCountServiceMock(_custRepo);
+            var ctrl = CreateController(
+                svc.Object, CreateRestrictedAuth(new List<string> { "E001" }), userId: "E001");
+
+            var json = await ctrl.Count(new CustomerCountQuery { emp_id = "E999" });
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+            Assert.Equal(0, (int)obj["count"]!);
+        }
+
+        [Fact]
+        public async Task Controller_Count_NoPermission_ReturnsZero()
+        {
+            // authtype=0（无数据权限）应直接返回 0，不查库
+            await InsertAsync(NewCustomer("C1", 0, "客户", empId: "E001"));
+
+            var svc = CreateCountServiceMock(_custRepo);
+            var auth = CreateRestrictedAuth(new List<string>(), authtype: 0);
+            var ctrl = CreateController(svc.Object, auth, userId: "E001");
+
+            var json = await ctrl.Count(new CustomerCountQuery());
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+            Assert.Equal(0, (int)obj["count"]!);
         }
     }
 }

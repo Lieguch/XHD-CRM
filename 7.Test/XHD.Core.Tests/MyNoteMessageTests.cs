@@ -97,6 +97,24 @@ namespace XHD.Core.Tests
         {
             var auth = new Mock<IDBAuthService>();
             auth.Setup(a => a.GetAuth(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+            // Sprint 10.38：MyNoteController.UpdateXY/Delete 的归属校验会调用 GetDataAuth，
+            // 不 mock 的话 loose mock 返回 null，authtype 访问会 NullReferenceException。
+            auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
+                .ReturnsAsync(new XHD.Core.Common.XHDRoleData
+                { authtype = 4, empList = new List<string>() });
+            return auth;
+        }
+
+        /// <summary>
+        /// Sprint 10.38：受限数据权限（默认本部 authtype=2），用于验证便签归属校验。
+        /// </summary>
+        private static Mock<IDBAuthService> CreateRestrictedAuth(
+            List<string> empList, int authtype = 2)
+        {
+            var auth = new Mock<IDBAuthService>();
+            auth.Setup(a => a.GetAuth(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+            auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
+                .ReturnsAsync(new XHD.Core.Common.XHDRoleData { authtype = authtype, empList = empList });
             return auth;
         }
 
@@ -121,13 +139,27 @@ namespace XHD.Core.Tests
             return ctrl;
         }
 
-        private MyNoteController CreateNoteController(string userId = "TEST_USER")
+        private MyNoteController CreateNoteController(
+            string userId = "TEST_USER", Mock<IDBAuthService> authMock = null)
         {
             var noteSvc = new Mock<IMy_NoteService>();
             noteSvc.Setup(s => s.RemindAsync(It.IsAny<string>(), It.IsAny<int>()))
                 .Returns((string empId, int limit) => _noteRepo.RemindAsync(empId, limit));
+            // Sprint 10.38：UpdateXY/Delete 新增归属校验，走单参 GridAsync。
+            // 注意 Service 单参重载返回 XHDData<T>，Repository 单参重载返回 List<T>，
+            // 故改用仓储分页重载（Limit 取大值即等价全量）。
+            noteSvc.Setup(s => s.GridAsync(It.IsAny<Expression<Func<My_Note, bool>>>()))
+                .Returns((Expression<Func<My_Note, bool>> e) => _noteRepo.GridAsync(e, 1, 100000));
+            noteSvc.Setup(s => s.UpdateAsync(
+                    It.IsAny<Expression<Func<My_Note, My_Note>>>(),
+                    It.IsAny<Expression<Func<My_Note, bool>>>()))
+                .Returns((Expression<Func<My_Note, My_Note>> set, Expression<Func<My_Note, bool>> w)
+                    => _noteRepo.UpdateAsync(set, w));
+            noteSvc.Setup(s => s.DeleteAsync(It.IsAny<string>()))
+                .Returns((string id) => _noteRepo.DeleteAsync(id));
 
-            var ctrl = new MyNoteController(noteSvc.Object, new Moq.Mock<IDBAuthService>().Object);
+            authMock ??= CreateFullAuth();
+            var ctrl = new MyNoteController(noteSvc.Object, authMock.Object);
             var httpCtx = new Microsoft.AspNetCore.Http.DefaultHttpContext();
             httpCtx.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
             var claims = new[]
@@ -419,6 +451,105 @@ namespace XHD.Core.Tests
             // 剩余 10 条仍未读
             int unreadCount = (int)await _fsql.Select<My_Note>().Where(a => !a.isRead).CountAsync();
             Assert.Equal(10, unreadCount);
+        }
+
+        // ============ #14b Sprint 10.38 回归：UpdateXY / Delete 归属校验 ============
+
+        [Fact]
+        public async Task UpdateXY_OtherEmpNote_RestrictedUser_ReturnsError()
+        {
+            // 受限用户移动他人便签应被拒（越权写）
+            await InsertNoteAsync(NewNote("OTHER1", "OTHER_EMP"));
+
+            var ctrl = CreateNoteController("TEST_USER",
+                CreateRestrictedAuth(new List<string> { "TEST_USER" }));
+
+            var json = await ctrl.UpdateXY(new My_Note { id = "OTHER1", top = 10, left = 20 });
+
+            // XHDResult.Error(msg) → code = -1（非 1），与既有 Save/Update 错误断言口径一致
+            var obj = JObject.Parse(json);
+            Assert.Equal(-1, (int)obj["code"]!);
+            Assert.Contains("无权限", (string)obj["msg"]!);
+        }
+
+        [Fact]
+        public async Task UpdateXY_OwnNote_UpdatesCoordinates()
+        {
+            await InsertNoteAsync(NewNote("OWN1", "TEST_USER"));
+
+            var ctrl = CreateNoteController("TEST_USER",
+                CreateRestrictedAuth(new List<string> { "TEST_USER" }));
+
+            var json = await ctrl.UpdateXY(new My_Note { id = "OWN1", top = 100, left = 200 });
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+
+            var row = await _fsql.Select<My_Note>().Where(a => a.id == "OWN1").FirstAsync();
+            Assert.Equal(100, row.top);
+            Assert.Equal(200, row.left);
+        }
+
+        [Fact]
+        public async Task UpdateXY_NonexistentNote_ReturnsNotFound()
+        {
+            var ctrl = CreateNoteController("TEST_USER",
+                CreateRestrictedAuth(new List<string> { "TEST_USER" }));
+
+            var json = await ctrl.UpdateXY(new My_Note { id = "NOPE", top = 1, left = 2 });
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(-1, (int)obj["code"]!);
+            Assert.Contains("找不到数据", (string)obj["msg"]!);
+        }
+
+        [Fact]
+        public async Task Delete_OtherEmpNote_RestrictedUser_ReturnsError()
+        {
+            // 受限用户删除他人便签应被拒（越权删除）
+            await InsertNoteAsync(NewNote("OTHER1", "OTHER_EMP"));
+
+            var ctrl = CreateNoteController("TEST_USER",
+                CreateRestrictedAuth(new List<string> { "TEST_USER" }));
+
+            var json = await ctrl.Delete("OTHER1");
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(-1, (int)obj["code"]!);
+            Assert.Contains("无权限", (string)obj["msg"]!);
+
+            // 数据未被删除
+            Assert.Single(await _fsql.Select<My_Note>().ToListAsync());
+        }
+
+        [Fact]
+        public async Task Delete_OwnNote_DeletesRow()
+        {
+            await InsertNoteAsync(NewNote("OWN1", "TEST_USER"));
+
+            var ctrl = CreateNoteController("TEST_USER",
+                CreateRestrictedAuth(new List<string> { "TEST_USER" }));
+
+            var json = await ctrl.Delete("OWN1");
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+            Assert.Empty(await _fsql.Select<My_Note>().ToListAsync());
+        }
+
+        [Fact]
+        public async Task Delete_FullAccessUser_CanDeleteOtherEmpNote()
+        {
+            // 全公司权限可删除任意人便签（设计意图，与 DeleteAsync 原有语义一致）
+            await InsertNoteAsync(NewNote("OTHER1", "OTHER_EMP"));
+
+            var ctrl = CreateNoteController("TEST_USER", CreateFullAuth());
+
+            var json = await ctrl.Delete("OTHER1");
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+            Assert.Empty(await _fsql.Select<My_Note>().ToListAsync());
         }
 
         // ============ #15 NoticeRemind：公告未读提醒 ============
