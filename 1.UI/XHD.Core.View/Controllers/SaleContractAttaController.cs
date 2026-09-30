@@ -94,7 +94,7 @@ namespace XHD.Core.View.Controllers
                         // Sprint 10.38: 路径遍历防护
                         string guid = Path.GetFileName(Request.Form["guid"]);
                         string attId = Path.GetFileName(Request.Form["id"]);
-                        if (guid.Contains("..") || attId.Contains("..") || guid.Contains("/") || attId.Contains("/") || guid.Contains("\"))
+                        if (guid.Contains("..") || attId.Contains("..") || guid.Contains("/") || attId.Contains("/") || guid.Contains("\\") || attId.Contains("\\"))
                             return XHDResult.Error("参数非法").ToString();
                         var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/contract/{guid}-{attId}/");
 
@@ -113,7 +113,7 @@ namespace XHD.Core.View.Controllers
                         //普通上传
                         // Sprint 10.38: 路径遍历防护
                         string contract_id = Path.GetFileName(Request.Form["contract_id"]);
-                        if (contract_id.Contains("..") || contract_id.Contains("/") || contract_id.Contains("\"))
+                        if (contract_id.Contains("..") || contract_id.Contains("/") || contract_id.Contains("\\"))
                             return XHDResult.Error("参数非法").ToString();
                         var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/contract/{contract_id}/");
                         
@@ -170,7 +170,7 @@ namespace XHD.Core.View.Controllers
 
             // Sprint 10.38: 路径遍历防护
             string contract_id = Path.GetFileName(Request.Form["contract_id"]);
-            if (contract_id.Contains("..") || contract_id.Contains("/") || contract_id.Contains("\"))
+            if (contract_id.Contains("..") || contract_id.Contains("/") || contract_id.Contains("\\"\")
                 return XHDResult.Error("参数非法").ToString();
             var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/contract/");
             var savePath = Path.GetDirectoryName($"{basePath}/{Request.Form["contract_id"]}/");
@@ -251,7 +251,7 @@ namespace XHD.Core.View.Controllers
 
             // Sprint 10.38: 路径遍历防护
             string contract_id = Path.GetFileName(Request.Form["contract_id"]);
-            if (contract_id.Contains("..") || contract_id.Contains("/") || contract_id.Contains("\"))
+            if (contract_id.Contains("..") || contract_id.Contains("/") || contract_id.Contains("\\"\")
                 return XHDResult.Error("参数非法").ToString();
             var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/contract/");
             var savePath = Path.GetDirectoryName($"{basePath}/{Request.Form["contract_id"]}/");

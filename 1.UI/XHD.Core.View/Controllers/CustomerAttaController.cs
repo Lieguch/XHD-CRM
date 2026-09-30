@@ -104,7 +104,7 @@ namespace XHD.Core.View.Controllers
                         // Sprint 10.38: 路径遍历防护
                         string guid = Path.GetFileName(Request.Form["guid"]);
                         string attId = Path.GetFileName(Request.Form["id"]);
-                        if (guid.Contains("..") || attId.Contains("..") || guid.Contains("/") || attId.Contains("/") || guid.Contains("\"))
+                        if (guid.Contains("..") || attId.Contains("..") || guid.Contains("/") || attId.Contains("/") || guid.Contains("\\") || attId.Contains("\\"))
                             return XHDResult.Error("参数非法").ToString();
                         var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/customer/{guid}-{attId}/");
 
@@ -185,7 +185,7 @@ namespace XHD.Core.View.Controllers
 
             // Sprint 10.38: 路径遍历防护
             customer_id = Path.GetFileName(customer_id);
-            if (customer_id.Contains("..") || customer_id.Contains("/") || customer_id.Contains("\"))
+            if (customer_id.Contains("..") || customer_id.Contains("/") || customer_id.Contains("\\"))
                 return XHDResult.Error("参数非法").ToString();
             var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/customer/");
             var savePath = Path.GetDirectoryName($"{basePath}/{ customer_id }/");
@@ -300,7 +300,7 @@ public async Task<string> Save()
 
             // Sprint 10.38: 路径遍历防护
             customer_id = Path.GetFileName(customer_id);
-            if (customer_id.Contains("..") || customer_id.Contains("/") || customer_id.Contains("\"))
+            if (customer_id.Contains("..") || customer_id.Contains("/") || customer_id.Contains("\\"))
                 return XHDResult.Error("参数非法").ToString();
             var basePath = Path.GetDirectoryName($"{Directory.GetCurrentDirectory()}/wwwroot/upload/customer/");
             var savePath = Path.GetDirectoryName($"{basePath}/{Request.Form["cus_id"]}/");
