@@ -174,7 +174,7 @@ namespace XHD.Core.Common.DEncrypt
             using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPrivate);
-            using var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
+            var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
             //设置签名的算法为SHA256
             RSAFormatter.SetHashAlgorithm("SHA256");
             //执行签名 
@@ -192,7 +192,7 @@ namespace XHD.Core.Common.DEncrypt
             using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPrivate);
-            using var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
+            var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
             //设置签名的算法为SHA256
             RSAFormatter.SetHashAlgorithm("SHA256");
             //执行签名 
@@ -213,7 +213,7 @@ namespace XHD.Core.Common.DEncrypt
             using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPrivate);
-            using var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
+            var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
             //设置签名的算法为SHA256
             RSAFormatter.SetHashAlgorithm("SHA256");
             //执行签名 
@@ -233,7 +233,7 @@ namespace XHD.Core.Common.DEncrypt
             using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPrivate);
-            using var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
+            var RSAFormatter = new RSAPKCS1SignatureFormatter(RSA);
             //设置签名的算法为SHA256
             RSAFormatter.SetHashAlgorithm("SHA256");
             //执行签名 
@@ -253,7 +253,7 @@ namespace XHD.Core.Common.DEncrypt
             using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPublic);
-            using var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
+            var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
             //指定解密的时候HASH算法为SHA256
             RSADeformatter.SetHashAlgorithm("SHA256");
 
@@ -273,7 +273,7 @@ namespace XHD.Core.Common.DEncrypt
             using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPublic);
-            using var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
+            var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
             //指定解密的时候HASH算法为SHA256
             RSADeformatter.SetHashAlgorithm("SHA256");
 
@@ -291,7 +291,7 @@ namespace XHD.Core.Common.DEncrypt
             using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPublic);
-            using var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
+            var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
             //指定解密的时候HASH算法为SHA256
             RSADeformatter.SetHashAlgorithm("SHA256");
 
@@ -314,7 +314,7 @@ namespace XHD.Core.Common.DEncrypt
             using var RSA = new RSACryptoServiceProvider(2048);
 
             RSA.FromXmlString(p_strKeyPublic);
-            using var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
+            var RSADeformatter = new RSAPKCS1SignatureDeformatter(RSA);
             //指定解密的时候HASH算法为SHA256
             RSADeformatter.SetHashAlgorithm("SHA256");
 
