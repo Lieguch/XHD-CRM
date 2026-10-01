@@ -320,3 +320,113 @@ Moq loose mock 默认返回 `false`，把我新加的 `CheckAuthAsync("edit")` �
       启动期对账，缺失按钮会被幂等 upsert 补进 `Sys_Button`，但**角色绑定**仍需人工配。
 - [ ] `cnb build start-build` 用的是 `--branch`；`get-build-status` 必须带 `--repo`。
 - [ ] Git Bash CWD 会话间会重置到 `D:/output`，命令里要么 `cd` 要么用绝对路径。
+
+---
+
+# Sprint 10.40 — 三仓库分叉合并（CNB → 本线方向）✅ 已验证
+
+> 上一条「遗留」第一项的执行结果。方向结论：**以本线（GitHub `main`）为准，把 CNB
+> 分叉里真正有价值的实质改动吸收进来，再把 `cnb/main` 对齐**。理由见下。
+
+## 1. 分叉盘点（`f91fde7` 之后 CNB 独有 18 个提交 / 15 个文件）
+
+| 文件 | 两边关系 | 处理 |
+|---|---|---|
+| `.cnb.yml` | **逐字节相同** | 无需合并 |
+| `SeedData.cs` | **逐字节相同** | 无需合并 |
+| `DatabaseInitializerService.cs` | **逐字节相同** | 无需合并 |
+| `Sale_order_details.cs` / `Sys_authority.cs` | **逐字节相同** | 无需合并 |
+| `Sprint10InitializerTests.cs` | CNB 改 8→14 | **不采纳**：SeedData 两边相同，真实 `dotnet test` 报 8 张表（CNB 那个 14 的断言在自己线上也跑不过，它只 build 不 test） |
+| 9 个控制器 | CNB 有本线没有的 `[v11]` 归属校验 | **部分采纳**（见第 2 节） |
+| `Report_FinanceController` | 本线有 6 处数据权限过滤，CNB 侧被删光 | **本线领先**，不采纳 CNB |
+| `CRM_ContactController` 返回值 | CNB 把字符串改成 `new JsonResult(...)`（`Task<string>` 方法） | **不采纳**，编译都过不了 |
+
+> CNB 那 18 个提交里有一半是「修上一轮注入脚本搞坏的代码」（`fix(controller): 补回
+> 被 [v10] 数据权限注入剥掉的 [HttpPost] + Save/Delete 方法签名` 等）——本线的
+> 10.37 已经用另一种方式修过，且修得更干净（保留方法签名 + `[ButtonAuth]` 声明式）。
+
+## 2. 真正的缺口：5 个控制器的 `[v11]` 编辑/删除归属校验被本线弄丢了
+
+`[v11]` 标记计数（local vs cnb/main）：
+
+| 控制器 | 本线 | CNB | 判定 |
+|---|---|---|---|
+| CRMFollowController | **0** | 6 | 缺失 |
+| CRM_ContactController | **0** | 6 | 缺失 |
+| FinanceInvoiceController | **0** | 6 | 缺失 |
+| FinanceReceiveController | **0** | 6 | 缺失 |
+| SaleOrderController | **0** | 6 | 缺失 |
+| Finance_ReceivableController | 3 | 3 | 一致 |
+| SaleContractController | 6 | 6 | 一致 |
+| CustomerController | 8 | 6 | 本线更强 |
+
+**根因**：Sprint 10.37 的 `17cc55c` / `ddbf7dc`（"P2/P3 fix"）面对的是
+`result = await` 后面直接接 `var roledata = ...` 的语法错误（`[v10]` 注入脚本搞坏的），
+它的修法是**把整段删掉**——连同里面的数据归属校验一起删了。CNB 侧的修法是
+`result = 0; /* 先校验 */ ... result = await _service.UpdateAsync(model)`，
+**保住了归属校验**。这是本线的一个真实越权缺口：有按钮权限的人可以改/删
+其他业务员客户名下的跟进、联系人、发票、收款、订单。
+
+## 3. 实证探针（先测后改，不靠猜）
+
+> 模型层**没有任何 `[Navigate]` 特性**（全仓 grep 0 命中），
+> `BaseRepository.GridAsync` 也**没有 `.Include()`**。`[v11]` 用的导航表达式
+（`a.customer.emp_id` / `a.Order.customer.emp_id`）能不能用，谁都没在真库上跑过
+（以前的测试全 mock 掉 service 层）。
+> 于是先加 `7.Test/XHD.Core.Tests/DataScopeExpressionProbeTests.cs`（真实 SQLite
+> 内存库），在 CNB 云开发 `cnb-mv7-1k3qr49tc` 上跑出结论：
+
+| 探针 | 结论 |
+|---|---|
+| Q1 一跳 `Where(a => empList.Contains(a.customer.emp_id))` | ✅ FreeSql 约定导航生效，翻译成 JOIN |
+| Q2 两跳 `Where(a => empList.Contains(a.Order.customer.emp_id))` | ✅ 同上（发票→订单→客户） |
+| Q3 `ToListAsync()` 后读 `existing.customer.emp_id` | ❌ **导航属性是 null**（无 Include）——CNB 那种写法在生产会 **NullReferenceException** |
+| Q4 空范围列表（`authtype==0`）翻译 | ✅ 得 0 行不抛 |
+| 对照 | 发票新增只写 `create_id`、从不写 `emp_id` ⇒ 本线 Grid 的 `a.emp_id` 过滤让非全员角色**看到 0 条**（功能性 bug） |
+
+**因此归属校验不能照抄 CNB 的内存回填写法**，改写为「范围内查询」（SQL 侧完成）：
+
+```csharp
+// [v11] 数据权限校验（编辑时检查数据归属）
+var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+if (roledata.authtype == 0)
+    return XHDResult.Error("无数据权限！").ToString();
+if (roledata.authtype != 4)
+{
+    var inScope = await _service.GridAsync(
+        a => a.id == model.id && roledata.empList.Contains(a.customer.emp_id), 1, 1);
+    if (inScope.count == 0)
+        return XHDResult.Error("无权限！").ToString();
+}
+```
+
+Grid 过滤口径与各自归属校验对齐（看到即能改）：
+
+| 控制器 | Grid 口径 | 备注 |
+|---|---|---|
+| CRMFollow / CRM_Contact | `a.customer.emp_id` | 原 `employee_id` / `create_id` |
+| FinanceInvoice / FinanceReceive | `a.Order.customer.emp_id` | 修掉 `a.emp_id` 恒空的问题；恢复 `authtype==0` 提前返回 |
+| SaleOrder | `a.emp_id`（不变） | 订单表单会提交 `emp_id`，且 CNB 自己的归属校验也用 `emp_id` |
+
+## 4. 验证
+
+| 通道 | 结果 |
+|---|---|
+| CNB 云开发 `sprint10.40-probe` @ `77b1f42`，构建 `cnb-3so-1k3qsm75l` | **Build succeeded，0 errors，438/438 tests pass**（含 11 个探针） |
+| 测试基线 | 426 → 438（+11 探针 +1 AuthInfrastructure 历史回归） |
+
+## 5. 提交链
+
+- `6ae823d` test(probe): Sprint 10.40 data-scope navigation expression probe
+- `77b1f42` fix(auth): Sprint 10.40 restore [v11] data-ownership checks + align Grid scope
+
+## 遗留（下个 agent）
+
+- [ ] 任务 #176（SysButtons 种子缺口）仍需排期。
+- [ ] `cnb/main` 需强推对齐本线（本线已吸收 CNB 全部实质改动，且修掉了 CNB 侧的
+      NRE 隐患）；GitHub `main` 同步推。
+- [ ] `Report_FinanceController.Index` 仍是同步 `IActionResult`（CNB 改成 async +
+      `roledata.authtype==0 → return View()`），本线 6 个报表端点有 empList 过滤、
+      更强；若要统一口径，以后单独评估。
+- [ ] 运行期仍未有针对真实 HTTP 管道的集成测试（导航表达式的 SQL 翻译只在 SQLite
+      内存库验证过；生产是 MySql/SqlServer，方言差异留作风险）。

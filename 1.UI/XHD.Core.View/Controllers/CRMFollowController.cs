@@ -102,7 +102,8 @@ namespace XHD.Core.View.Controllers
 
             if (roledata.authtype != 4)
             {
-                exp = exp.And(a => roledata.empList.Contains(a.employee_id));
+                // 数据范围跟随客户归属（与编辑/删除归属校验同一字段，保证看到即能改）
+                exp = exp.And(a => roledata.empList.Contains(a.customer.emp_id));
             }
 
             var result = await _service.GridAsync(exp, model.Page, model.Limit, "a.Follow_time desc");
@@ -134,6 +135,20 @@ namespace XHD.Core.View.Controllers
                 if (checknulldata.count == 0)
                 {
                     return XHDResult.Error("找不到数据！").ToString();
+                }
+
+                // [v11] 数据权限校验（编辑时检查数据归属）
+                // 范围内查询：导航过滤在 SQL 侧完成（GridAsync 无 Include，导航属性不在内存回填，
+                // 不能读 existing.customer.emp_id，否则 NullReferenceException）
+                var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+                if (roledata.authtype == 0)
+                    return XHDResult.Error("无数据权限！").ToString();
+                if (roledata.authtype != 4)
+                {
+                    var inScope = await _service.GridAsync(
+                        a => a.id == model.id && roledata.empList.Contains(a.customer.emp_id), 1, 1);
+                    if (inScope.count == 0)
+                        return XHDResult.Error("无权限！").ToString();
                 }
 
                 result = await _service.UpdateAsync(model);
@@ -181,6 +196,18 @@ namespace XHD.Core.View.Controllers
             if (checkdata.count == 0)
             {
                 return XHDResult.Error("找不到此数据！").ToString();
+            }
+
+            // [v11] 数据权限校验（删除时检查数据归属）
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype == 0)
+                return XHDResult.Error("无数据权限！").ToString();
+            if (roledata.authtype != 4)
+            {
+                var inScope = await _service.GridAsync(
+                    a => a.id == id && roledata.empList.Contains(a.customer.emp_id), 1, 1);
+                if (inScope.count == 0)
+                    return XHDResult.Error("无权限！").ToString();
             }
 
             result = await _service.DeleteAsync(id);
