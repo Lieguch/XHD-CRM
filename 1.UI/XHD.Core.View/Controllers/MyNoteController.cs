@@ -22,6 +22,7 @@ using XHD.Core.IRepository;
 using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.View.Configs;
+using XHD.Core.View.Authorization;
 
 namespace XHD.Core.View.Controllers
 {

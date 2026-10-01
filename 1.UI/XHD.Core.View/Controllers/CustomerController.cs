@@ -25,6 +25,7 @@ using XHD.Core.Models;
 using XHD.Core.View.Configs;
 using XHD.Core.View.Helpers;
 using XHD.Core.View.Models.Dtos;
+using XHD.Core.View.Authorization;
 
 namespace XHD.Core.View.Controllers
 {
@@ -140,6 +141,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="payload">请求体 JSON：{ ids: string[], state: int }</param>
         /// <returns>JObject { code, msg, data }</returns>
         [HttpPost]
+        [ButtonAuth("CRM_Customer", "edit", DenyMessage = "无权限！")]
         public async Task<string> SetIntention([FromBody] JObject payload)
         {
             var resp = new JObject();
@@ -178,13 +180,6 @@ namespace XHD.Core.View.Controllers
             if (ids.Count == 0)
             {
                 resp["code"] = 1; resp["msg"] = "参数为空"; resp["data"] = null;
-                return resp.ToString();
-            }
-
-            // 按钮权限：复用 CRM_Customer|edit
-            if (!await _dBAuthService.GetAuth(GetUserId(), "CRM_Customer|edit"))
-            {
-                resp["code"] = 1; resp["msg"] = "无权限！"; resp["data"] = null;
                 return resp.ToString();
             }
 
@@ -330,22 +325,12 @@ namespace XHD.Core.View.Controllers
             return User.FindFirst(ClaimTypes.Sid)?.Value;
         }
 
-        private async Task<bool> CheckAuthAsync(string operation)
-        {
-            // 直接将常量 "CRM_Customer" 写在这里
-            return await _dBAuthService.GetAuth(GetUserId(), $"CRM_Customer|{operation}");
-        }
-
+        [AnyOfButtonAuth("CRM_Customer|add", "CRM_Customer|edit", DenyMessage = "无权限！")]
         public async Task<string> Save(CRM_Customer model)
         {
             if (string.IsNullOrWhiteSpace(model.id))
             {
                 // 新增
-                if (!await CheckAuthAsync("add"))
-                {
-                    return XHDResult.Error("无权限！").ToString();
-                }
-
                 model.id = UUIDNext.Uuid.NewSequential().ToString();
                 model.sn = $"CU-{DateTime.Now:yyyyMMdd}-{model.id.Split('-')[2]}";
                 model.create_id = GetUserId();
@@ -376,11 +361,6 @@ namespace XHD.Core.View.Controllers
             else
             {
                 // 编辑
-                if (!await CheckAuthAsync("edit"))
-                {
-                    return XHDResult.Error("无权限！").ToString();
-                }
-
                 var old = (await _service.GridAsync(c => c.id == model.id, 1, 1)).data.FirstOrDefault();
                 if (old == null)
                 {
@@ -415,13 +395,10 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
+        [ButtonAuth("CRM_Customer", "edit", DenyMessage = "无操作权限")]
         public async Task<string> Excute()
         {
             // 与 Save/SetIntention 口径一致：客户新增/编辑表单调用此端点校验重名
-            if (!await CheckAuthAsync("edit"))
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
 
             var cusName = Request.Form["cus_name"].ToString();
             var currentId = Request.Form["id"].ToString();
@@ -442,6 +419,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="ids">客户 ID 数组，客户端以 JSON 数组形式提交</param>
         /// <returns>JSON 字符串，供前端 jq/ajax 解析</returns>
         [HttpPost]
+        [ButtonAuth("CRM_Customer", "edit", DenyMessage = "无操作权限")]
         public async Task<string> Claimlist([FromBody] JArray ids)
         {
             var resp = new JObject();
@@ -483,15 +461,6 @@ namespace XHD.Core.View.Controllers
             // 去重：重复 id 会让 list.Count 大于去重后条数，导致下方 "poolData.data.Count < list.Count" 误拒正常请求；
             // 底层 ClaimlistAsync 走 IN 参数化，重复 id 无副作用，去重后 resp["data"] 与实际影响条数一致。
             list = list.Distinct().ToList();
-
-            // 按钮权限校验（与 Save/SetIntention 口径一致，复用 CRM_Customer|edit）
-            if (!await CheckAuthAsync("edit"))
-            {
-                resp["code"] = 1;
-                resp["msg"] = "无操作权限";
-                resp["data"] = null;
-                return resp.ToString();
-            }
 
             // 数据权限校验：只允许认领真正在公共池（state==1）里的客户。
             // 底层 ClaimlistAsync 无 state/归属过滤，必须在此预筛，防止越权重认领他人私有客户。
@@ -542,6 +511,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="ids">客户 ID 数组</param>
         /// <returns>JSON 字符串</returns>
         [HttpPost]
+        [ButtonAuth("CRM_Customer", "edit", DenyMessage = "无操作权限")]
         public async Task<string> AbanDon([FromBody] JArray ids)
         {
             var resp = new JObject();
@@ -582,15 +552,6 @@ namespace XHD.Core.View.Controllers
 
             // 去重：同 Claimlist，避免重复 id 让 ownData.data.Count < list.Count 误拒正常请求。
             list = list.Distinct().ToList();
-
-            // 按钮权限校验（与 Delete 口径一致）
-            if (!await CheckAuthAsync("edit"))
-            {
-                resp["code"] = 1;
-                resp["msg"] = "无操作权限";
-                resp["data"] = null;
-                return resp.ToString();
-            }
 
             // 数据权限校验：只能放弃自己名下的客户（全公司权限 authtype==4 不受限）。
             // 底层 AbanDonAsync 无归属过滤，必须在此预筛。
@@ -691,6 +652,7 @@ namespace XHD.Core.View.Controllers
         }
 
         [HttpPost]
+        [ButtonAuth("CRM_Customer", "del", DenyMessage = "无权限！")]
         public async Task<string> Delete(string id)
         {
             // 检查关联数据
@@ -709,11 +671,6 @@ namespace XHD.Core.View.Controllers
             if ((await _contractService.GridAsync(c => c.customer_id == id, 1, 1)).count > 0)
             {
                 return XHDResult.Error("此客户下含有合同，不能删除！").ToString();
-            }
-
-            if (!await _dBAuthService.GetAuth(GetUserId(), "CRM_Customer|del"))
-            {
-                return XHDResult.Error("无权限！").ToString();
             }
 
             var customer = (await _service.GridAsync(c => c.id == id, 1, 1)).data.FirstOrDefault();
@@ -843,6 +800,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="id">客户 ID</param>
         /// <returns>标准 XHDResult 字符串</returns>
         [HttpPost("AdvanceDelete")]
+        [ButtonAuth("CRM_Customer", "del", DenyMessage = "无权限！")]
         public async Task<string> AdvanceDelete(string id)
         {
             // 参数校验
@@ -856,12 +814,6 @@ namespace XHD.Core.View.Controllers
             if (customer == null)
             {
                 return XHDResult.Error("系统错误，找不到数据！").ToString();
-            }
-
-            // 按钮权限校验（与 Delete 使用同一按钮键，保证业务口径一致）
-            if (!await _dBAuthService.GetAuth(GetUserId(), "CRM_Customer|del"))
-            {
-                return XHDResult.Error("无权限！").ToString();
             }
 
             // 数据权限校验（预删除属于数据级操作，需检查 authtype 是否允许触及该客户的员工归属）
@@ -929,6 +881,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="id">客户 ID（GUID 格式）</param>
         /// <returns>标准 XHDResult 字符串</returns>
         [HttpPost("regain")]
+        [ButtonAuth("CRM_Customer", "del", DenyMessage = "无权限！")]
         public async Task<string> Regain(string id)
         {
             // 参数校验
@@ -940,12 +893,6 @@ namespace XHD.Core.View.Controllers
             if (!PageValidate.checkID(id))
             {
                 return XHDResult.Error("系统错误，找不到数据！").ToString();
-            }
-
-            // 按钮权限校验（与 AdvanceDelete 使用同一按钮键）
-            if (!await _dBAuthService.GetAuth(GetUserId(), "CRM_Customer|del"))
-            {
-                return XHDResult.Error("无权限！").ToString();
             }
 
             // 数据权限校验（与 AdvanceDelete 保持同一模式）
@@ -1002,6 +949,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="model">移动端提交的客户模型（id 必填）</param>
         /// <returns>标准 XHDResult 字符串</returns>
         [HttpPost("UpdateApp")]
+        [ButtonAuth("CRM_Customer", "edit", DenyMessage = "无权限！")]
         public async Task<string> UpdateApp([FromBody] CRM_Customer model)
         {
             if (model == null || string.IsNullOrWhiteSpace(model.id))
@@ -1012,11 +960,6 @@ namespace XHD.Core.View.Controllers
             if (!PageValidate.checkID(model.id))
             {
                 return XHDResult.Error("客户ID无效").ToString();
-            }
-
-            if (!await CheckAuthAsync("edit"))
-            {
-                return XHDResult.Error("无权限！").ToString();
             }
 
             // 数据权限校验：只能更新自己有权限访问的客户
@@ -1167,14 +1110,9 @@ namespace XHD.Core.View.Controllers
         /// <returns>XHDResult JSON 字符串（含 success/update/error/message 字段）</returns>
         [HttpPost("import")]
         [RequestSizeLimit(11 * 1024 * 1024)]
+        [ButtonAuth("CRM_Customer", "import", DenyMessage = "无权限！")]
         public async Task<string> Import(IFormFile file)
         {
-            // 1. 权限校验
-            if (!await CheckAuthAsync("import"))
-            {
-                return XHDResult.Error("无权限！").ToString();
-            }
-
             // 2. 文件校验
             if (file == null || file.Length == 0)
             {
@@ -1242,13 +1180,9 @@ namespace XHD.Core.View.Controllers
         /// <returns>XHDResult JSON 字符串</returns>
         [HttpPost("adminimport")]
         [RequestSizeLimit(11 * 1024 * 1024)]
+        [ButtonAuth("CRM_Customer", "adminimport", DenyMessage = "无权限！")]
         public async Task<string> AdminImport(IFormFile file)
         {
-            if (!await CheckAuthAsync("adminimport"))
-            {
-                return XHDResult.Error("无权限！").ToString();
-            }
-
             if (file == null || file.Length == 0)
             {
                 return XHDResult.Error("请选择要导入的文件").ToString();

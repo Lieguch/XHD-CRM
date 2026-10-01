@@ -12,6 +12,7 @@ using XHD.Core.IServices;
 using XHD.Core.Common;
 using XHD.Core.Models;
 using XHD.Core.View.Configs;
+using XHD.Core.View.Authorization;
 
 namespace XHD.Core.View.Controllers
 {
@@ -48,10 +49,9 @@ namespace XHD.Core.View.Controllers
         /// <param name="taskId">任务 ID</param>
         /// <returns>标准 XHDResult 字符串</returns>
         [HttpPost("DeleteWhere")]
+        [ButtonAuth("task_follow", "del")]
         public async Task<string> DeleteWhere(string taskId)
         {
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "task_follow|del"))
-                return XHDResult.Error("无操作权限").ToString();
             if (string.IsNullOrWhiteSpace(taskId))
             {
                 return XHDResult.Error("参数错误！").ToString();
@@ -92,10 +92,9 @@ namespace XHD.Core.View.Controllers
         /// id 为空即新建（生成 UUID + follow_id=当前用户 + follow_time=当前时间），
         /// id 有值即更新。
         /// </summary>
+        [ButtonAuth("task_follow", "save")]
         public async Task<string> Save(Task_follow model)
         {
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "task_follow|save"))
-                return XHDResult.Error("无操作权限").ToString();
             if (model == null)
             {
                 return XHDResult.Error("参数错误！").ToString();

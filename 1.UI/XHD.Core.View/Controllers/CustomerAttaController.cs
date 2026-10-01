@@ -22,6 +22,7 @@ using XHD.Core.IServices;
 using XHD.Core.IRepository;
 using XHD.Core.Common;
 using XHD.Core.Models;
+using XHD.Core.View.Authorization;
 
 using Newtonsoft.Json.Converters;
 using System.Collections;
@@ -35,14 +36,12 @@ namespace XHD.Core.View.Controllers
         private readonly ILogger<CustomerAttaController> _logger;
         private readonly ICRM_CustomerService _service;
         private readonly ICRM_Customer_attaService _detailservice;
-        private readonly IDBAuthService _dBAuthService;
 
-        public CustomerAttaController(ILogger<CustomerAttaController> logger, ICRM_CustomerService service, ICRM_Customer_attaService detailservice, IDBAuthService dBAuthService)
+        public CustomerAttaController(ILogger<CustomerAttaController> logger, ICRM_CustomerService service, ICRM_Customer_attaService detailservice)
         {
             _service = service;
             _logger = logger;
             _detailservice = detailservice;
-            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -257,10 +256,9 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
-public async Task<string> Save()
+        [ButtonAuth("crm_customer", "atta")]
+        public async Task<string> Save()
         {
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "crm_customer|atta"))
-                return XHDResult.Error("无操作权限").ToString();
             var claimIdentity = (ClaimsIdentity)User.Identity;
             var emp_id = claimIdentity.FindFirst(ClaimTypes.Sid).Value;
 
@@ -287,10 +285,9 @@ public async Task<string> Save()
             return XHDResult.Success().ToString();
         }
 
+        [ButtonAuth("crm_customer", "atta_del")]
         public async Task<string> Del(string id)
         {
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "crm_customer|atta_del"))
-                return XHDResult.Error("无操作权限").ToString();
             Expression<Func<CRM_Customer_atta, bool>> exp = a => a.id == id;
 
             var data = await _detailservice.GridAsync(exp);

@@ -14,6 +14,7 @@ using XHD.Core.IRepository;
 using XHD.Core.Common;
 using XHD.Core.Models;
 using XHD.Core.View.Configs;
+using XHD.Core.View.Authorization;
 
 namespace XHD.Core.View.Controllers
 {
@@ -32,20 +33,18 @@ namespace XHD.Core.View.Controllers
         private readonly ISMSService _service;
         private readonly ISMSRepository _smsRepo;
         private readonly Ihr_employeeService _empService;
-        private readonly IDBAuthService _dBAuthService;
 
         public SMSController(
             ILogger<SMSController> logger,
             ISMSService service,
             ISMSRepository smsRepo,
-            Ihr_employeeService empService,
-            IDBAuthService dBAuthService)
+            Ihr_employeeService empService
+            )
         {
             _logger = logger;
             _service = service;
             _smsRepo = smsRepo;
             _empService = empService;
-            _dBAuthService = dBAuthService;
         }
 
         // ========== Sprint 10.26a：新增 CRUD ==========
@@ -138,13 +137,9 @@ namespace XHD.Core.View.Controllers
         /// id 空 = 新增，非空 = 编辑（仅编辑标题/内容/联系人/手机号，不改发送状态）。
         /// 校验：标题、内容、手机号不能为空；手机号按逗号分割后逐个校验 11 位。
         /// </summary>
+        [ButtonAuth("sms", "save")]
         public async Task<string> Save(SMS model)
         {
-            if (!await _dBAuthService.GetAuth(GetUserId(), "sms|save"))
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
-
             if (model == null)
             {
                 return XHDResult.Error("参数无效").ToString();
@@ -223,13 +218,9 @@ namespace XHD.Core.View.Controllers
         /// Sprint 10.26a：删除短信（软删除走 isSend + delete 语义）。
         /// 对齐 A 侧 SMS.del.xhd 逻辑：isSend==1 时拒绝删除。
         /// </summary>
+        [ButtonAuth("sms", "del")]
         public async Task<string> Delete(string id)
         {
-            if (!await _dBAuthService.GetAuth(GetUserId(), "sms|del"))
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
-
             if (string.IsNullOrWhiteSpace(id))
             {
                 return XHDResult.Error("短信ID无效").ToString();
@@ -275,17 +266,13 @@ namespace XHD.Core.View.Controllers
         /// 对应 A 侧 Server.SMS.send（Server/SMS.cs:187）。
         /// </summary>
         [HttpPost("send")]
+        [ButtonAuth("sms", "send")]
         public async Task<string> Send(string id)
         {
             var userId = GetUserId();
             if (string.IsNullOrWhiteSpace(userId))
             {
                 return XHDResult.Error("登录状态已过期").ToString();
-            }
-
-            if (!await _dBAuthService.GetAuth(userId, "sms|send"))
-            {
-                return XHDResult.Error("无操作权限").ToString();
             }
 
             var result = await _service.SendAsync(id ?? string.Empty, userId);

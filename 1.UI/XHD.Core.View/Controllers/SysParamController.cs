@@ -24,6 +24,7 @@ using XHD.Core.Models;
 using System.Linq.Expressions;
 using Newtonsoft.Json.Converters;
 using XHD.Core.View.Configs;
+using XHD.Core.View.Authorization;
 
 namespace XHD.Core.View.Controllers
 {
@@ -39,7 +40,6 @@ namespace XHD.Core.View.Controllers
         private readonly IFinance_InvoiceService _InvoiceService;
         private readonly IMessage_newsService _NewsService;
         private readonly ISys_logService _LogService;
-        private readonly IDBAuthService _dBAuthService;
         private readonly SysLogExt<Sys_Param> logext = new SysLogExt<Sys_Param>();  //日志
 
         public SysParamController(ILogger<SysParamController> logger,
@@ -50,7 +50,7 @@ namespace XHD.Core.View.Controllers
             IFinance_ReceiveService ReceiveService,
             IFinance_InvoiceService InvoiceService,
             IMessage_newsService NewsService,
-            ISys_logService LogService, IDBAuthService dBAuthService)
+            ISys_logService LogService)
         {
             _service = service;
             _logger = logger;
@@ -62,7 +62,6 @@ namespace XHD.Core.View.Controllers
             _NewsService = NewsService;
 
             _LogService = LogService;
-            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -98,6 +97,7 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
+        [AnyOfButtonAuth("sys_params|add", "sys_params|edit", DenyMessage = "无权限！")]
         public async Task<string> Save(Sys_Param model)
         {
             var result = 0;
@@ -105,62 +105,42 @@ namespace XHD.Core.View.Controllers
             if (string.IsNullOrWhiteSpace(model.id))
             {
                 model.id = UUIDNext.Uuid.NewSequential().ToString();
-                //权限
-                var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sys_params|add");
-
-                if (authbtn)
-                {
-                    result = await _service.AddAsync(model);
-                }
-                else
-                {
-                    return XHDResult.Error("无权限！").ToString();
-                }
+                result = await _service.AddAsync(model);
             }
             else
             {
-                //权限
-                var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sys_params|edit");
+                //日志
+                Expression<Func<Sys_Param, bool>> exp = a => a.id == model.id;
+                var checknulldata = await _service.GridAsync(exp, 1, 1);
 
-                if (authbtn)
+                if (checknulldata.count == 0)
                 {
-                    //日志
-                    Expression<Func<Sys_Param, bool>> exp = a => a.id == model.id;
-                    var checknulldata = await _service.GridAsync(exp, 1, 1);
-
-                    if (checknulldata.count == 0)
-                    {
-                        return XHDResult.Error("找不到数据！").ToString();
-                    }
-
-                    result = await _service.UpdateAsync(model);
-
-                    //对比实体差别
-
-                    var content = logext.LogContent(checknulldata.data[0], model);
-
-                    if (content.Length > 0)
-                    {
-                        //添加修改日志
-                        Sys_log logmodels = new Sys_log();
-
-                        logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
-                        logmodels.EventType = "[参数]修改";
-                        logmodels.EventID = model.id;
-                        logmodels.EventTitle = model.params_name;
-                        logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
-                        logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
-                        logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
-                        logmodels.EventDate = DateTime.Now;
-                        logmodels.Log_Content = content;
-
-                        
-                        await _LogService.UpdateLog(logmodels);
-                    }
+                    return XHDResult.Error("找不到数据！").ToString();
                 }
-                else
+
+                result = await _service.UpdateAsync(model);
+
+                //对比实体差别
+
+                var content = logext.LogContent(checknulldata.data[0], model);
+
+                if (content.Length > 0)
                 {
-                    return XHDResult.Error("无权限！").ToString();
+                    //添加修改日志
+                    Sys_log logmodels = new Sys_log();
+
+                    logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
+                    logmodels.EventType = "[参数]修改";
+                    logmodels.EventID = model.id;
+                    logmodels.EventTitle = model.params_name;
+                    logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
+                    logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
+                    logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
+                    logmodels.EventDate = DateTime.Now;
+                    logmodels.Log_Content = content;
+
+                    
+                    await _LogService.UpdateLog(logmodels);
                 }
             }
 
@@ -172,6 +152,7 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
+        [ButtonAuth("sys_params", "del", DenyMessage = "无权限！")]
         public async Task<string> Delete(string id)
         {
             Expression<Func<Sys_Param, bool>> expparams = a => a.id == id;
@@ -309,45 +290,35 @@ namespace XHD.Core.View.Controllers
 
             var result = 0;
 
-            //权限
-            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sys_params|del");
+            //判断是否有数据
+            Expression<Func<Sys_Param, bool>> exp = a => a.id == id;
+            var checkdata = await _service.GridAsync(exp, 1, 1);
 
-            if (authbtn)
+            if (checkdata.count == 0)
             {
-                //判断是否有数据
-                Expression<Func<Sys_Param, bool>> exp = a => a.id == id;
-                var checkdata = await _service.GridAsync(exp, 1, 1);
-
-                if (checkdata.count == 0)
-                {
-                    return XHDResult.Error("找不到此数据！").ToString();
-                }
-
-                result = await _service.DeleteAsync(id);
-
-                //先存储删除的实体记录，用日志形式
-                logext.getEntityText(checkdata.data[0]);
-
-                //记录日志
-                Sys_log logmodels = new Sys_log();
-
-                logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
-                logmodels.EventType = "[参数]删除";
-                logmodels.EventID = id;
-                logmodels.EventTitle = checkdata.data[0].params_name;
-                logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
-                logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
-                logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
-                logmodels.EventDate = DateTime.Now;
-                //logmodels.Log_Content = checkdata.data[0].follow_content;
-
-                
-                await _LogService.DeleteLog(logmodels);
+                return XHDResult.Error("找不到此数据！").ToString();
             }
-            else
-            {
-                return XHDResult.Error("无权限！").ToString();
-            }
+
+            result = await _service.DeleteAsync(id);
+
+            //先存储删除的实体记录，用日志形式
+            logext.getEntityText(checkdata.data[0]);
+
+            //记录日志
+            Sys_log logmodels = new Sys_log();
+
+            logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
+            logmodels.EventType = "[参数]删除";
+            logmodels.EventID = id;
+            logmodels.EventTitle = checkdata.data[0].params_name;
+            logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
+            logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
+            logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
+            logmodels.EventDate = DateTime.Now;
+            //logmodels.Log_Content = checkdata.data[0].follow_content;
+
+            
+            await _LogService.DeleteLog(logmodels);
 
             if (result == 0)
             {

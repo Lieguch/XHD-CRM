@@ -30,6 +30,7 @@ using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.View.Configs;
 using XHD.Core.View.Helpers;
+using XHD.Core.View.Authorization;
 
 
 namespace XHD.Core.View.Controllers
@@ -119,6 +120,7 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
+        [AnyOfButtonAuth("CRM_Contact|add", "CRM_Contact|edit", DenyMessage = "无权限！")]
         public async Task<string> Save(CRM_Contact model)
         {
             var result = 0;
@@ -129,64 +131,42 @@ namespace XHD.Core.View.Controllers
                 model.create_id = User.FindFirst(ClaimTypes.Sid).Value;
                 model.create_time = DateTime.Now;
 
-                //权限
-                var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "CRM_Contact|add");
-
-                if (authbtn)
-                {
-                    result = await _service.AddAsync(model);
-                }
-                else
-                {
-                    return XHDResult.Error("无权限！").ToString();
-                }
+                result = await _service.AddAsync(model);
             }
             else
             {
-                //权限
-                var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "CRM_Contact|edit");
+                //日志
+                Expression<Func<CRM_Contact, bool>> exp = a => a.id == model.id;
+                var checknulldata = await _service.GridAsync(exp, 1, 1);
 
-                if (authbtn)
+                if (checknulldata.count == 0)
                 {
-                    //日志
-                    Expression<Func<CRM_Contact, bool>> exp = a => a.id == model.id;
-                    var checknulldata = await _service.GridAsync(exp, 1, 1);
-
-                    if (checknulldata.count == 0)
-                    {
-                        return XHDResult.Error("找不到数据！").ToString();
-                    }
-
-                    result = await _service.UpdateAsync(model);
-
-                    //对比实体差别
-                    
-                    var content = logext.LogContent(checknulldata.data[0], model);
-
-                    if (content.Length > 0)
-                    {
-                        //添加修改日志
-                        Sys_log logmodels = new Sys_log();
-
-                        logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
-                        logmodels.EventType = "[联系人]修改";
-                        logmodels.EventID = model.id;
-                        logmodels.EventTitle = model.C_name;
-                        logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
-                        logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
-                        logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
-                        logmodels.EventDate = DateTime.Now;
-                        logmodels.Log_Content = content;
-
-                        
-                        await _LogService.UpdateLog(logmodels);
-                    }
-
-                    
+                    return XHDResult.Error("找不到数据！").ToString();
                 }
-                else
+
+                result = await _service.UpdateAsync(model);
+
+                //对比实体差别
+
+                var content = logext.LogContent(checknulldata.data[0], model);
+
+                if (content.Length > 0)
                 {
-                    return XHDResult.Error("无权限！").ToString();
+                    //添加修改日志
+                    Sys_log logmodels = new Sys_log();
+
+                    logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
+                    logmodels.EventType = "[联系人]修改";
+                    logmodels.EventID = model.id;
+                    logmodels.EventTitle = model.C_name;
+                    logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
+                    logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
+                    logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
+                    logmodels.EventDate = DateTime.Now;
+                    logmodels.Log_Content = content;
+
+
+                    await _LogService.UpdateLog(logmodels);
                 }
             }
 
@@ -198,6 +178,7 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
+        [ButtonAuth("CRM_Contact", "del", DenyMessage = "无权限！")]
         public async Task<string> Delete(string id)
         {
             //判断是否有跟进
@@ -211,48 +192,38 @@ namespace XHD.Core.View.Controllers
 
             var result = 0;
 
-            //权限
-            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "CRM_Contact|del");
+            //判断是否有数据
+            Expression<Func<CRM_Contact, bool>> exp = a => a.id == id;
+            var checkdata = await _service.GridAsync(exp, 1, 1);
 
-            if (authbtn)
+            if (checkdata.count == 0)
             {
-                //判断是否有数据
-                Expression<Func<CRM_Contact, bool>> exp = a => a.id == id;
-                var checkdata = await _service.GridAsync(exp, 1, 1);
-
-                if (checkdata.count == 0)
-                {
-                    return XHDResult.Error("找不到此数据！").ToString();
-                }
-
-                result = await _service.DeleteAsync(id);
-
-                //日志
-
-                //先存储删除的实体记录，用日志形式
-                logext.getEntityText(checkdata.data[0]);
-
-                //记录日志
-                Sys_log logmodels = new Sys_log();
-
-                logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
-                logmodels.EventType = "[联系人]删除";
-                logmodels.EventID = id;
-                logmodels.EventTitle = checkdata.data[0].C_name;
-                logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
-                logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
-                logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
-                logmodels.EventDate = DateTime.Now;
-                //logmodels.Log_Content = content;
-
-                
-                await _LogService.DeleteLog(logmodels);
-                //await _LogService.DeleteLog(logmodels);
+                return XHDResult.Error("找不到此数据！").ToString();
             }
-            else
-            {
-                return XHDResult.Error("无权限！").ToString();
-            }
+
+            result = await _service.DeleteAsync(id);
+
+            //日志
+
+            //先存储删除的实体记录，用日志形式
+            logext.getEntityText(checkdata.data[0]);
+
+            //记录日志
+            Sys_log logmodels = new Sys_log();
+
+            logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
+            logmodels.EventType = "[联系人]删除";
+            logmodels.EventID = id;
+            logmodels.EventTitle = checkdata.data[0].C_name;
+            logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
+            logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
+            logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
+            logmodels.EventDate = DateTime.Now;
+            //logmodels.Log_Content = content;
+
+
+            await _LogService.DeleteLog(logmodels);
+            //await _LogService.DeleteLog(logmodels);
 
             if (result == 0)
             {
@@ -402,15 +373,9 @@ namespace XHD.Core.View.Controllers
         /// <returns>XHDResult JSON 字符串（含 success/error/message 字段）</returns>
         [HttpPost("import")]
         [RequestSizeLimit(11 * 1024 * 1024)]
+        [ButtonAuth("CRM_Contact", "import", DenyMessage = "无权限！")]
         public async Task<string> Import(IFormFile file)
         {
-            // 1. 权限
-            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "CRM_Contact|import");
-            if (!authbtn)
-            {
-                return XHDResult.Error("无权限！").ToString();
-            }
-
             // 2. 文件校验
             if (file == null || file.Length == 0)
             {

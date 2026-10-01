@@ -6,6 +6,7 @@ using System;
 using XHD.Core.Common;
 using XHD.Core.IServices;
 using XHD.Core.Models;
+using XHD.Core.View.Authorization;
 using Newtonsoft.Json.Linq;
 using System.Data;
 using System.Collections;
@@ -23,20 +24,17 @@ namespace XHD.Core.View.Controllers
         private readonly ISys_MenuService _MenuService;
         private readonly ISys_ButtonService _ButtonService;
         private readonly ISys_authorityService _authorityService;
-        private readonly IDBAuthService _dBAuthService;
 
         public SysAuthController(ILogger<SysAuthController> logger,
              ISys_MenuService MenuService,
              ISys_ButtonService ButtonService,
-             ISys_authorityService authorityService,
-             IDBAuthService dBAuthService
-            )
+             ISys_authorityService authorityService
+             )
         {
             _MenuService = MenuService;
             _authorityService = authorityService;
             _ButtonService = ButtonService;
             _logger = logger;
-            _dBAuthService = dBAuthService;
         }
 
         public async Task<string> Grid()
@@ -165,13 +163,9 @@ namespace XHD.Core.View.Controllers
             return obj.ToString();
         }
 
+        [ButtonAuth("sys_auth", "save")]
         public async Task<string> save()
         {
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sys_auth|save"))
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
-
             Expression<Func<Sys_authority, bool>> exp = a => a.Role_id == Request.Form["role_id"] && a.Auth_id == Request.Form["auth_id"];
 
             await _authorityService.DeleteAsync(exp);

@@ -22,6 +22,7 @@ using XHD.Core.IServices;
 using XHD.Core.IRepository;
 using XHD.Core.Common;
 using XHD.Core.Models;
+using XHD.Core.View.Authorization;
 
 
 
@@ -33,13 +34,11 @@ namespace XHD.Core.View.Controllers
     {
         private readonly ILogger<SysLogController> _logger;
         private readonly ISys_logService _service;
-        private readonly IDBAuthService _dBAuthService;
 
-        public SysLogController(ILogger<SysLogController> logger, ISys_logService service, IDBAuthService dBAuthService)
+        public SysLogController(ILogger<SysLogController> logger, ISys_logService service)
         {
             _service = service;
             _logger = logger;
-            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -47,10 +46,9 @@ namespace XHD.Core.View.Controllers
             return View();
         }
 
+        [ButtonAuth("sys_log", "add")]
         public async Task<IActionResult> Add()
         {
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "sys_log|add"))
-                return View();
             var result = await _service.LogType();
             ViewData["logTypes"] = result["data"];
             return View();

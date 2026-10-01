@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using XHD.Core.Common;
 using XHD.Core.IServices;
 using XHD.Core.Models;
+using XHD.Core.View.Authorization;
 
 namespace XHD.Core.View.Controllers
 {
@@ -30,18 +31,16 @@ namespace XHD.Core.View.Controllers
         private readonly ILogger<DataAuthConfigController> _logger;
         private readonly ISys_roleService _roleService;
         private readonly ISys_logService _logService;
-        private readonly IDBAuthService _dBAuthService;
 
         public DataAuthConfigController(
             ILogger<DataAuthConfigController> logger,
             ISys_roleService roleService,
-            ISys_logService logService,
-            IDBAuthService dBAuthService)
+            ISys_logService logService
+            )
         {
             _logger = logger;
             _roleService = roleService;
             _logService = logService;
-            _dBAuthService = dBAuthService;
         }
 
         /// <summary>
@@ -58,14 +57,9 @@ namespace XHD.Core.View.Controllers
         /// 说明映射：0 无 / 1 本人 / 2 本部 / 3 本部及下级 / 4 全部
         /// </summary>
         [HttpGet("Grid")]
+        [ButtonAuth("sys_role", "edit")]
         public async Task<string> Grid()
         {
-            var userId = GetUserId();
-            if (!await _dBAuthService.GetAuth(userId, "sys_role|edit"))
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
-
             var result = await _roleService.GridAsync(r => true, "RoleSort");
             var roles = result.data ?? new System.Collections.Generic.List<Sys_role>();
 
@@ -89,6 +83,7 @@ namespace XHD.Core.View.Controllers
         /// 保存单个角色的 DataAuth 层级（0-4）。
         /// </summary>
         [HttpPost("Save")]
+        [ButtonAuth("sys_role", "edit", DenyMessage = "无权限！")]
         public async Task<string> Save(string role_id, int? DataAuth)
         {
             if (string.IsNullOrWhiteSpace(role_id))
@@ -105,11 +100,6 @@ namespace XHD.Core.View.Controllers
             if (string.IsNullOrWhiteSpace(userId))
             {
                 return XHDResult.Error("登录状态已过期").ToString();
-            }
-
-            if (!await _dBAuthService.GetAuth(userId, "sys_role|edit"))
-            {
-                return XHDResult.Error("无权限！").ToString();
             }
 
             var old = (await _roleService.GridAsync(r => r.id == role_id, 1, 1)).data.FirstOrDefault();

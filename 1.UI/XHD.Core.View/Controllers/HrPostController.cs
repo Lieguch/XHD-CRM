@@ -14,6 +14,7 @@ using XHD.Core.IServices;
 using XHD.Core.IRepository;
 using XHD.Core.Common;
 using XHD.Core.Models;
+using XHD.Core.View.Authorization;
 using System.Linq.Expressions;
 using XHD.Core.View.Configs;
 

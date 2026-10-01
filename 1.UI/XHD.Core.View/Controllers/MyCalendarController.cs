@@ -23,6 +23,7 @@ using XHD.Core.IRepository;
 using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.View.Configs;
+using XHD.Core.View.Authorization;
 
 namespace XHD.Core.View.Controllers
 {
@@ -53,13 +54,9 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
+        [ButtonAuth("my_calendar", "save")]
         public async Task<string> Save()
         {
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "my_calendar|save"))
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
-
             string requestBody = await new StreamReader(Request.Body).ReadToEndAsync();
             var model = JsonConvert.DeserializeObject<My_Calendar>(requestBody);
 
@@ -139,13 +136,9 @@ namespace XHD.Core.View.Controllers
 
         }
 
+        [ButtonAuth("my_calendar", "del")]
         public async Task<string> Delete(string id)
         {
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "my_calendar|del"))
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
-
             var userId = User.FindFirst(ClaimTypes.Sid).Value;
 
             // 查询记录，校验归属

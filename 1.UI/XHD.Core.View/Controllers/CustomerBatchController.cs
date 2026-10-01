@@ -13,6 +13,7 @@ using XHD.Core.IServices;
 using XHD.Core.Common;
 using XHD.Core.Models;
 using XHD.Core.View.Configs;
+using XHD.Core.View.Authorization;
 
 
 namespace XHD.Core.View.Controllers
@@ -101,14 +102,10 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
+        [ButtonAuth("customer", "save")]
         public async Task<string> Save(CRM_Customer_Bath model)
         {
             var result = 0;
-
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "customer|save"))
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
 
             model.id = UUIDNext.Uuid.NewSequential().ToString();
             model.create_time = DateTime.Now;

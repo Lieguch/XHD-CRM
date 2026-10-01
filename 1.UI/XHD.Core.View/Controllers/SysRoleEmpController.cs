@@ -13,6 +13,7 @@ using XHD.Core.IServices;
 using XHD.Core.IRepository;
 using XHD.Core.Common;
 using XHD.Core.Models;
+using XHD.Core.View.Authorization;
 using System.Linq.Expressions;
 
 namespace XHD.Core.View.Controllers
@@ -29,18 +30,16 @@ namespace XHD.Core.View.Controllers
         private readonly ILogger<SysRoleEmpController> _logger;
         private readonly ISys_role_empService _roleEmpService;
         private readonly ISys_logService _LogService;
-        private readonly IDBAuthService _dBAuthService;
 
         public SysRoleEmpController(
             ILogger<SysRoleEmpController> logger,
             ISys_role_empService roleEmpService,
-            ISys_logService logService,
-            IDBAuthService dBAuthService)
+            ISys_logService logService
+            )
         {
             _logger = logger;
             _roleEmpService = roleEmpService;
             _LogService = logService;
-            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -58,6 +57,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="empids">员工 id 集合（逗号分隔字符串）</param>
         /// <returns>标准 XHDResult 字符串</returns>
         [HttpPost("add")]
+        [AnyOfButtonAuth("Sys_role|edit", "Sys_role_emp|add", DenyMessage = "无权限！")]
         public async Task<string> Add(string role_id, string empids)
         {
             if (string.IsNullOrWhiteSpace(role_id))
@@ -74,16 +74,6 @@ namespace XHD.Core.View.Controllers
             if (string.IsNullOrWhiteSpace(userId))
             {
                 return XHDResult.Error("登录状态已过期").ToString();
-            }
-
-            var authbtn = await _dBAuthService.GetAuth(userId, "Sys_role|edit");
-            if (!authbtn)
-            {
-                authbtn = await _dBAuthService.GetAuth(userId, "Sys_role_emp|add");
-            }
-            if (!authbtn)
-            {
-                return XHDResult.Error("无权限！").ToString();
             }
 
             // 解析逗号分隔字符串（对齐 A 侧 TrimEnd(',') + Split(',')）
@@ -116,6 +106,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="empids">员工 id 集合（逗号分隔字符串）</param>
         /// <returns>标准 XHDResult 字符串</returns>
         [HttpPost("remove")]
+        [AnyOfButtonAuth("Sys_role|edit", "Sys_role_emp|del", DenyMessage = "无权限！")]
         public async Task<string> Remove(string role_id, string empids)
         {
             if (string.IsNullOrWhiteSpace(role_id))
@@ -132,16 +123,6 @@ namespace XHD.Core.View.Controllers
             if (string.IsNullOrWhiteSpace(userId))
             {
                 return XHDResult.Error("登录状态已过期").ToString();
-            }
-
-            var authbtn = await _dBAuthService.GetAuth(userId, "Sys_role|edit");
-            if (!authbtn)
-            {
-                authbtn = await _dBAuthService.GetAuth(userId, "Sys_role_emp|del");
-            }
-            if (!authbtn)
-            {
-                return XHDResult.Error("无权限！").ToString();
             }
 
             var empIdList = empids

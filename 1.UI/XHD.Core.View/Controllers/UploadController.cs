@@ -17,6 +17,7 @@ using XHD.Core.IServices;
 using XHD.Core.Models;
 using System.Security.Claims;
 using XHD.Core.Common;
+using XHD.Core.View.Authorization;
 
 namespace XHD.Core.View.Controllers
 {
@@ -24,20 +25,17 @@ namespace XHD.Core.View.Controllers
     public class UploadController : Controller
     {
         private readonly ICRM_Customer_attaService _customerattaservice;
-        private readonly IDBAuthService _dBAuthService;
         private readonly ILogger<UploadController> _logger;
 
-        public UploadController(ICRM_Customer_attaService customerattaservice, IDBAuthService dBAuthService, ILogger<UploadController> logger)
+        public UploadController(ICRM_Customer_attaService customerattaservice, ILogger<UploadController> logger)
         {
             _customerattaservice = customerattaservice;
-            _dBAuthService = dBAuthService;
             _logger = logger;
         }
 
+        [ButtonAuth("upload", "image")]
         public async Task<string> Image()
         {
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "upload|image"))
-                return XHDResult.Error("无操作权限").ToString();
             byte[] buffer = Guid.NewGuid().ToByteArray();
             var out_trad_id = BitConverter.ToInt64(buffer, 0).ToString();
 
@@ -81,10 +79,9 @@ namespace XHD.Core.View.Controllers
         }
 
         [DisableRequestSizeLimit]
+        [ButtonAuth("upload", "fileup")]
         public async Task<string> FileUp()
         {
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "upload|fileup"))
-                return XHDResult.Error("无操作权限").ToString();
             byte[] buffer = Guid.NewGuid().ToByteArray();
             var out_trad_id = BitConverter.ToInt64(buffer, 0).ToString();
 
@@ -134,10 +131,9 @@ namespace XHD.Core.View.Controllers
         /// <param name="fileName">客户端接收的文件名（如 "我的报告.pdf"）</param>
         /// <returns>文件流</returns>
 
+        [ButtonAuth("crm_customer", "atta_download")]
         public async Task<IActionResult> DownloadCustomerAtta(string id)
         {
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "crm_customer|atta_download"))
-                return BadRequest("无操作权限");
             id = Path.GetFileName(id);
             if (string.IsNullOrWhiteSpace(id) || id.Contains("..") || id.Contains("/") || id.Contains("\\"))
                 return BadRequest("非法文件名");
@@ -205,10 +201,9 @@ namespace XHD.Core.View.Controllers
         /// <returns>标准 XHDResult 字符串（msg 为落盘文件名）</returns>
         [DisableRequestSizeLimit]
         [HttpPost("cus_import")]
+        [ButtonAuth("crm_customer", "cus_import")]
         public async Task<string> CusImport(IFormFile file)
         {
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "crm_customer|cus_import"))
-                return XHDResult.Error("无操作权限").ToString();
             if (file == null || file.Length == 0)
             {
                 return XHDResult.Error("未选择文件").ToString();
@@ -240,10 +235,9 @@ namespace XHD.Core.View.Controllers
         /// <returns>标准 XHDResult 字符串（msg 为落盘文件名）</returns>
         [DisableRequestSizeLimit]
         [HttpPost("contact_import")]
+        [ButtonAuth("crm_contact", "contact_import")]
         public async Task<string> ContactImport(IFormFile file)
         {
-            if (!await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "crm_contact|contact_import"))
-                return XHDResult.Error("无操作权限").ToString();
             if (file == null || file.Length == 0)
             {
                 return XHDResult.Error("未选择文件").ToString();

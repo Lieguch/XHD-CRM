@@ -11,6 +11,7 @@ using XHD.Core.Common;
 using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.View.Configs;
+using XHD.Core.View.Authorization;
 
 namespace XHD.Core.View.Controllers
 {
@@ -21,21 +22,19 @@ namespace XHD.Core.View.Controllers
         private readonly ISys_roleService _service;
         private readonly Ihr_employeeService _employeeService;
         private readonly ISys_logService _logService;
-        private readonly IDBAuthService _dBAuthService;
         private readonly SysLogExt<Sys_role> _logExt = new();
 
         public SysRoleController(
             ILogger<SysRoleController> logger,
             Ihr_employeeService roleEmpService,
             ISys_roleService service,
-            ISys_logService logService,
-            IDBAuthService dBAuthService)
+            ISys_logService logService
+            )
         {
             _logger = logger;
             _employeeService = roleEmpService;
             _service = service;
             _logService = logService;
-            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -59,16 +58,12 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
+        [AnyOfButtonAuth("sys_role|add", "sys_role|edit", DenyMessage = "无权限！")]
         public async Task<string> Save(Sys_role model)
         {
             if (string.IsNullOrWhiteSpace(model.id))
             {
                 // 新增
-                if (!await _dBAuthService.GetAuth(GetUserId(), "sys_role|add"))
-                {
-                    return XHDResult.Error("无权限！").ToString();
-                }
-
                 model.id = UUIDNext.Uuid.NewSequential().ToString();
                 var result = await _service.AddAsync(model);
                 if (result == 0)
@@ -79,11 +74,6 @@ namespace XHD.Core.View.Controllers
             else
             {
                 // 编辑
-                if (!await _dBAuthService.GetAuth(GetUserId(), "sys_role|edit"))
-                {
-                    return XHDResult.Error("无权限！").ToString();
-                }
-
                 var old = (await _service.GridAsync(r => r.id == model.id, 1, 1)).data.FirstOrDefault();
                 if (old == null)
                 {
@@ -117,17 +107,13 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
+        [ButtonAuth("sys_role", "del", DenyMessage = "无权限！")]
         public async Task<string> Del(string id)
         {
             // 检查角色下是否有员工
             if ((await _employeeService.GridAsync(re => re.role_id == id, 1, 1)).count > 0)
             {
                 return XHDResult.Error("此角色下有员工，不能删除！").ToString();
-            }
-
-            if (!await _dBAuthService.GetAuth(GetUserId(), "sys_role|del"))
-            {
-                return XHDResult.Error("无权限！").ToString();
             }
 
             var role = (await _service.GridAsync(r => r.id == id, 1, 1)).data.FirstOrDefault();

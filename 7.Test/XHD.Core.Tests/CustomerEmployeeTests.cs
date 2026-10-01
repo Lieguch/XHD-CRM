@@ -7,12 +7,15 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using XHD.Core.Common;
 using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.Repository;
+using XHD.Core.Tests.Authorization;
+using XHD.Core.View.Authorization;
 using XHD.Core.View.Controllers;
 using Xunit;
 
@@ -291,23 +294,26 @@ namespace XHD.Core.Tests
         [Fact]
         public async Task Regain_NoDelButtonPermission_ReturnsPermissionDenied()
         {
-            // Arrange：del 按钮权限被拒
+            // Sprint 10.39：Regain 的按钮授权已迁移到 [ButtonAuth("CRM_Customer", "del")]。
+            // 直接调方法不再触发授权（预期行为），这里驱动真实过滤器验证拒绝语义。
+            var attr = typeof(CustomerController)
+                .GetMethod(nameof(CustomerController.Regain))!
+                .GetCustomAttribute<ButtonAuthAttribute>();
+            Assert.NotNull(attr);
+            Assert.Equal("CRM_Customer|del", attr!.AuthId);
+
+            // Arrange：del 按钮权限被拒，且库里存在一个已软删的客户
             var custId = Guid.NewGuid().ToString();
             await InsertCustomerAsync(NewCustomer(custId, isDelete: 1));
-            var logMock = new Mock<ISys_logService>();
 
-            var ctrl = CreateCustomerController(CreateFullAccessAuth(grantDel: false), logMock);
+            var auth = new Mock<IDBAuthService>();
+            auth.Setup(a => a.GetAuth("TEST_USER", "CRM_Customer|del")).ReturnsAsync(false);
 
             // Act
-            var json = await ctrl.Regain(custId);
-            var obj = JObject.Parse(json);
+            var result = await AuthFilterTestHarness.RunAuthFilterAsync(attr, "TEST_USER", auth.Object);
 
-            // Assert
-            Assert.Equal(-1, (int)obj["code"]!);
-            Assert.Contains("无权限", (string)obj["msg"]!);
-
-            // 关键：无权限不写 Sys_log、不改数据
-            logMock.Verify(l => l.DeleteLog(It.IsAny<Sys_log>()), Times.Never);
+            // Assert：拒绝，且拒绝路径完全不碰数据
+            AuthFilterTestHarness.AssertDenied(result, "无权限");
             var rows = await _fsql.Select<CRM_Customer>().Where(a => a.id == custId).ToListAsync();
             Assert.Equal(1, rows[0].isDelete);
         }

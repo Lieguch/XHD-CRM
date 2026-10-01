@@ -25,6 +25,7 @@ using System.Linq.Expressions;
 using Newtonsoft.Json.Converters;
 using System.Collections;
 using XHD.Core.View.Configs;
+using XHD.Core.View.Authorization;
 
 namespace XHD.Core.View.Controllers
 {
@@ -100,6 +101,7 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
+        [AnyOfButtonAuth("Finance_Invoice|add", "Finance_Invoice|edit", DenyMessage = "无权限！")]
         public async Task<string> Save(Finance_Invoice model)
         {
             var result = 0;
@@ -110,61 +112,41 @@ namespace XHD.Core.View.Controllers
                 model.create_id = User.FindFirst(ClaimTypes.Sid).Value;
                 model.create_time = DateTime.Now;
 
-                //权限
-                var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "Finance_Invoice|add");
-
-                if (authbtn)
-                {
-                    result = await _service.AddAsync(model);
-                }
-                else
-                {
-                    return XHDResult.Error("无权限！").ToString();
-                }
+                result = await _service.AddAsync(model);
             }
             else
             {
-                //权限
-                var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "Finance_Invoice|edit");
+                //日志
+                Expression<Func<Finance_Invoice, bool>> exp = a => a.id == model.id;
+                var checknulldata = await _service.GridAsync(exp, 1, 1);
 
-                if (authbtn)
+                if (checknulldata.count == 0)
                 {
-                    //日志
-                    Expression<Func<Finance_Invoice, bool>> exp = a => a.id == model.id;
-                    var checknulldata = await _service.GridAsync(exp, 1, 1);
-
-                    if (checknulldata.count == 0)
-                    {
-                        return XHDResult.Error("找不到数据！").ToString();
-                    }
-
-                    result = await _service.UpdateAsync(model);
-
-                    //对比实体差别
-
-                    var content = logext.LogContent(checknulldata.data[0], model);
-
-                    if (content.Length > 0)
-                    {
-                        //添加修改日志
-                        Sys_log logmodels = new Sys_log();
-
-                        logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
-                        logmodels.EventType = "[发票]修改";
-                        logmodels.EventID = model.id;
-                        logmodels.EventTitle = model.invoice_num;
-                        logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
-                        logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
-                        logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
-                        logmodels.EventDate = DateTime.Now;
-                        logmodels.Log_Content = content;
-                        
-                        await _LogService.UpdateLog(logmodels);
-                    }
+                    return XHDResult.Error("找不到数据！").ToString();
                 }
-                else
+
+                result = await _service.UpdateAsync(model);
+
+                //对比实体差别
+
+                var content = logext.LogContent(checknulldata.data[0], model);
+
+                if (content.Length > 0)
                 {
-                    return XHDResult.Error("无权限！").ToString();
+                    //添加修改日志
+                    Sys_log logmodels = new Sys_log();
+
+                    logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
+                    logmodels.EventType = "[发票]修改";
+                    logmodels.EventID = model.id;
+                    logmodels.EventTitle = model.invoice_num;
+                    logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
+                    logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
+                    logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
+                    logmodels.EventDate = DateTime.Now;
+                    logmodels.Log_Content = content;
+
+                    await _LogService.UpdateLog(logmodels);
                 }
             }
 
@@ -179,6 +161,7 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
+        [ButtonAuth("Finance_Invoice", "del", DenyMessage = "无权限！")]
         public async Task<string> Delete(string id)
         {
             //先查询信息
@@ -192,36 +175,26 @@ namespace XHD.Core.View.Controllers
 
             var result = 0;
 
-            //权限
-            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "Finance_Invoice|del");
+            result = await _service.DeleteAsync(id);
 
-            if (authbtn)
-            {
-                result = await _service.DeleteAsync(id);
+            //先存储删除的实体记录，用日志形式
+            logext.getEntityText(invoiceInfo.data[0]);
 
-                //先存储删除的实体记录，用日志形式
-                logext.getEntityText(invoiceInfo.data[0]);
+            //记录日志
+            Sys_log logmodels = new Sys_log();
 
-                //记录日志
-                Sys_log logmodels = new Sys_log();
+            logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
+            logmodels.EventType = "[发票]删除";
+            logmodels.EventID = id;
+            logmodels.EventTitle = invoiceInfo.data[0].invoice_num;
+            logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
+            logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
+            logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
+            logmodels.EventDate = DateTime.Now;
+            //logmodels.Log_Content = checkdata.data[0].follow_content;
 
-                logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
-                logmodels.EventType = "[发票]删除";
-                logmodels.EventID = id;
-                logmodels.EventTitle = invoiceInfo.data[0].invoice_num;
-                logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
-                logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
-                logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
-                logmodels.EventDate = DateTime.Now;
-                //logmodels.Log_Content = checkdata.data[0].follow_content;
 
-                
-                await _LogService.DeleteLog(logmodels);
-            }
-            else
-            {
-                return XHDResult.Error("无权限！").ToString();
-            }
+            await _LogService.DeleteLog(logmodels);
 
             if (result == 0)
             {

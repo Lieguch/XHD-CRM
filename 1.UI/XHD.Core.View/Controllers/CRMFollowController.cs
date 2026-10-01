@@ -25,6 +25,7 @@ using System.Linq.Expressions;
 using Newtonsoft.Json.Converters;
 using System.Collections;
 using XHD.Core.View.Configs;
+using XHD.Core.View.Authorization;
 
 
 
@@ -109,6 +110,7 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
+        [AnyOfButtonAuth("CRM_Follow|add", "CRM_Follow|edit", DenyMessage = "无权限！")]
         public async Task<string> Save(CRM_follow model)
         {
             var result = 0;
@@ -119,64 +121,43 @@ namespace XHD.Core.View.Controllers
                 model.employee_id = User.FindFirst(ClaimTypes.Sid).Value;
                 model.follow_time = DateTime.Now;
 
-                //权限
-                var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "CRM_Follow|add");
+                result = await _service.AddAsync(model);
 
-                if (authbtn)
-                {
-                    result = await _service.AddAsync(model);
-
-                    await _customerService.LastFollow(model.customer_id);
-
-                }
-                else
-                {
-                    return XHDResult.Error("无权限！").ToString();
-                }
+                await _customerService.LastFollow(model.customer_id);
             }
             else
             {
-                //权限
-                var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "CRM_Follow|edit");
+                //日志
+                Expression<Func<CRM_follow, bool>> exp = a => a.id == model.id;
+                var checknulldata = await _service.GridAsync(exp, 1, 1);
 
-                if (authbtn)
+                if (checknulldata.count == 0)
                 {
-                    //日志
-                    Expression<Func<CRM_follow, bool>> exp = a => a.id == model.id;
-                    var checknulldata = await _service.GridAsync(exp, 1, 1);
-
-                    if (checknulldata.count == 0)
-                    {
-                        return XHDResult.Error("找不到数据！").ToString();
-                    }
-
-                    result = await _service.UpdateAsync(model);
-
-                    //对比实体差别
-                    
-                    var content = logext.LogContent(checknulldata.data[0], model);
-
-                    if (content.Length > 0)
-                    {
-                        //添加修改日志
-                        Sys_log logmodels = new Sys_log();
-
-                        logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
-                        logmodels.EventType = "[跟进]修改";
-                        logmodels.EventID = model.id;
-                        logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
-                        logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
-                        logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
-                        logmodels.EventDate = DateTime.Now;
-                        logmodels.Log_Content = content;
-
-                        
-                        await _LogService.UpdateLog(logmodels);
-                    }
+                    return XHDResult.Error("找不到数据！").ToString();
                 }
-                else
+
+                result = await _service.UpdateAsync(model);
+
+                //对比实体差别
+
+                var content = logext.LogContent(checknulldata.data[0], model);
+
+                if (content.Length > 0)
                 {
-                    return XHDResult.Error("无权限！").ToString();
+                    //添加修改日志
+                    Sys_log logmodels = new Sys_log();
+
+                    logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
+                    logmodels.EventType = "[跟进]修改";
+                    logmodels.EventID = model.id;
+                    logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
+                    logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
+                    logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
+                    logmodels.EventDate = DateTime.Now;
+                    logmodels.Log_Content = content;
+
+
+                    await _LogService.UpdateLog(logmodels);
                 }
             }
 
@@ -188,51 +169,42 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
+        [ButtonAuth("CRM_Follow", "del", DenyMessage = "无权限！")]
         public async Task<string> Delete(string id)
         {
             var result = 0;
 
-            //权限
-            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "CRM_Follow|del");
+            //判断是否有数据
+            Expression<Func<CRM_follow, bool>> exp = a => a.id == id;
+            var checkdata = await _service.GridAsync(exp, 1, 1);
 
-            if (authbtn)
+            if (checkdata.count == 0)
             {
-                //判断是否有数据
-                Expression<Func<CRM_follow, bool>> exp = a => a.id == id;
-                var checkdata = await _service.GridAsync(exp, 1, 1);
-
-                if (checkdata.count == 0)
-                {
-                    return XHDResult.Error("找不到此数据！").ToString();
-                }
-
-                result = await _service.DeleteAsync(id);
-
-                //日志
-
-                //先存储删除的实体记录，用日志形式
-                logext.getEntityText(checkdata.data[0]);
-
-                //记录日志
-                Sys_log logmodels = new Sys_log();
-
-                logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
-                logmodels.EventType = "[跟进]删除";
-                logmodels.EventID = id;
-                logmodels.EventTitle = checkdata.data[0].id;
-                logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
-                logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
-                logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
-                logmodels.EventDate = DateTime.Now;
-                logmodels.Log_Content = checkdata.data[0].follow_content;
-
-                
-                await _LogService.DeleteLog(logmodels);
+                return XHDResult.Error("找不到此数据！").ToString();
             }
-            else
-            {
-                return XHDResult.Error("无权限！").ToString();
-            }
+
+            result = await _service.DeleteAsync(id);
+
+            //日志
+
+            //先存储删除的实体记录，用日志形式
+            logext.getEntityText(checkdata.data[0]);
+
+            //记录日志
+            Sys_log logmodels = new Sys_log();
+
+            logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
+            logmodels.EventType = "[跟进]删除";
+            logmodels.EventID = id;
+            logmodels.EventTitle = checkdata.data[0].id;
+            logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
+            logmodels.UserName = User.FindFirst(ClaimTypes.Name).Value;
+            logmodels.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
+            logmodels.EventDate = DateTime.Now;
+            logmodels.Log_Content = checkdata.data[0].follow_content;
+
+
+            await _LogService.DeleteLog(logmodels);
 
             if (result == 0)
             {

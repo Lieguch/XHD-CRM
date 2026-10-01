@@ -16,6 +16,7 @@ using XHD.Core.Common;
 using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.View.Configs;
+using XHD.Core.View.Authorization;
 
 namespace XHD.Core.View.Controllers
 {
@@ -114,13 +115,9 @@ namespace XHD.Core.View.Controllers
         /// 关键修复点：id 为空即新建（生成 UUID + create_id + create_time），
         /// id 有值即更新；避免重复 JobsController.Save 的"新建返回无权限"逻辑反了 bug。
         /// </summary>
+        [ButtonAuth("task", "save")]
         public async Task<string> Save(TaskInfo model)
         {
-            if (!await _dBAuthService.GetAuth(GetUserId(), "task|save"))
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
-
             if (model == null || string.IsNullOrWhiteSpace(model.task_title))
             {
                 return XHDResult.Error("任务标题不能为空！").ToString();
@@ -179,13 +176,9 @@ namespace XHD.Core.View.Controllers
         /// <summary>
         /// 删除任务，级联删除该任务下的所有 Task_follow 记录。
         /// </summary>
+        [ButtonAuth("task", "del")]
         public async Task<string> Delete(string id)
         {
-            if (!await _dBAuthService.GetAuth(GetUserId(), "task|del"))
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
-
             if (string.IsNullOrWhiteSpace(id))
             {
                 return XHDResult.Error("参数错误！").ToString();
@@ -213,13 +206,9 @@ namespace XHD.Core.View.Controllers
         /// 更新任务状态：0=进行中 / 1=已完成 / 2=已中止。
         /// 状态置为 1 时同步 is_check=1，模拟 A 侧勾选交互。
         /// </summary>
+        [ButtonAuth("task", "edit")]
         public async Task<string> UpdateStatus(string id, int status)
         {
-            if (!await _dBAuthService.GetAuth(GetUserId(), "task|edit"))
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
-
             if (string.IsNullOrWhiteSpace(id))
             {
                 return XHDResult.Error("参数错误！").ToString();
@@ -274,6 +263,9 @@ namespace XHD.Core.View.Controllers
                 return XHDResult.Error("参数错误！").ToString();
             }
 
+            // Sprint 10.39 迁移例外（有意保留）：本检查是数据权限(authtype)与按钮权限的复合条件，
+            // 且仅在"查看他人待办"时触发 —— 条件依赖请求数据，静态授权属性无法表达。
+            // 若日后要收口，需引入条件授权策略(Policy)而非 [ButtonAuth]。
             // 查看他人待办需要 view_others 权限或 admin
             if (exec != currentUserId)
             {

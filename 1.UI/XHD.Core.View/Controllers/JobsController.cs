@@ -20,6 +20,7 @@ using XHD.Core.IServices;
 using XHD.Core.IRepository;
 using XHD.Core.Common;
 using XHD.Core.Models;
+using XHD.Core.View.Authorization;
 
 using System.Linq.Expressions;
 using Newtonsoft.Json.Converters;
@@ -33,12 +34,10 @@ namespace XHD.Core.View.Controllers
     public class JobsController : Controller
     {
         private readonly IJobsService _service;
-        private readonly IDBAuthService _dBAuthService;
 
-        public JobsController(IJobsService service, IDBAuthService dBAuthService)
+        public JobsController(IJobsService service)
         {
             _service = service;
-            _dBAuthService = dBAuthService;
         }
 
         //管理页
@@ -67,15 +66,10 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
+        [ButtonAuth("jobs", "save")]
         public async Task<string> Save(Jobs model)
         {
             var result = 0;
-
-            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "jobs|save");
-            if (!authbtn)
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
 
             if (string.IsNullOrWhiteSpace(model.id))
             {
@@ -119,15 +113,10 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
+        [ButtonAuth("jobs", "del")]
         public async Task<string> Delete(string id)
         {
             var result = 0;
-
-            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "jobs|del");
-            if (!authbtn)
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
 
             //判断是否有数据
             Expression<Func<Jobs, bool>> exp = a => a.id == id;

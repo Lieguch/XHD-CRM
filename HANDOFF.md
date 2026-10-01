@@ -204,3 +204,69 @@ Moq loose mock 默认返回 `false`，把我新加的 `CheckAuthAsync("edit")` �
       python3 _art_295.py <run_id>
       ```
 - [ ] 任务 #176（SysButtons 种子缺口）需单独排期
+
+---
+
+# Sprint 10.39 — 声明式授权迁移（接续 10.38）
+
+**本地 HEAD**: `80fd3e6`（`0655348` 之上，1 个提交，42 files / +1655 −817）
+**验证分支（CNB）**: `sprint10.39-verify` @ `80fd3e6`
+**CNB 云开发构建**: `cnb-2b6-1k3qk6h3h`（api_trigger，8cpu/16GB，dotnet SDK 8.0）
+**构建日志**: https://cnb.cool/lieguch/XHD-CRM/-/build/logs/cnb-2b6-1k3qk6h3h
+
+## 本轮做了什么
+
+1. **声明式授权迁移**：31 个控制器的内联 `if (!await _dBAuthService.GetAuth(...)) return ...`
+   迁移为 `[ButtonAuth(menu, op)]` / `[AnyOfButtonAuth(...)]` / `[AdminOnly]` MVC 过滤器属性。
+2. **新增 `1.UI/XHD.Core.View/Authorization/`（8 文件）**：
+   `ButtonAuthAttribute`（`IAsyncAuthorizationFilter`，`AuthId = "menu|operation"`，
+   admin 大小写不敏感短路）、`AnyOfButtonAuthAttribute`（OR 短路）、`AdminOnlyAttribute`、
+   `AuthDeny`（HTTP 200 + JSON，与全仓 `res.code` 前端契约一致，不用 403）、
+   `AuthCatalog` + `AuthCatalogReconciler`（`IHostedService`，启动期反射收集声明作为
+   **唯一真源**与 `Sys_Button` 求差集，缺失幂等 upsert，孤儿只告警不删；声明为空直接抛异常阻止启动；
+   DB 不可达不阻止启动，后台重试 6 次×2s）、`DataScope`（authtype→过滤语义解析）、
+   `RawJsonStringResultFilter`（字符串 JSON 返回改 content-type）。
+3. **`#183` 根因修复（`Sys_MenuRepository.GetMenuByEmpID`）**：旧实现取**员工 id** 去比
+   `Sys_authority.Role_id`（角色 id），命名空间永不相交 ⇒ 所有非 admin 用户菜单永远为空。
+   新实现走 `hr_employee.role_id` + `Sys_role_emp`（过滤 `isDelete == null || isDelete == 0`）
+   → Distinct → `Sys_authority`（`Auth_type == 2`）→ 展开逗号分隔 `Auth_id`。
+4. **迁移残留清理（本轮新发现并已修）**：
+   - `SystemController.CheckAdminAsync()` —— 7 个调用点全部迁到 `[AdminOnly]` 后成为**死代码**，
+     连同唯一引用它的 `_dBAuthService` 字段、构造函数参数、`using System.Security.Claims`、
+     `using XHD.Core.IServices` 一并删除。
+   - 另外 **13 个控制器**的 `_dBAuthService` 字段在迁移后再无调用点（只剩字段声明 + 构造函数赋值）：
+     `CustomerAtta / DataAuthConfig / Jobs / SMS / SaleContractAtta / SysAuth / SysInfo /
+     SysLog / SysMenu / SysParam / SysRole / SysRoleEmp / Upload`。
+     字段 + 构造函数参数 + 赋值全部删除（每文件改后 `IDBAuthService` 引用计数 = 0，
+     构造函数括号配对已逐个肉眼复核）。
+5. **`Startup.cs`**：`AddControllersWithViews(options => options.Filters.Add<RawJsonStringResultFilter>())`
+   + `services.AddHostedService<AuthCatalogReconciler>()`（在 `AddDb(_env)` 之后）。
+6. **`7.Test/XHD.Core.Tests/AuthInfrastructureTests.cs`（273 行，新增）**：
+   覆盖 `AuthCatalog.Collect`（方法级/类级、只采集 Controller 子类型、确定性排序、null 抛异常）、
+   `Reconcile`（Missing/Orphans/干净）、`ButtonAuthAttribute`（组合 AuthId、空段拒绝）、
+   `AnyOfButtonAuthAttribute`（多 id/单 id 拒绝/去重）、`DataScope`（authtype=4 不过滤、0-3 过滤、
+   null 容错、**admin 形状防混淆**：`authtype=4+空 empList` 与 `authtype=0+空 empList` 结论必须相反）。
+   > 关键陷阱：`TestAssembly` 必须是 `typeof(AuthInfrastructureTests).Assembly`，
+   > 写成 `ButtonAuthAttribute.Assembly` 会扫不到本程序集的嵌套假控制器。
+
+## 有意的部分迁移（不是遗漏）
+
+剩余 57 处 `_dBAuthService.GetAuth(`（有参）+ 77 处 `CheckAuthAsync/CheckAdminAsync/authtype !=`
+是**刻意保留**的：条件式判定（如「有 edit 权限则走 A 分支否则走 B」）、跨用户数据权限过滤、
+动态按钮渲染等场景不适合属性化。`grep "GetAuth(\s*)"`（无参）= 0。
+
+## 跳出「本机无 SDK → 盲推 CI」的绕圈
+
+本机无 dotnet SDK，此前只能「静态猜 → 推 GitHub CI → 挂了再盲修」。本轮改用用户指定的
+**CNB 云开发通道**（`$:api_trigger`，配额池与构建通道独立，dotnet SDK 8.0，16GB/8cpu）
+做真机构建验证：`sprint10.39-verify` 分支 + `cnb build start-build --event api_trigger`。
+> 注：本地仓是**浅克隆**（shallow boundary `e4d6999`），CNB 拒绝 shallow update。
+> 已 `git fetch --unshallow origin` 补全历史（335 commits），push 成功。
+
+## 三仓库分叉（未解决，下个 agent 注意）
+
+- GitHub `origin/main` = 本地 HEAD 的内容等价基线（仅 CRLF/LF 差异）
+- CNB `cnb/main` = `0e02d59`，与本地在 `f91fde7`（Sprint 10.33 v12）之后**完全分叉**：
+  CNB 有本地没有的 11 个「数据权限注入脚本」提交，本地有 CNB 没有的 17 个审计修复提交。
+  本轮**没有**合并，只在 CNB 建了新分支 `sprint10.39-verify` 做构建验证。
+  ⇒ 合并两条线是后续必办项（建议以 GitHub 侧为准，把 CNB 11 个提交的实质改动 cherry-pick 或重放）。

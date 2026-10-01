@@ -10,6 +10,7 @@ using System.Data;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Reflection;
 using System.Security.Claims;
 using System.Threading.Tasks;
 using XHD.Core.Common;
@@ -17,6 +18,8 @@ using XHD.Core.Common.Excel;
 using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.Repository;
+using XHD.Core.Tests.Authorization;
+using XHD.Core.View.Authorization;
 using XHD.Core.View.Controllers;
 using XHD.Core.View.Helpers;
 using Xunit;
@@ -279,15 +282,21 @@ namespace XHD.Core.Tests
         [Fact]
         public async Task Import_NoPermission_ReturnsError()
         {
-            var ctrl = CreateCustomerController(grantImport: false);
-            var bytes = BuildExcelBytes(
-                new[] { "客户名字", "地址", "电话" },
-                new[] { new object[] { "新客户", "地址1", "139" } });
-            var file = CreateFormFile("test.xlsx", bytes);
-            var result = await ctrl.Import(file);
-            var json = JObject.Parse(result);
-            Assert.Equal(-1, json["code"].Value<int>());
-            Assert.Contains("无权限", json["msg"].Value<string>());
+            // Sprint 10.39：Import 的授权已迁移到 [ButtonAuth] 过滤器，方法体内不再判断。
+            // 直接调方法不会触发授权（预期行为），所以这里驱动真实过滤器验证拒绝语义，
+            // 并同时断言方法确实挂着正确的 auth_id（删掉属性会立刻让这个断言挂掉）。
+            var attr = typeof(CustomerController)
+                .GetMethod(nameof(CustomerController.Import))!
+                .GetCustomAttribute<ButtonAuthAttribute>();
+            Assert.NotNull(attr);
+            Assert.Equal("CRM_Customer|import", attr!.AuthId);
+
+            var auth = new Mock<IDBAuthService>();
+            auth.Setup(a => a.GetAuth("TEST_USER", "CRM_Customer|import"))
+                .ReturnsAsync(false);
+
+            var result = await AuthFilterTestHarness.RunAuthFilterAsync(attr, "TEST_USER", auth.Object);
+            AuthFilterTestHarness.AssertDenied(result, "无权限");
         }
 
         [Fact]
@@ -486,16 +495,19 @@ namespace XHD.Core.Tests
         [Fact]
         public async Task AdminImport_NoPermission_ReturnsError()
         {
-            await SeedCodeTablesAsync();
-            var ctrl = CreateCustomerController(grantAdminImport: false);
-            var bytes = BuildExcelBytes(
-                new[] { "客户名字" },
-                new[] { new object[] { "管理员新客户" } });
-            var file = CreateFormFile("test.xlsx", bytes);
-            var result = await ctrl.AdminImport(file);
-            var json = JObject.Parse(result);
-            Assert.Equal(-1, json["code"].Value<int>());
-            Assert.Contains("无权限", json["msg"].Value<string>());
+            // Sprint 10.39：AdminImport 的授权已迁移到 [ButtonAuth] 过滤器（见 Import_NoPermission 注释）。
+            var attr = typeof(CustomerController)
+                .GetMethod(nameof(CustomerController.AdminImport))!
+                .GetCustomAttribute<ButtonAuthAttribute>();
+            Assert.NotNull(attr);
+            Assert.Equal("CRM_Customer|adminimport", attr!.AuthId);
+
+            var auth = new Mock<IDBAuthService>();
+            auth.Setup(a => a.GetAuth("TEST_USER", "CRM_Customer|adminimport"))
+                .ReturnsAsync(false);
+
+            var result = await AuthFilterTestHarness.RunAuthFilterAsync(attr, "TEST_USER", auth.Object);
+            AuthFilterTestHarness.AssertDenied(result, "无权限");
         }
 
         [Fact]
@@ -578,16 +590,19 @@ namespace XHD.Core.Tests
         [Fact]
         public async Task ContactImport_NoPermission_ReturnsError()
         {
-            await SeedCodeTablesAsync();
-            var ctrl = CreateContactController(grantImport: false);
-            var bytes = BuildExcelBytes(
-                new[] { "姓名", "客户名字" },
-                new[] { new object[] { "联系人1", "老客户" } });
-            var file = CreateFormFile("test.xlsx", bytes);
-            var result = await ctrl.Import(file);
-            var json = JObject.Parse(result);
-            Assert.Equal(-1, json["code"].Value<int>());
-            Assert.Contains("无权限", json["msg"].Value<string>());
+            // Sprint 10.39：Import 的授权已迁移到 [ButtonAuth("CRM_Contact", "import")]。
+            var attr = typeof(CRM_ContactController)
+                .GetMethod(nameof(CRM_ContactController.Import))!
+                .GetCustomAttribute<ButtonAuthAttribute>();
+            Assert.NotNull(attr);
+            Assert.Equal("CRM_Contact|import", attr!.AuthId);
+
+            var auth = new Mock<IDBAuthService>();
+            auth.Setup(a => a.GetAuth("TEST_USER", "CRM_Contact|import"))
+                .ReturnsAsync(false);
+
+            var result = await AuthFilterTestHarness.RunAuthFilterAsync(attr, "TEST_USER", auth.Object);
+            AuthFilterTestHarness.AssertDenied(result, "无权限");
         }
 
         [Fact]

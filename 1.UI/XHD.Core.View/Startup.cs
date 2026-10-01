@@ -57,7 +57,14 @@ namespace XHD.Core.View
             //services.AddSingleton<Ihr_employeeService, hr_employeeService>();
             //services.AddSingleton<Ihr_employeeRepository, hr_employeeRepository>();
             //services.AddUEditorService();
-            services.AddControllersWithViews();
+            services.AddControllersWithViews(options =>
+            {
+                // Sprint 10.39：把返回 JSON 文本字符串的 action 输出为真正的 application/json。
+                // 既有 action 大量以 Task<string> 返回 XHDResult.*().ToString()，MVC 默认按
+                // StringResult 以 text/plain 写出。之前能跑只因前端 $.ajax 显式声明了
+                // dataType:"json"（强制按 JSON 解析、忽略 Content-Type），属于隐蔽隐式契约。
+                options.Filters.Add<XHD.Core.View.Authorization.RawJsonStringResultFilter>();
+            });
 
             services.AddService();
             services.AddRepository();
@@ -98,6 +105,12 @@ namespace XHD.Core.View
                 .PersistKeysToFileSystem(new System.IO.DirectoryInfo("/app/Data"));
 
             services.AddDb(_env);
+
+            // Sprint 10.39：权限目录启动期对账（根治权限目录三处分裂导致的漂移）。
+            // 反射收集代码中全部 [ButtonAuth] 声明作为唯一真源，与 Sys_Button 求差集，
+            // 缺失的按钮幂等 upsert；孤儿按钮只告警不删除。
+            // 注意须在 AddDb 之后注册 —— 对账需要 FreeSql 单例。
+            services.AddHostedService<XHD.Core.View.Authorization.AuthCatalogReconciler>();
             // Sprint 0 修复 (2026-09-18): 补 AddHsts() 注册
             // 原代码只调 app.UseHsts() 但未 services.AddHsts()，导致 HstsOptions 未注册，
             // 容器部署时 HTTPS 失败。参考 https://docs.microsoft.com/en-us/aspnet/core/security/enforcing-ssl
