@@ -270,3 +270,53 @@ Moq loose mock 默认返回 `false`，把我新加的 `CheckAuthAsync("edit")` �
   CNB 有本地没有的 11 个「数据权限注入脚本」提交，本地有 CNB 没有的 17 个审计修复提交。
   本轮**没有**合并，只在 CNB 建了新分支 `sprint10.39-verify` 做构建验证。
   ⇒ 合并两条线是后续必办项（建议以 GitHub 侧为准，把 CNB 11 个提交的实质改动 cherry-pick 或重放）。
+
+---
+
+# Sprint 10.39 验证结果（终）— 全绿
+
+代码已同时落在三条线，且**全部由真实 dotnet 8 构建验证通过**（不是静态推断）：
+
+| 通道 | 位置 | 结果 |
+|------|------|------|
+| CNB 云开发（api_trigger，16GB/8cpu） | 分支 `sprint10.39-verify` @ `56311fb` | **Build succeeded，0 errors，426/426 tests pass**（构建 `cnb-daa-1k3qn3q7i`） |
+| GitHub Actions（main:push 门禁） | `main` @ `909070e9fe`（run `36810703100`） | **success**：restore/build/test/Docker compose 全部通过 |
+| 本地 | `main` @ `56311fb` | 工作树干净，51 个文件已同步 |
+
+测试基线：**404 → 426**（+22：AuthInfrastructureTests 18 个 + 4 个拒绝路径测试重写）。
+
+## 真机构建暴露并修复的问题（静态审计全部漏掉）
+
+| 轮次 | 错误 | 根因与修法 |
+|------|------|-----------|
+| r1 `cnb-2b6-1k3qk6h3h` | `Sys_MenuRepository.cs(63,18) CS1061` `List<string>` 无 `Where` | 缺 `using System.Linq;`（#183 修复文件）→ 补 |
+| r2 `cnb-tqk-1k3qknpi4` | `AuthCatalog.cs` 4 个错误 | `ControllerBase` 缺 `using Microsoft.AspNetCore.Mvc`（CS0246）；`Distinct` 传 lambda（CS1660）→ 改 `AuthIdComparer` 并在 Distinct 前做 (AuthId,Controller,Action) 全排序保证确定性；`CustomAttributeData.CreateInstance<T>` 不存在（CS1061）→ `GetCustomAttributes<T>`；`AuthReconcileReport.Declared` 只读（CS0200）→ 可写 |
+| r2 | `RawJsonStringResultFilter.cs(59) CS1061` | `ObjectResult` 无 `ContentType` 属性 → 换成 `ContentResult`（Content/ContentType/StatusCode 全保留） |
+| r3 `cnb-uia-1k3qlh48h` | 4 个测试 FAIL（`code` 期望 -1 实得 0） | 声明式迁移后授权发生在过滤器层，直接调方法不再触发拒绝——**这是预期行为**。重写 `Import_NoPermission` / `AdminImport_NoPermission` / `ContactImport_NoPermission` / `Regain_NoDelButtonPermission` 为驱动真实 `ButtonAuthAttribute` 过滤器（新 harness `AuthFilterTestHarness`），并断言方法上确实挂着对应 auth_id（删属性即挂测试） |
+| r4 `cnb-f9j-1k3qmo4tk` | 1 个测试 FAIL | `CRM_ContactController.Import` 的 DenyMessage 是「无权限！」不是默认「无操作权限」→ 改断言片段 |
+| r5 `cnb-daa-1k3qn3q7i` | — | **全绿** |
+
+> 这正是「跳出绕圈」的产出：本机无 SDK 时只能静态猜，5 个编译错误 + 4 个语义错误
+> 静态审计全部没发现；启用 CNB 云开发通道后 5 轮内全部清零并拿到 426/426。
+
+## 工具链修复（顺带）
+
+- `push_main.py` 不支持新增目录（`replace_path` 要求中间目录在远端树已存在）
+  → 改为缺失时就地建空子树。`Authorization/` 目录由此才能推上去。
+- 本地仓是浅克隆（shallow boundary `e4d6999`），CNB 拒绝 shallow update
+  → `git fetch --unshallow origin` 补全到 335 commits 后 push 成功。
+
+## 遗留（下个 agent）
+
+- [ ] **三仓库分叉仍未合并**：CNB `cnb/main`（`0e02d59`）与 GitHub `main` 在
+      `f91fde7`（Sprint 10.33 v12）后完全分叉——CNB 侧有 11 个「数据权限注入脚本」提交
+      是本线没有的，本线有 CNB 侧没有的 10.38/10.39 全部修复。建议以 GitHub `main`
+      为准，把 CNB 那 11 个提交的**实质改动**逐个 review 后 cherry-pick 或重放，
+      再把 `cnb/main` 强推对齐。注意：Sprint 10.39 的 `[ButtonAuth]` 声明式授权与
+      CNB 侧的「数据权限注入脚本」可能在同一批控制器上改动，合并时会有真冲突，
+      不能盲合。
+- [ ] 任务 #176（SysButtons 种子缺口：`my_calendar|*` / `my_note|*` /
+      `CRM_Customer|adminimport`）仍需单独排期。现在有 `AuthCatalogReconciler`
+      启动期对账，缺失按钮会被幂等 upsert 补进 `Sys_Button`，但**角色绑定**仍需人工配。
+- [ ] `cnb build start-build` 用的是 `--branch`；`get-build-status` 必须带 `--repo`。
+- [ ] Git Bash CWD 会话间会重置到 `D:/output`，命令里要么 `cd` 要么用绝对路径。
