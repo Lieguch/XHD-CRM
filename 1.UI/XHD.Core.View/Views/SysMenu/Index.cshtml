@@ -6,7 +6,6 @@
     <div class="layuimini-main">
         <div>
             <button class="layui-btn layui-btn layui-btn-normal" id="btn-menu">添加目录</button>
-            @*<button class="layui-btn layui-btn layui-btn-normal" id="btn-button">添加按钮</button>*@
             <div class="layui-btn-group">
 
                 <button class="layui-btn" id="btn-expand">全部展开</button>
@@ -93,11 +92,6 @@
         $('#btn-menu').click(function () {
             addMenu();
         });
-
-        $('#btn-button').click(function () {
-            addButton();
-        });
-
 
         //监听工具条
         table.on('tool(munu-table)', function (obj) {

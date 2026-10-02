@@ -177,7 +177,7 @@
 <script type="text/html" id="toolbarDemo">
     <div class="layui-btn-container">
         <button class="layui-btn layui-btn-sm" lay-event="add">添加</button>
-        @*<button class="layui-btn layui-btn-sm layui-bg-blue" lay-event="import">导入</button>*@
+        <button class="layui-btn layui-btn-sm layui-bg-blue" lay-event="import">导入</button>
         <button class="layui-btn layui-btn-sm layui-bg-orange" lay-event="export">导出</button>
     </div>
 </script>
@@ -310,11 +310,27 @@
                 add();
                 return;
             }
+            if (obj.event === 'import') {  // 打开客户导入页（菜单 "客户导入" 同一入口：Customer/ImportView）
+                Import();
+                return;
+            }
             if (obj.event === 'export') {  // 监听添加操作
                 Export();
                 return;
             }
         });
+
+        // 客户导入：iframe 打开 ImportView，导入完成由子页关闭并提示
+        function Import() {
+            layui.layer.open({
+                title: '客户导入',
+                type: 2,
+                anim: 1,
+                area: ['820px', '640px'],
+                maxmin: true,
+                content: 'ImportView'
+            });
+        }
 
         function Export() {
             var file = "Export";
