@@ -56,7 +56,7 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
-        [ButtonAuth("sys_info", "save")]
+        [ButtonAuth("sysconfig", "save")]
         public async Task<string> Save(string key,string value)
         {
             Sys_info model=new Sys_info();

@@ -1,0 +1,189 @@
+@{
+    ViewData["Title"] = "短信配置";
+}
+
+<div class="layui-row">
+    <!-- 左侧卡片：当前状态 -->
+    <div class="layui-col-md6">
+        <div class="layui-card config-card" style="margin-right: 15px;">
+            <div class="layui-card-header">当前状态</div>
+            <div class="layui-card-body">
+                <div class="layui-form layui-form-pane" action="">
+                    <div class="layui-form-item">
+                        <div class="layui-input-group">
+                            <div class="layui-input-split layui-input-prefix">
+                                短信账号
+                            </div>
+                            <input type="text" class="layui-input layui-disabled" readonly="readonly" id="T_sms_no" placeholder="未配置">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <div class="layui-input-group">
+                            <div class="layui-input-split layui-input-prefix">
+                                注册状态
+                            </div>
+                            <input type="text" class="layui-input layui-disabled" readonly="readonly" id="T_sms_done">
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <div class="layui-input-group">
+                            <div class="layui-input-split layui-input-prefix">
+                                当前余额
+                            </div>
+                            <input type="text" class="layui-input layui-disabled" readonly="readonly" id="T_sms_balance" placeholder="点击下方按钮查询">
+                            <div class="layui-input-split layui-input-suffix" style="cursor: pointer;">
+                                <i class="layui-icon layui-icon-refresh" lay-on="sms-balance"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="layui-form-item">
+                        <button type="button" class="layui-btn" id="btn_balance" lay-on="sms-balance">
+                            <i class="layui-icon layui-icon-rmb"></i> 查询余额
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧卡片：服务商注册 -->
+    <div class="layui-col-md6">
+        <div class="layui-card" style="margin-left: 15px;">
+            <div class="layui-card-header">短信服务商注册</div>
+            <div class="layui-card-body">
+                <form class="layui-form layui-form-pane" action="" id="regForm">
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">序列号</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="T_SerialNo" id="T_SerialNo" autocomplete="off" placeholder="服务商序列号" class="layui-input" lay-verify="required">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <label class="layui-form-label">密钥</label>
+                        <div class="layui-input-block">
+                            <input type="text" name="T_key" id="T_key" autocomplete="off" placeholder="服务商密钥" class="layui-input" lay-verify="required">
+                        </div>
+                    </div>
+                    <div class="layui-form-item">
+                        <button type="submit" class="layui-btn" lay-submit lay-filter="reg-submit">
+                            <i class="layui-icon layui-icon-ok"></i> 提交注册
+                        </button>
+                    </div>
+                </form>
+                <blockquote class="layui-elem-quote" style="margin-top: 10px;">
+                    如果需要注册及充值，请联系小黄豆CRM官方。QQ：250476029。
+                </blockquote>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    layui.use(['element', 'form', 'layer', 'util'], function () {
+        var element = layui.element,
+            form = layui.form,
+            layer = layui.layer,
+            $ = layui.$;
+        var util = layui.util;
+
+        // 加载系统参数（短信账号 / 注册状态）
+        function loadConfig() {
+            $.ajax({
+                type: 'GET',
+                url: '/SysInfo/Grid',
+                dataType: "json",
+                success: function (res) {
+                    if (res.code == 0) {
+                        var data = res.data;
+
+                        var infos = {};
+                        for (var i = 0; i < data.length; i++) {
+                            infos[data[i].sys_key] = data[i].sys_value;
+                        }
+
+                        $("#T_sms_no").val(infos.sms_no || '');
+
+                        var isReg = infos.sms_done;
+                        if (isReg == 1 || isReg == "1") {
+                            $("#T_sms_done").val('已经注册');
+                        } else {
+                            $("#T_sms_done").val('还未注册');
+                        }
+                    } else {
+                        layer.alert(res.msg, { icon: 5 });
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                }
+            });
+        }
+
+        // 查询余额
+        function getBalance() {
+            $.ajax({
+                type: 'GET',
+                url: '/SMS/getBalance',
+                dataType: "json",
+                success: function (res) {
+                    if (res.code == 0) {
+                        var balance = res.data && res.data.length > 0 ? res.data[0].balance : 0;
+                        $("#T_sms_balance").val(balance + ' 条');
+                        layer.msg('短信剩余条数：' + balance + ' 条', { icon: 1 });
+                    } else {
+                        layer.alert(res.msg || '查询失败', { icon: 5 });
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                }
+            });
+        }
+
+        // 事件
+        util.on('lay-on', {
+            "sms-balance": function () {
+                getBalance();
+            }
+        });
+
+        // 注册提交
+        form.on('submit(reg-submit)', function (data) {
+            var serialNo = $("#T_SerialNo").val();
+            var key = $("#T_key").val();
+
+            if (!serialNo) {
+                layer.alert('序列号不能为空', { icon: 5 });
+                return false;
+            }
+            if (!key) {
+                layer.alert('密钥不能为空', { icon: 5 });
+                return false;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: '/SysInfo/regSMS?serialNo=' + encodeURIComponent(serialNo) + '&key=' + encodeURIComponent(key),
+                dataType: "json",
+                success: function (res) {
+                    if (res.code == 0) {
+                        layer.msg('注册成功', { icon: 1 });
+                        loadConfig();
+                    } else {
+                        layer.alert(res.msg, { icon: 5 });
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                }
+            });
+
+            return false;
+        });
+
+        loadConfig();
+    });
+</script>

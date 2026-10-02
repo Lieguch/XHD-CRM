@@ -1,4 +1,4 @@
-
+﻿
 using System;
 using System.Linq;
 using System.Linq.Expressions;
@@ -115,7 +115,7 @@ namespace XHD.Core.View.Controllers
         /// 关键修复点：id 为空即新建（生成 UUID + create_id + create_time），
         /// id 有值即更新；避免重复 JobsController.Save 的"新建返回无权限"逻辑反了 bug。
         /// </summary>
-        [ButtonAuth("task", "save")]
+        [ButtonAuth("task_manager", "save")]
         public async Task<string> Save(TaskInfo model)
         {
             if (model == null || string.IsNullOrWhiteSpace(model.task_title))
@@ -176,7 +176,7 @@ namespace XHD.Core.View.Controllers
         /// <summary>
         /// 删除任务，级联删除该任务下的所有 Task_follow 记录。
         /// </summary>
-        [ButtonAuth("task", "del")]
+        [ButtonAuth("task_manager", "del")]
         public async Task<string> Delete(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
@@ -206,7 +206,7 @@ namespace XHD.Core.View.Controllers
         /// 更新任务状态：0=进行中 / 1=已完成 / 2=已中止。
         /// 状态置为 1 时同步 is_check=1，模拟 A 侧勾选交互。
         /// </summary>
-        [ButtonAuth("task", "edit")]
+        [ButtonAuth("task_manager", "edit")]
         public async Task<string> UpdateStatus(string id, int status)
         {
             if (string.IsNullOrWhiteSpace(id))
@@ -270,7 +270,7 @@ namespace XHD.Core.View.Controllers
             if (exec != currentUserId)
             {
                 var roledata = await _dBAuthService.GetDataAuth(currentUserId);
-                if (roledata.authtype != 4 && !await _dBAuthService.GetAuth(currentUserId, "task|view_others"))
+                if (roledata.authtype != 4 && !await _dBAuthService.GetAuth(currentUserId, "task_manager|view_others"))
                 {
                     return XHDResult.Error("无权限查看他人待办").ToString();
                 }

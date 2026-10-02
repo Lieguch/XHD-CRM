@@ -1,0 +1,250 @@
+﻿@{
+    ViewData["Title"] = "角色员工";
+}
+
+<div class="table-search-fieldset">
+    <div style="margin: 10px;">
+        <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item">
+                <div class="layui-inline">
+                    <label class="layui-form-label">角色</label>
+                    <div class="layui-input-inline">
+                        <select id="role_id" name="role_id" lay-filter="roleSelect">
+                            <option value="">请选择角色</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">姓名</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="stext" id="stext" autocomplete="off" placeholder="员工姓名关键字" class="layui-input">
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn" id="btn_serch"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                    <button type="reset" class="layui-btn layui-btn-primary" id="btn_reset"><i class="layui-icon layui-icon-error"></i> 重置</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="layui-row layui-col-space10">
+    <!-- 左侧：可分配员工（不在该角色下） -->
+    <div class="layui-col-md6">
+        <div class="layuimini-card">
+            <div class="layui-card-header">可分配员工</div>
+            <div class="layui-card-body">
+                <script type="text/html" id="toolbarCandidate">
+                    <div class="layui-btn-container">
+                        <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="assign"><i class="layui-icon layui-icon-right"></i> 分配</button>
+                    </div>
+                </script>
+
+                <table id="grid-candidate" class="layui-table" lay-filter="candidateFilter"></table>
+            </div>
+        </div>
+    </div>
+
+    <!-- 右侧：已分配员工 -->
+    <div class="layui-col-md6">
+        <div class="layuimini-card">
+            <div class="layui-card-header">已分配员工</div>
+            <div class="layui-card-body">
+                <script type="text/html" id="toolbarAssigned">
+                    <div class="layui-btn-container">
+                        <button class="layui-btn layui-btn-sm layui-btn-danger" lay-event="remove"><i class="layui-icon layui-icon-left"></i> 移除</button>
+                    </div>
+                </script>
+
+                <table id="grid-assigned" class="layui-table" lay-filter="assignedFilter"></table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    layui.use(['table', 'form', 'layer'], function () {
+        var $ = layui.jquery;
+        var table = layui.table;
+        var form = layui.form;
+        var layer = layui.layer;
+
+        var currentRoleId = "";
+
+        // 角色下拉
+        $.ajax({
+            url: "/SysRole/Combo",
+            type: "post",
+            dataType: "json",
+            success: function (data) {
+                var category = $('#role_id');
+                category.html("");
+                category.append('<option value="">请选择角色</option>');
+                for (var i = 0; i < data.length; i++) {
+                    category.append("<option value='" + data[i]["id"] + "'>" + data[i]["text"] + "</option>");
+                }
+                form.render("select");
+            }
+        });
+
+        // 公用列定义（对齐 A 侧 Role_emp.aspx：名字/性别/部门/职务）
+        var empCols = [[
+            { type: 'checkbox', fixed: 'left' },
+            { type: 'numbers', title: "序号", width: 60 },
+            { field: 'name', width: 130, title: '名字' },
+            {
+                field: 'sex', width: 70, title: '性别', templet: function (t) {
+                    switch (t.sex) {
+                        case 1: return "男";
+                        case 2: return "女";
+                        default: return "";
+                    }
+                }
+            },
+            {
+                field: 'dep_name', width: 150, title: '部门', templet: function (t) {
+                    return (t.department) ? t.department.dep_name : "";
+                }
+            },
+            {
+                field: 'position_name', width: 130, title: '职务', templet: function (t) {
+                    return (t.position) ? t.position.position_name : "";
+                }
+            },
+            { field: 'tel', minWidth: 120, title: '电话' }
+        ]];
+
+        // 左侧：可分配员工
+        table.render({
+            elem: '#grid-candidate',
+            url: 'emplist',
+            toolbar: '#toolbarCandidate',
+            defaultToolbar: ['filter'],
+            id: "gridCandidate",
+            cols: empCols,
+            limits: [10, 15, 20, 25, 50, 100],
+            limit: 15,
+            page: true
+        });
+
+        // 右侧：已分配员工
+        table.render({
+            elem: '#grid-assigned',
+            url: 'get',
+            toolbar: '#toolbarAssigned',
+            defaultToolbar: ['filter'],
+            id: "gridAssigned",
+            cols: empCols,
+            limits: [10, 15, 20, 25, 50, 100],
+            limit: 15,
+            page: true
+        });
+
+        // 刷新两个表格
+        function reloadGrids() {
+            var where = {
+                role_id: currentRoleId,
+                stext: $("#stext").val()
+            };
+            table.reload('gridCandidate', { where: where }, 'data');
+            table.reload('gridAssigned', { where: where }, 'data');
+        }
+
+        // 角色切换
+        form.on('select(roleSelect)', function (data) {
+            currentRoleId = data.value;
+            reloadGrids();
+        });
+
+        // 搜索
+        form.on('submit(data-search-btn)', function (data) {
+            reloadGrids();
+            return false;
+        });
+
+        // 分配
+        table.on('toolbar(candidateFilter)', function (obj) {
+            if (obj.event !== 'assign') return;
+
+            if (!currentRoleId) {
+                layer.msg('请先选择角色', { icon: 2 });
+                return;
+            }
+
+            var checkStatus = table.checkStatus('gridCandidate');
+            var rows = checkStatus.data;
+            if (rows.length < 1) {
+                layer.msg('请选择要分配的员工', { icon: 2 });
+                return;
+            }
+
+            var empids = [];
+            for (var i = 0; i < rows.length; i++) {
+                empids.push(rows[i].id);
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: 'add',
+                data: { role_id: currentRoleId, empids: empids.join(',') },
+                dataType: "json",
+                success: function (res) {
+                    if (res.code == 0) {
+                        layer.msg('分配成功', { icon: 1 });
+                        reloadGrids();
+                    } else {
+                        layer.alert(res.msg, { icon: 5 });
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                }
+            });
+        });
+
+        // 移除
+        table.on('toolbar(assignedFilter)', function (obj) {
+            if (obj.event !== 'remove') return;
+
+            if (!currentRoleId) {
+                layer.msg('请先选择角色', { icon: 2 });
+                return;
+            }
+
+            var checkStatus = table.checkStatus('gridAssigned');
+            var rows = checkStatus.data;
+            if (rows.length < 1) {
+                layer.msg('请选择要移除的员工', { icon: 2 });
+                return;
+            }
+
+            layer.confirm('此操作不可恢复，确定移除？', { icon: 3, title: '提示信息' }, function (index) {
+                layer.close(index);
+
+                var empids = [];
+                for (var i = 0; i < rows.length; i++) {
+                    empids.push(rows[i].id);
+                }
+
+                $.ajax({
+                    type: 'POST',
+                    url: 'remove',
+                    data: { role_id: currentRoleId, empids: empids.join(',') },
+                    dataType: "json",
+                    success: function (res) {
+                        if (res.code == 0) {
+                            layer.msg('移除成功', { icon: 1 });
+                            reloadGrids();
+                        } else {
+                            layer.alert(res.msg, { icon: 5 });
+                        }
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                    }
+                });
+            });
+        });
+    });
+</script>

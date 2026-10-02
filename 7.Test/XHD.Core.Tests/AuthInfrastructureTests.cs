@@ -169,9 +169,9 @@ namespace XHD.Core.Tests
         [Fact]
         public void AnyOfButtonAuthAttribute_AcceptsMultipleIds()
         {
-            // HrPostController.Save 的既有语义：hr_post|edit OR hr_position|edit
+            // SysRoleEmpController.Add 的既有语义：sys_role|edit OR sys_role|emp_add
             var attr = new XHD.Core.View.Authorization.AnyOfButtonAuthAttribute(
-                "hr_post|edit", "hr_position|edit");
+                "sys_role|edit", "sys_role|emp_add");
 
             Assert.Equal(2, attr.AuthIds.Count);
         }
@@ -195,7 +195,7 @@ namespace XHD.Core.Tests
         public void AnyOfButtonAuthAttribute_DedupsRepeatedIds()
         {
             var attr = new XHD.Core.View.Authorization.AnyOfButtonAuthAttribute(
-                "hr_post|edit", "hr_post|edit", "hr_position|edit");
+                "sys_role|edit", "sys_role|edit", "sys_role|emp_add");
 
             Assert.Equal(2, attr.AuthIds.Count);
         }

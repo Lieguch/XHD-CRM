@@ -57,7 +57,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="empids">员工 id 集合（逗号分隔字符串）</param>
         /// <returns>标准 XHDResult 字符串</returns>
         [HttpPost("add")]
-        [AnyOfButtonAuth("Sys_role|edit", "Sys_role_emp|add", DenyMessage = "无权限！")]
+        [AnyOfButtonAuth("sys_role|edit", "sys_role|emp_add", DenyMessage = "无权限！")]
         public async Task<string> Add(string role_id, string empids)
         {
             if (string.IsNullOrWhiteSpace(role_id))
@@ -106,7 +106,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="empids">员工 id 集合（逗号分隔字符串）</param>
         /// <returns>标准 XHDResult 字符串</returns>
         [HttpPost("remove")]
-        [AnyOfButtonAuth("Sys_role|edit", "Sys_role_emp|del", DenyMessage = "无权限！")]
+        [AnyOfButtonAuth("sys_role|edit", "sys_role|emp_del", DenyMessage = "无权限！")]
         public async Task<string> Remove(string role_id, string empids)
         {
             if (string.IsNullOrWhiteSpace(role_id))

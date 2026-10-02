@@ -121,7 +121,7 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
-        [AnyOfButtonAuth("CRM_Contact|add", "CRM_Contact|edit", DenyMessage = "无权限！")]
+        [AnyOfButtonAuth("crm_contact|add", "crm_contact|edit", DenyMessage = "无权限！")]
         public async Task<string> Save(CRM_Contact model)
         {
             var result = 0;
@@ -193,7 +193,7 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
-        [ButtonAuth("CRM_Contact", "del", DenyMessage = "无权限！")]
+        [ButtonAuth("crm_contact", "del", DenyMessage = "无权限！")]
         public async Task<string> Delete(string id)
         {
             //判断是否有跟进
@@ -395,13 +395,13 @@ namespace XHD.Core.View.Controllers
         /// 对应 A 侧 Server.CRM_Contact.import（ext_rar2018/Server/CRM_Contact.cs:290）。
         /// 列名与 A 侧 contact.xml 模板 100% 对齐，并兼容 B 侧 Export 输出的中文列名。
         /// 必填字段：姓名（C_name）、客户归属（可通过"客户名字/客户名称"列解析）。
-        /// 权限：CRM_Contact|import。
+        /// 权限：crm_contact|import。
         /// </summary>
         /// <param name="file">Excel 文件（≤ 10 MB）</param>
         /// <returns>XHDResult JSON 字符串（含 success/error/message 字段）</returns>
         [HttpPost("import")]
         [RequestSizeLimit(11 * 1024 * 1024)]
-        [ButtonAuth("CRM_Contact", "import", DenyMessage = "无权限！")]
+        [ButtonAuth("crm_contact", "import", DenyMessage = "无权限！")]
         public async Task<string> Import(IFormFile file)
         {
             // 2. 文件校验

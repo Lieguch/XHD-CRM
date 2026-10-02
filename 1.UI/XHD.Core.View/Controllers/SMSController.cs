@@ -137,7 +137,7 @@ namespace XHD.Core.View.Controllers
         /// id 空 = 新增，非空 = 编辑（仅编辑标题/内容/联系人/手机号，不改发送状态）。
         /// 校验：标题、内容、手机号不能为空；手机号按逗号分割后逐个校验 11 位。
         /// </summary>
-        [ButtonAuth("sms", "save")]
+        [ButtonAuth("SMS_Manager", "save")]
         public async Task<string> Save(SMS model)
         {
             if (model == null)
@@ -218,7 +218,7 @@ namespace XHD.Core.View.Controllers
         /// Sprint 10.26a：删除短信（软删除走 isSend + delete 语义）。
         /// 对齐 A 侧 SMS.del.xhd 逻辑：isSend==1 时拒绝删除。
         /// </summary>
-        [ButtonAuth("sms", "del")]
+        [ButtonAuth("SMS_Manager", "del")]
         public async Task<string> Delete(string id)
         {
             if (string.IsNullOrWhiteSpace(id))
@@ -250,6 +250,17 @@ namespace XHD.Core.View.Controllers
         }
 
         /// <summary>
+        /// 短信配置页（对齐菜单 SMS_Config，Menu_url = SMS/Config）。
+        /// 对齐 A 侧 View/System/sysconfig/sms_config.aspx：
+        /// 显示短信账号/注册状态，提供服务商注册（regSMS）与余额查询（GetBalance）。
+        /// </summary>
+        [ButtonAuth("SMS_Config", "config")]
+        public IActionResult Config()
+        {
+            return View();
+        }
+
+        /// <summary>
         /// Sprint 10.26a：发送状态报告页。
         /// 对齐 A 侧 View/CRM/Contact/sms_report.aspx。
         /// </summary>
@@ -266,7 +277,7 @@ namespace XHD.Core.View.Controllers
         /// 对应 A 侧 Server.SMS.send（Server/SMS.cs:187）。
         /// </summary>
         [HttpPost("send")]
-        [ButtonAuth("sms", "send")]
+        [ButtonAuth("SMS_Manager", "send")]
         public async Task<string> Send(string id)
         {
             var userId = GetUserId();

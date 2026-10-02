@@ -102,7 +102,7 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
-        [ButtonAuth("customer", "save")]
+        [ButtonAuth("CRM_bath", "save")]
         public async Task<string> Save(CRM_Customer_Bath model)
         {
             var result = 0;

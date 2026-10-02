@@ -54,7 +54,7 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
-        [ButtonAuth("my_calendar", "save")]
+        [ButtonAuth("mycalendar", "save")]
         public async Task<string> Save()
         {
             string requestBody = await new StreamReader(Request.Body).ReadToEndAsync();
@@ -136,7 +136,7 @@ namespace XHD.Core.View.Controllers
 
         }
 
-        [ButtonAuth("my_calendar", "del")]
+        [ButtonAuth("mycalendar", "del")]
         public async Task<string> Delete(string id)
         {
             var userId = User.FindFirst(ClaimTypes.Sid).Value;
@@ -175,6 +175,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="model">日程实体（含 title / startDate / startTime / endDate / endTime / description / color / allDay）</param>
         /// <returns>标准 XHDResult 字符串，成功时 data[0].id 承载新日程 ID</returns>
         [HttpPost("quickadd")]
+        [ButtonAuth("mycalendar", "save")]
         public async Task<string> QuickAdd(My_Calendar model)
         {
             if (model == null)
@@ -234,6 +235,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="calendarEndTimeHHmm">结束时间（HH:mm，可选）</param>
         /// <returns>标准 XHDResult 字符串</returns>
         [HttpPost("quickupdate")]
+        [ButtonAuth("mycalendar", "save")]
         public async Task<string> QuickUpdate(
             string calendarId,
             string calendarStartTime,
@@ -287,6 +289,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="calendarId">日程 id</param>
         /// <returns>标准 XHDResult 字符串</returns>
         [HttpPost("quickdel")]
+        [ButtonAuth("mycalendar", "del")]
         public async Task<string> QuickDel(string calendarId)
         {
             if (string.IsNullOrWhiteSpace(calendarId))

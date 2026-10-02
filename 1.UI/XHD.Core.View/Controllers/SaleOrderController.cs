@@ -131,7 +131,7 @@ namespace XHD.Core.View.Controllers
                 model.create_time = DateTime.Now;
 
                 //权限
-                var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "Sale_Order|add");
+                var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "Sale_Menu_order|add");
 
                 if (authbtn)
                 {
@@ -145,7 +145,7 @@ namespace XHD.Core.View.Controllers
             else
             {
                 //权限
-                var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid)?.Value, "Sale_Order|edit");
+                var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid)?.Value, "Sale_Menu_order|edit");
 
                 if (authbtn)
                 {
@@ -258,7 +258,7 @@ namespace XHD.Core.View.Controllers
             var result = 0;
 
             //权限
-            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "Sale_Order|del");
+            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "Sale_Menu_order|del");
 
             if (authbtn)
             {

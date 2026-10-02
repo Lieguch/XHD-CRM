@@ -1,0 +1,136 @@
+﻿@{
+    ViewData["Title"] = "上传合同附件";
+}
+
+<style type="text/css">
+    .downpanel .layui-select-title span { line-height: 38px; }
+</style>
+
+<div class="layui-form layui-form-pane" action="">
+    @Html.Hidden("id")
+    <div class="layui-form-item">
+        <label class="layui-form-label">合同ID</label>
+        <div class="layui-input-block">
+            <input type="text" id="contract_id" name="contract_id" lay-verify="required" placeholder="合同ID" class="layui-input" readonly />
+        </div>
+    </div>
+
+    <div class="layui-upload" style="background:#fff;">
+        <button type="button" class="layui-btn layui-btn-normal" id="testList">选择文件</button>
+        <div class="layui-upload-list">
+            <table class="layui-table">
+                <thead>
+                    <tr>
+                        <th>文件名</th>
+                        <th>大小</th>
+                        <th>状态</th>
+                        <th style="width:80px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="demoList3">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="layui-form-item">
+        <div class="layui-input-block">
+            <button type="button" class="layui-btn" id="btnUpload">开始上传</button>
+        </div>
+    </div>
+</div>
+
+<link href="~/layuimini/js/lay-module/webuploader/webuploader.css" rel="stylesheet" />
+
+<script>
+    layui.use(['form', 'layer', 'webuploader', 'element'], function () {
+        var form = layui.form;
+        var layer = layui.layer;
+        var $ = layui.$;
+        var webuploader = layui.webuploader;
+        var element = layui.element;
+
+        var contract_id = getparastr("id") || "";
+        $("#contract_id").val(contract_id);
+
+        form.render();
+
+        var guid3 = webuploader.Base.guid();
+        var uploader3 = webuploader.create({
+            swf: "../../js/webuploader/uploader.swf",
+            server: "/SaleContractAtta/Upload",
+            pick: "#testList",
+            resize: false,
+            formData: { guid: guid3, contract_id: contract_id },
+            chunked: true
+        });
+
+        uploader3.on('fileQueued', function (file) {
+            var tr = $(['<tr id="upload-' + file.id + '" class="uplist">'
+                , '<td>' + file.name + '</td>'
+                , '<td>' + (file.size / 1024).toFixed(1) + 'kb</td>'
+                , '<td></td>'
+                , '<td><div class="layui-progress" lay-filter="progress-demo-' + file.id + '"><div class="layui-progress-bar" lay-percent=""></div></div></td>'
+                , '<td>'
+                , '<button class="layui-btn layui-btn-xs layui-btn-danger demo-delete" id="' + file.id + '">删除</button>'
+                , '</td>'
+                , '</tr>'].join(''));
+
+            //删除
+            tr.find('.demo-delete').on('click', function () {
+                var id = $(this).attr("id");
+                uploader3.removeFile(id);
+                tr.remove();
+            });
+
+            $('#demoList3').append(tr);
+        });
+
+        // 文件上传过程中创建进度条实时显示。
+        uploader3.on('uploadProgress', function (file, percentage) {
+            element.progress('progress-demo-' + file.id, percentage * 100 + '%');
+            $("#upload-" + file.id + " td").eq(2).text(Math.round(percentage * 100) + '%');
+        });
+
+        uploader3.on('uploadSuccess', function (file) {
+            $.ajax({
+                type: 'POST',
+                url: '/SaleContractAtta/Meger',
+                data: {
+                    name: file.name,
+                    id: file.id,
+                    guid: guid3,
+                    contract_id: contract_id
+                },
+                dataType: "json",
+                success: function (res) {
+                    if (res.code != 0) {
+                        layer.alert(res.msg || res.Message || '合并失败', { icon: 5 });
+                    }
+                },
+                error: function () {
+                    layer.alert('合并失败', { icon: 5 });
+                }
+            });
+        });
+
+        uploader3.on('uploadError', function (file) {
+            layer.alert('上传失败：' + file.name, { icon: 5 });
+        });
+
+        uploader3.on('uploadFinished', function () {
+            layer.msg('上传完成', { icon: 1 });
+            // 刷新父页面附件列表并关闭弹层
+            try {
+                parent.f_reload();
+            } catch (e) {
+            }
+            var idx = parent.layer.getFrameIndex(window.name);
+            parent.layer.close(idx);
+        });
+
+        $("#btnUpload").on('click', function () {
+            uploader3.upload();
+        });
+    });
+</script>

@@ -33,7 +33,7 @@ namespace XHD.Core.View.Controllers
             _logger = logger;
         }
 
-        [ButtonAuth("upload", "image")]
+        [ButtonAuth("Message_News", "upload")]
         public async Task<string> Image()
         {
             byte[] buffer = Guid.NewGuid().ToByteArray();
@@ -79,7 +79,7 @@ namespace XHD.Core.View.Controllers
         }
 
         [DisableRequestSizeLimit]
-        [ButtonAuth("upload", "fileup")]
+        [ButtonAuth("sysconfig", "fileup")]
         public async Task<string> FileUp()
         {
             byte[] buffer = Guid.NewGuid().ToByteArray();
@@ -131,7 +131,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="fileName">客户端接收的文件名（如 "我的报告.pdf"）</param>
         /// <returns>文件流</returns>
 
-        [ButtonAuth("crm_customer", "atta_download")]
+        [ButtonAuth("CRM_Customer", "atta_download")]
         public async Task<IActionResult> DownloadCustomerAtta(string id)
         {
             id = Path.GetFileName(id);
@@ -201,7 +201,7 @@ namespace XHD.Core.View.Controllers
         /// <returns>标准 XHDResult 字符串（msg 为落盘文件名）</returns>
         [DisableRequestSizeLimit]
         [HttpPost("cus_import")]
-        [ButtonAuth("crm_customer", "cus_import")]
+        [ButtonAuth("CRM_Customer", "cus_import")]
         public async Task<string> CusImport(IFormFile file)
         {
             if (file == null || file.Length == 0)

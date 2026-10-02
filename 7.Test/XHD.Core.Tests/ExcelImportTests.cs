@@ -238,7 +238,7 @@ namespace XHD.Core.Tests
             auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
                 .ReturnsAsync(new XHDRoleData { authtype = 4, empList = new List<string>() });
             auth.Setup(a => a.GetAuth(It.IsAny<string>(), It.IsAny<string>()))
-                .Returns((string _, string btn) => Task.FromResult(btn == "CRM_Contact|import" ? grantImport : true));
+                .Returns((string _, string btn) => Task.FromResult(btn == "crm_contact|import" ? grantImport : true));
 
             var svc = new Mock<ICRM_ContactService>();
             svc.Setup(s => s.ImportAsync(It.IsAny<List<CRM_Contact>>()))
@@ -590,15 +590,15 @@ namespace XHD.Core.Tests
         [Fact]
         public async Task ContactImport_NoPermission_ReturnsError()
         {
-            // Sprint 10.39：Import 的授权已迁移到 [ButtonAuth("CRM_Contact", "import")]。
+            // Sprint 10.39：Import 的授权已迁移到 [ButtonAuth("crm_contact", "import")]。
             var attr = typeof(CRM_ContactController)
                 .GetMethod(nameof(CRM_ContactController.Import))!
                 .GetCustomAttribute<ButtonAuthAttribute>();
             Assert.NotNull(attr);
-            Assert.Equal("CRM_Contact|import", attr!.AuthId);
+            Assert.Equal("crm_contact|import", attr!.AuthId);
 
             var auth = new Mock<IDBAuthService>();
-            auth.Setup(a => a.GetAuth("TEST_USER", "CRM_Contact|import"))
+            auth.Setup(a => a.GetAuth("TEST_USER", "crm_contact|import"))
                 .ReturnsAsync(false);
 
             var result = await AuthFilterTestHarness.RunAuthFilterAsync(attr, "TEST_USER", auth.Object);

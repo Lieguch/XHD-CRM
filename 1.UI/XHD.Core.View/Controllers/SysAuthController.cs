@@ -163,7 +163,7 @@ namespace XHD.Core.View.Controllers
             return obj.ToString();
         }
 
-        [ButtonAuth("sys_auth", "save")]
+        [ButtonAuth("sys_role", "auth_save")]
         public async Task<string> save()
         {
             Expression<Func<Sys_authority, bool>> exp = a => a.Role_id == Request.Form["role_id"] && a.Auth_id == Request.Form["auth_id"];

@@ -17,9 +17,8 @@ namespace XHD.Core.View.Authorization
     /// Sprint 10.39 全量盘点（见 <c>auth_inventory.md</c> 3.4.2）发现 5 个方法
     /// 的既有授权语义是**双按钮 OR**：
     /// <list type="bullet">
-    /// <item><c>SysRoleEmpController.Add</c> → <c>Sys_role|edit</c> OR <c>Sys_role_emp|add</c></item>
-    /// <item><c>SysRoleEmpController.Remove</c> → <c>Sys_role|edit</c> OR <c>Sys_role_emp|del</c></item>
-    /// <item><c>HrPostController.Save</c> → <c>hr_post|edit</c> OR <c>hr_position|edit</c></item>
+    /// <item><c>SysRoleEmpController.Add</c> → <c>sys_role|edit</c> OR <c>sys_role|emp_add</c></item>
+    /// <item><c>SysRoleEmpController.Remove</c> → <c>sys_role|edit</c> OR <c>sys_role|emp_del</c></item>
     /// <item><c>HrPostController.Delete</c> → <c>hr_post|del</c> OR <c>hr_post|edit</c></item>
     /// <item><c>HrPostController.UpdatePost</c> → <c>hr_post|edit</c> OR <c>hr_employee|edit</c></item>
     /// </list>
@@ -36,7 +35,7 @@ namespace XHD.Core.View.Authorization
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public sealed class AnyOfButtonAuthAttribute : Attribute, IAsyncAuthorizationFilter
     {
-        /// <summary>任一通过的 auth_id 列表，例如 <c>"hr_post|edit", "hr_position|edit"</c>。</summary>
+        /// <summary>任一通过的 auth_id 列表，例如 <c>"sys_role|edit", "sys_role|emp_add"</c>。</summary>
         public IReadOnlyList<string> AuthIds { get; }
 
         public string DenyMessage { get; set; } = AuthDeny.DefaultMessage;

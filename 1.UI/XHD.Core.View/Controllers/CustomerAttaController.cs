@@ -256,7 +256,7 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
-        [ButtonAuth("crm_customer", "atta")]
+        [ButtonAuth("CRM_Customer", "atta")]
         public async Task<string> Save()
         {
             var claimIdentity = (ClaimsIdentity)User.Identity;
@@ -285,7 +285,7 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
-        [ButtonAuth("crm_customer", "atta_del")]
+        [ButtonAuth("CRM_Customer", "atta_del")]
         public async Task<string> Del(string id)
         {
             Expression<Func<CRM_Customer_atta, bool>> exp = a => a.id == id;

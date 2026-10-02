@@ -412,7 +412,7 @@ namespace XHD.Core.View.Controllers
                 model.create_time = DateTime.Now;
 
                 //权限
-                var authbtn = await _dBAuthService.GetAuth(employee.id, "CRM_Contact|add");
+                var authbtn = await _dBAuthService.GetAuth(employee.id, "crm_contact|add");
 
                 if (authbtn)
                 {
@@ -426,7 +426,7 @@ namespace XHD.Core.View.Controllers
             else
             {
                 //权限
-                var authbtn = await _dBAuthService.GetAuth(employee.id, "CRM_Contact|edit");
+                var authbtn = await _dBAuthService.GetAuth(employee.id, "crm_contact|edit");
 
                 if (authbtn)
                 {
@@ -729,7 +729,7 @@ namespace XHD.Core.View.Controllers
                 model.create_time = DateTime.Now;
 
                 //权限
-                var authbtn = await _dBAuthService.GetAuth(employee.id, "Sale_Order|add");
+                var authbtn = await _dBAuthService.GetAuth(employee.id, "Sale_Menu_order|add");
 
                 if (authbtn)
                 {
@@ -743,7 +743,7 @@ namespace XHD.Core.View.Controllers
             else
             {
                 //权限
-                var authbtn = await _dBAuthService.GetAuth(employee.id, "Sale_Order|edit");
+                var authbtn = await _dBAuthService.GetAuth(employee.id, "Sale_Menu_order|edit");
 
                 if (authbtn)
                 {
@@ -899,7 +899,7 @@ namespace XHD.Core.View.Controllers
                 model.create_time = DateTime.Now;
 
                 //权限
-                var authbtn = await _dBAuthService.GetAuth(employee.id, "Sale_contract|add");
+                var authbtn = await _dBAuthService.GetAuth(employee.id, "Sale_Contract|add");
 
                 if (authbtn)
                 {
@@ -916,7 +916,7 @@ namespace XHD.Core.View.Controllers
             else
             {
                 //权限
-                var authbtn = await _dBAuthService.GetAuth(employee.id, "Sale_contract|edit");
+                var authbtn = await _dBAuthService.GetAuth(employee.id, "Sale_Contract|edit");
 
                 if (authbtn)
                 {

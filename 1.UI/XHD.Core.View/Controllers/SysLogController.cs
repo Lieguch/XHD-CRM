@@ -46,7 +46,7 @@ namespace XHD.Core.View.Controllers
             return View();
         }
 
-        [ButtonAuth("sys_log", "add")]
+        [ButtonAuth("sys_logs", "add")]
         public async Task<IActionResult> Add()
         {
             var result = await _service.LogType();

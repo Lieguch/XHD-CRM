@@ -53,14 +53,9 @@ namespace XHD.Core.View.Controllers
             return result.ToString();
         }
 
+        [ButtonAuth("mynote", "save")]
         public async Task<string> Save(My_Note model)
         {
-            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "my_note|save");
-            if (!authbtn)
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
-
             model.id = UUIDNext.Uuid.NewSequential().ToString();
             model.Note_time = DateTime.Now;
             model.emp_id = User.FindFirst(ClaimTypes.Sid).Value;
@@ -71,15 +66,10 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success(model.id).ToString();
         }
 
+        [ButtonAuth("mynote", "update")]
         public async Task<string> Update(My_Note model)
         {
-            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "my_note|update");
-            if (!authbtn)
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
-
-            Expression<Func<My_Note, My_Note>> expnote = a => new My_Note { 
+            Expression<Func<My_Note, My_Note>> expnote = a => new My_Note {
                 content=model.content,
                 color=model.color
             };
@@ -92,17 +82,12 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success(model.id).ToString();
         }
 
+        [ButtonAuth("mynote", "update")]
         public async Task<string> UpdateXY(My_Note model)
         {
             if (model == null || string.IsNullOrWhiteSpace(model.id))
             {
                 return XHDResult.Error("参数错误！").ToString();
-            }
-
-            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "my_note|update");
-            if (!authbtn)
-            {
-                return XHDResult.Error("无操作权限").ToString();
             }
 
             var userId = User.FindFirst(ClaimTypes.Sid).Value;
@@ -134,15 +119,10 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success(model.id).ToString();
         }
 
+        [ButtonAuth("mynote", "del")]
         public async Task<string> Delete(string id)
         {
-            var result = 0;            
-
-            var authbtn = await _dBAuthService.GetAuth(User.FindFirst(ClaimTypes.Sid).Value, "my_note|del");
-            if (!authbtn)
-            {
-                return XHDResult.Error("无操作权限").ToString();
-            }
+            var result = 0;
 
             var userId = User.FindFirst(ClaimTypes.Sid).Value;
 

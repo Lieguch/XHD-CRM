@@ -992,6 +992,7 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success("更新成功").ToString();
         }
 
+        [ButtonAuth("CRM_Customer", "export", DenyMessage = "无权限！")]
         public async Task<ActionResult> Export()
         {
             // 原有业务逻辑完全保留

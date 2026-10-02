@@ -69,7 +69,7 @@ namespace XHD.Core.View.Controllers
         /// 此代码会区分分片上传代码。
         /// </summary>
         /// <returns></returns>
-        [ButtonAuth("sale_contract", "atta")]
+        [ButtonAuth("Sale_Contract", "atta")]
         public async Task<string> Upload()
         {
             var claimIdentity = (ClaimsIdentity)User.Identity;
@@ -157,7 +157,7 @@ namespace XHD.Core.View.Controllers
         /// 文件合并
         /// </summary>
         /// <returns></returns>
-        [ButtonAuth("sale_contract", "atta")]
+        [ButtonAuth("Sale_Contract", "atta")]
         public async Task<string> Meger()
         {
             var claimIdentity = (ClaimsIdentity)User.Identity;
@@ -236,7 +236,7 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
-        [ButtonAuth("sale_contract", "atta_del")]
+        [ButtonAuth("Sale_Contract", "atta_del")]
         public async Task<string> Del(string id)
         {
             Expression<Func<Sale_contract_atta, bool>> exp = a => a.id == id;

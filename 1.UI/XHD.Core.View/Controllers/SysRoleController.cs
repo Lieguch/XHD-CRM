@@ -47,6 +47,7 @@ namespace XHD.Core.View.Controllers
             return View();
         }
 
+        [ButtonAuth("sys_role", "auth")]
         public IActionResult Auth()
         {
             return View();

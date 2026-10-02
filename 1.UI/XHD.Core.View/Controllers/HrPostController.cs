@@ -98,7 +98,7 @@ namespace XHD.Core.View.Controllers
         /// <summary>
         /// Sprint 10.25：新增/编辑岗位（对齐 A 侧 hr_post.save.xhd）。
         /// id 空 = 新增，非空 = 编辑。
-        /// 权限：hr_post|edit（若无该按钮则回退到 hr_position|edit）。
+        /// 权限：hr_post|edit（挂在 hr_post 菜单下）。
         /// </summary>
         public async Task<string> Save(hr_post model)
         {
@@ -114,10 +114,6 @@ namespace XHD.Core.View.Controllers
             }
 
             var authbtn = await _dBAuthService.GetAuth(userId, "hr_post|edit");
-            if (!authbtn)
-            {
-                authbtn = await _dBAuthService.GetAuth(userId, "hr_position|edit");
-            }
             if (!authbtn)
             {
                 return XHDResult.Error("无权限！").ToString();

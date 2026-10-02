@@ -1,0 +1,134 @@
+﻿@{
+    ViewData["Title"] = "合同附件";
+}
+
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="add"><i class="layui-icon"></i> 上传附件</button>
+            </div>
+        </script>
+
+        <table id="munu-table" class="layui-table" lay-filter="currentTableFilter"></table>
+    </div>
+</div>
+
+<form id="form_excel"></form>
+
+<script>
+    layui.use(['table', 'form'], function () {
+        var $ = layui.jquery;
+        var table = layui.table;
+        var form = layui.form;
+
+        var contract_id = getparastr("id") || "";
+
+        // 渲染表格
+        layer.load(2);
+        table.render({
+            elem: '#munu-table',
+            url: 'Grid?id=' + encodeURIComponent(contract_id),
+            toolbar: '#toolbarDemo',
+            defaultToolbar: ['filter'],
+            id: "mainGrid",
+            cols: [[
+                { type: 'numbers', fixed: 'left', title: "序号" },
+                { field: 'file_name', width: 400, title: '文件名', fixed: 'left' },
+                { field: 'file_size', width: 120, title: '文件大小(KB)' },
+                { field: 'create_time', width: 180, title: '创建时间' },
+                {
+                    field: 'creater', width: 150, title: '上传人', templet: function (item) {
+                        if (item.creater)
+                            return item.creater.name;
+                        return "";
+                    }
+                },
+                {
+                    width: 200, align: 'center', fixed: "right", title: '操作', templet: function (t) {
+                        return "<a class='layui-btn layui-btn-xs' href='/upload/contract/" + t.contract_id + "/" + t.real_name + "' target='_blank'>下载</a>"
+                            + "<a class='layui-btn layui-btn-xs layui-btn-danger' lay-event='del'>删除</a>";
+                    }
+                }
+            ]],
+            limits: [10, 15, 20, 25, 50, 100],
+            limit: 15,
+            page: true,
+            done: function () {
+                layer.closeAll('loading');
+            }
+        });
+
+        /**
+        * toolbar监听事件
+        */
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'add') {  // 监听添加操作
+                add();
+                return;
+            }
+        });
+
+        //监听工具条
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            var layEvent = obj.event;
+
+            if (layEvent === 'del') {
+                layer.confirm('确定删除？', { icon: 3, title: '提示信息' }, function (index) {
+                    del(data.id, data.contract_id);
+                    layer.close(index);
+                });
+            }
+        });
+
+        function del(id, cid) {
+            $.ajax({
+                type: 'POST',
+                url: "Del",
+                data: { id: id, contract_id: cid },
+                dataType: "json",
+                success: function (res) {//res为相应体,function为回调函数
+                    if (res.code == 0) {
+                        f_reload();
+                    }
+                    else {
+                        layer.alert(res.msg || res.Message, { icon: 5 });
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                }
+            });
+        }
+
+        //上传附件
+        function add() {
+            var index = layui.layer.open({
+                title: "上传附件",
+                type: 2,
+                anim: 1,
+                area: ['70%', '70%'],
+                maxmin: true,
+                content: "Add?id=" + encodeURIComponent(contract_id),
+                btn: ['关闭'],
+                btn2: function (index, layero) {
+                    layer.close(index);
+                },
+                cancel: function () {
+                    f_reload();
+                }
+            });
+        }
+
+        function f_reload() {
+            table.reload('mainGrid', {
+                page: {
+                    curr: 1
+                }
+            }, 'data');
+        }
+
+        window.f_reload = f_reload;
+    });
+</script>

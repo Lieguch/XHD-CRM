@@ -49,7 +49,7 @@ namespace XHD.Core.View.Controllers
         /// <param name="taskId">任务 ID</param>
         /// <returns>标准 XHDResult 字符串</returns>
         [HttpPost("DeleteWhere")]
-        [ButtonAuth("task_follow", "del")]
+        [ButtonAuth("task_manager", "follow_del")]
         public async Task<string> DeleteWhere(string taskId)
         {
             if (string.IsNullOrWhiteSpace(taskId))
@@ -92,7 +92,7 @@ namespace XHD.Core.View.Controllers
         /// id 为空即新建（生成 UUID + follow_id=当前用户 + follow_time=当前时间），
         /// id 有值即更新。
         /// </summary>
-        [ButtonAuth("task_follow", "save")]
+        [ButtonAuth("task_manager", "follow_save")]
         public async Task<string> Save(Task_follow model)
         {
             if (model == null)

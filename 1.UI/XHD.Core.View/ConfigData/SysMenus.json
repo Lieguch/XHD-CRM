@@ -32,6 +32,14 @@
     "Menu_order": 30
   },
   {
+    "id": "jobs",
+    "Menu_name": "工作计划",
+    "Menu_url": "Jobs/Index",
+    "Menu_icon": "fa-briefcase",
+    "parentid": "mytable",
+    "Menu_order": 35
+  },
+  {
     "id": "Message_News",
     "Menu_name": "新闻公告",
     "Menu_url": "MessageNews/Index",    
@@ -202,7 +210,7 @@
   {
     "id": "Sale_Menu_order",
     "Menu_name": "订单管理",
-    "Menu_url": "SaleMenu_order/Index",    
+    "Menu_url": "SaleOrder/Index",
     "Menu_icon": "fa-copy",    
     "parentid": "SaleManager",
     "Menu_order": 10
@@ -266,7 +274,7 @@
   {
     "id": "Report_Menu_order",
     "Menu_name": "订单报表",
-    "Menu_url": "Report_Menu_order/Index",    
+    "Menu_url": "Report_Order/Index",    
     "Menu_icon": "fa-balance-scale",    
     "parentid": "ReportManager",
     "Menu_order": 20
@@ -398,6 +406,14 @@
     "Menu_icon": "fa-shield",
     "parentid": "Sys_Manager",
     "Menu_order": 70
+  },
+  {
+    "id": "sys_menu",
+    "Menu_name": "菜单管理",
+    "Menu_url": "SysMenu/Index",
+    "Menu_icon": "fa-navicon",
+    "parentid": "Sys_Manager",
+    "Menu_order": 80
   },
   {
     "id": "sys_logs",
