@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Security.Cryptography;
-using System.Text;
 
 namespace XHD.Core.Common.DEncrypt
 {
@@ -45,8 +44,7 @@ namespace XHD.Core.Common.DEncrypt
         public static string Hash(string secret)
         {
             byte[] salt = RandomNumberGenerator.GetBytes(SaltBytes);
-            byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
-                Encoding.UTF8.GetBytes(secret ?? string.Empty), salt, Algorithm, Iterations, HashBytes);
+            byte[] hash = Derive(secret, salt, Iterations, HashBytes);
             return $"{Prefix}${Iterations}${Convert.ToBase64String(salt)}${Convert.ToBase64String(hash)}";
         }
 
@@ -87,8 +85,7 @@ namespace XHD.Core.Common.DEncrypt
                 {
                     return false;
                 }
-                byte[] actual = Rfc2898DeriveBytes.Pbkdf2(
-                    Encoding.UTF8.GetBytes(secret), salt, Algorithm, iterations, expected.Length);
+                byte[] actual = Derive(secret, salt, iterations, expected.Length);
                 return CryptographicOperations.FixedTimeEquals(actual, expected);
             }
 
@@ -102,6 +99,17 @@ namespace XHD.Core.Common.DEncrypt
         public static bool NeedsRehash(string stored)
         {
             return !string.IsNullOrEmpty(stored) && !stored.StartsWith(Prefix + "$", StringComparison.Ordinal);
+        }
+
+        /// <summary>
+        /// PBKDF2-HMAC-SHA256 派生。
+        /// 注意静态 Pbkdf2 的参数顺序为 (password, salt, iterations, hashAlgorithm, outputLength)——
+        /// iterations 在 hashAlgorithm 之前（CI #301 曾因顺序写反报 CS1503）。
+        /// </summary>
+        private static byte[] Derive(string secret, byte[] salt, int iterations, int outputBytes)
+        {
+            // string 重载内部按 UTF8 转换，与 Encoding.UTF8.GetBytes 等价
+            return Rfc2898DeriveBytes.Pbkdf2(secret ?? string.Empty, salt, iterations, Algorithm, outputBytes);
         }
     }
 }
