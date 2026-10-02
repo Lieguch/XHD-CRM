@@ -126,13 +126,13 @@ namespace XHD.Core.Services
             // [Sprint 10.38 P1-7] 不再把哈希写进 DB 查询表达式：
             // PBKDF2 无法被 FreeSql 翻译，且密码学比较应在内存做（固定时间）。
             // 规范密钥 = MD5(明文).ToUpper()，兼容已部署移动端协议。
-            string secret = DEncrypt.PasswordHasher.CanonicalSecret(model.pwd);
+            string secret = XHD.Core.Common.DEncrypt.PasswordHasher.CanonicalSecret(model.pwd);
 
             var result = await _irepository.GridAsync(a => a.uid == model.uid);
 
             // 旧实现把校验下推到 SQL（pwd == MD5Hash(明文)），这里改为取回后内存校验，
             // 对外行为不变：用户名或密码错误统一返回同一句，不泄露用户是否存在。
-            if (result.Count == 0 || !DEncrypt.PasswordHasher.Verify(result[0].pwd, secret))
+            if (result.Count == 0 || !XHD.Core.Common.DEncrypt.PasswordHasher.Verify(result[0].pwd, secret))
             {
                 return XHDResult.Error("用户名或密码错误！");
             }
@@ -144,9 +144,9 @@ namespace XHD.Core.Services
 
             // 透明升级：存量无盐 MD5 密码在**完全登录成功后**改写为 PBKDF2（用户无感知，
             // 被限制登录的用户不触发升级）。
-            if (DEncrypt.PasswordHasher.NeedsRehash(result[0].pwd))
+            if (XHD.Core.Common.DEncrypt.PasswordHasher.NeedsRehash(result[0].pwd))
             {
-                string upgraded = DEncrypt.PasswordHasher.Hash(secret);
+                string upgraded = XHD.Core.Common.DEncrypt.PasswordHasher.Hash(secret);
                 await _irepository.UpdateAsync(
                     a => new hr_employee { pwd = upgraded },
                     a => a.id == result[0].id);
