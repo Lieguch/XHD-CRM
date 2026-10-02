@@ -181,7 +181,9 @@ namespace XHD.Core.Tests
             Assert.Single(admins);
             Assert.Equal("admin", admins[0].id);
             Assert.Equal("admin", admins[0].uid);
-            Assert.Equal("E10ADC3949BA59ABBE56E057F20F883E", admins[0].pwd); // "123456" MD5
+            // [Sprint 10.38 P1-7] admin 密码改为 PBKDF2 加盐哈希，随机盐 ⇒ 不再断言字面量，改走 Verify
+            Assert.True(XHD.Core.Common.DEncrypt.PasswordHasher.Verify(admins[0].pwd,
+                XHD.Core.Common.DEncrypt.PasswordHasher.CanonicalSecret("123456")), "admin 初始密码不再是 123456 的哈希");
         }
 
         // ========== helpers ==========

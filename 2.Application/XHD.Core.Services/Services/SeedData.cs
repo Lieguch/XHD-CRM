@@ -773,7 +773,10 @@ namespace XHD.Core.Services
         public static IReadOnlyList<hr_employee> Admins()
         {
                         var list = new List<hr_employee>();
-            list.Add(new hr_employee { id = "admin", uid = "admin", pwd = "E10ADC3949BA59ABBE56E057F20F883E", name = "超级管理员", role_id = "SystemAdminRole" });
+            // [Sprint 10.38 P1-7] admin 初始密码 "123456" 改为 PBKDF2 加盐哈希（规范密钥 = MD5(明文).ToUpper()）。
+            // 随机盐 ⇒ 每次生成的哈希不同，校验一律走 PasswordHasher.Verify。
+            string adminPwdHash = XHD.Core.Common.DEncrypt.PasswordHasher.Hash(XHD.Core.Common.DEncrypt.PasswordHasher.CanonicalSecret("123456"));
+            list.Add(new hr_employee { id = "admin", uid = "admin", pwd = adminPwdHash, name = "超级管理员", role_id = "SystemAdminRole" });
             return list;
         }
         /// <summary>

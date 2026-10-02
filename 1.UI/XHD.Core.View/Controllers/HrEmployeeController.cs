@@ -340,16 +340,17 @@ namespace XHD.Core.View.Controllers
                 return XHDResult.Error("系统错误，找不到此用户！").ToString();
             }
 
-            var checkpwd = Common.DEncrypt.MD5Comm.MD5Hash(oldpassword);
+            // [Sprint 10.38 P1-7] 规范密钥 = MD5(明文).ToUpper()，Verify 兼容存量无盐 MD5
+            var checkpwd = Common.DEncrypt.PasswordHasher.CanonicalSecret(oldpassword);
 
-            if (!data.data[0].pwd.Equals(checkpwd))
+            if (!Common.DEncrypt.PasswordHasher.Verify(data.data[0].pwd, checkpwd))
             {
                 return XHDResult.Error("原密码不正确！").ToString();
             }
 
             var password = Request.Form["password"];
 
-            Expression<Func<hr_employee, hr_employee>> exppwd = a => new hr_employee { pwd = Common.DEncrypt.MD5Comm.MD5Hash(password) };
+            Expression<Func<hr_employee, hr_employee>> exppwd = a => new hr_employee { pwd = Common.DEncrypt.PasswordHasher.Hash(Common.DEncrypt.PasswordHasher.CanonicalSecret(password)) };
 
 
             await _service.UpdateAsync(exppwd, expwhere);
@@ -381,7 +382,7 @@ namespace XHD.Core.View.Controllers
                 return XHDResult.Error("只能修改自己的密码").ToString();
             }
 
-            Expression<Func<hr_employee, hr_employee>> exppwd = a => new hr_employee { pwd = Common.DEncrypt.MD5Comm.MD5Hash(password) };
+            Expression<Func<hr_employee, hr_employee>> exppwd = a => new hr_employee { pwd = Common.DEncrypt.PasswordHasher.Hash(Common.DEncrypt.PasswordHasher.CanonicalSecret(password)) };
             Expression<Func<hr_employee, bool>> expwhere = a => a.id == id;
 
             var result = await _service.UpdateAsync(exppwd, expwhere);

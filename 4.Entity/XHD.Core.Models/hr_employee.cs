@@ -113,7 +113,12 @@ namespace XHD.Core.Models {
         /// <summary>
 		/// 员工密码
 		/// </summary>
-		[JsonIgnore, Column(StringLength = 50)]
+		/// <remarks>
+		/// Sprint 10.38 P1-7：无盐 MD5(32 位) → 加盐 PBKDF2。
+		/// 存储格式 "XHD-PBKDF2${迭代次数}${Base64(16B 盐)}${Base64(32B 哈希)}" ≈ 87 字符，
+		/// 因此列宽 50 → 128；FreeSql CodeFirst(UseAutoSyncStructure=true) 启动时自动 ALTER。
+		/// </remarks>
+		[JsonIgnore, Column(StringLength = 128)]
 		public string pwd { get; set; } = string.Empty;
 
         /// <summary>

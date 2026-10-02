@@ -75,9 +75,11 @@ namespace XHD.Core.View.Controllers
         [HttpGet]
         public async Task<string> Login(string uid, string? pwd)
         {
-            pwd = pwd.ToUpper();
+            // [Sprint 10.38 P1-7] 移动端协议：客户端发送 MD5(pwd).ToUpper()，服务端拿到的就是规范密钥。
+            // 校验改在内存做（PBKDF2 无法下推 SQL），存量无盐 MD5 记录由 Verify 兼容并透明升级。
+            string secret = (pwd ?? string.Empty).ToUpperInvariant();
 
-            Expression<Func<hr_employee, bool>> expwhere = a => a.uid == uid && a.pwd == pwd;
+            Expression<Func<hr_employee, bool>> expwhere = a => a.uid == uid;
 
             if (uid != "admin")
             {
@@ -89,6 +91,20 @@ namespace XHD.Core.View.Controllers
             if (list.count > 0)
             {
                 var l = list.data[0];
+
+                if (!PasswordHasher.Verify(l.pwd, secret))
+                {
+                    return XHDResult.Error("账号密码不匹配！").ToString();
+                }
+
+                // 透明升级存量无盐 MD5 密码为 PBKDF2
+                if (PasswordHasher.NeedsRehash(l.pwd))
+                {
+                    string upgraded = PasswordHasher.Hash(secret);
+                    await _empservice.UpdateAsync(
+                        a => new hr_employee { pwd = upgraded },
+                        a => a.id == l.id);
+                }
 
                 string id = l.id;
                 var outtime = DateTime.Now.AddMonths(1).ToString("yyyy-MM-dd hh:mm:ss");
@@ -188,15 +204,16 @@ namespace XHD.Core.View.Controllers
                 return userresult.ToString();
             }
 
-            // 校验原密码
+            // 校验原密码（移动端此接口按明文发送，服务端求规范密钥——沿用 A 版原始契约）
             var empData = await _empservice.GridAsync(a => a.id == employee.id);
             var emp = empData.data.FirstOrDefault();
-            if (emp == null || !emp.pwd.Equals(MD5Comm.MD5Hash(oldpwd), StringComparison.OrdinalIgnoreCase))
+            string oldSecret = PasswordHasher.CanonicalSecret(oldpwd);
+            if (emp == null || !PasswordHasher.Verify(emp.pwd, oldSecret))
             {
                 return XHDResult.Error("原密码不正确").ToString();
             }
 
-            Expression<Func<hr_employee, hr_employee>> exppwd = a => new hr_employee { pwd = MD5Comm.MD5Hash(pwd) };
+            Expression<Func<hr_employee, hr_employee>> exppwd = a => new hr_employee { pwd = PasswordHasher.Hash(PasswordHasher.CanonicalSecret(pwd)) };
             Expression<Func<hr_employee, bool>> expwhere = a => a.id == employee.id;
             var result = await _empservice.UpdateAsync(exppwd, expwhere);
             if (result <= 0)
