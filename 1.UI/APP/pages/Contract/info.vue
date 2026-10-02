@@ -149,6 +149,11 @@ export default {
         this.loadAtta();
     },
 
+    // 页面再次显示时（含从编辑页返回）刷新详情，使改动即时回显
+    onShow() {
+        this.loadContractDetail();
+    },
+
     methods: {
 		updateData(data) {
 		    this.contractInfo = data;

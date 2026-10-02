@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Session;
 using Microsoft.Extensions.Configuration;
 using Newtonsoft;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using Newtonsoft.Json.Linq;
 
 using System;
@@ -683,8 +684,39 @@ namespace XHD.Core.View.Controllers
 
             var result = await _OrderService.GridAsync(exp, page, limit, "a.create_time desc");
 
-            return result.ToString();
+            // APP 按 A 版 Model 契约读取编号字段（Serialnumber），B 实体字段名为 sn —— 在 API 边界补别名
+            return ProjectGrid(result, o => WithSerialnumber(SerializeItem(o), o.sn)).ToString();
+        }
 
+        /// <summary>
+        /// 订单详情（单条）。移动端约定 res.data 为对象本身。
+        /// </summary>
+        /// <param name="id">订单 id</param>
+        public async Task<string> OrderInfo(string id)
+        {
+            //身份验证
+            var userresult = checkToken();
+
+            if (userresult.Value<int>("code") != 0)
+            {
+                return userresult.ToString();
+            }
+
+            if (string.IsNullOrWhiteSpace(id) || !PageValidate.checkID(id))
+            {
+                return XHDResult.Error("参数错误").ToString();
+            }
+
+            Expression<Func<Sale_order, bool>> exp = a => a.id == id;
+
+            var result = await _OrderService.GridAsync(exp, 1, 1);
+
+            if (result.count == 0 || result.data == null || result.data.Count == 0)
+            {
+                return XHDResult.Error("数据不存在").ToString();
+            }
+
+            return SingleResult(WithSerialnumber(SerializeItem(result.data[0]), result.data[0].sn)).ToString();
         }
 
         public async Task<string> OrderDetails(string order_id)
@@ -876,8 +908,39 @@ namespace XHD.Core.View.Controllers
 
             var result = await _contractservice.GridAsync(exp, page, limit, "a.create_time desc");
 
-            return result.ToString();
+            // APP 按 A 版 Model 契约读取编号字段（Serialnumber），B 实体字段名为 sn —— 在 API 边界补别名
+            return ProjectGrid(result, o => WithSerialnumber(SerializeItem(o), o.sn)).ToString();
+        }
 
+        /// <summary>
+        /// 合同详情（单条）。移动端约定 res.data 为对象本身。
+        /// </summary>
+        /// <param name="id">合同 id</param>
+        public async Task<string> ContractInfo(string id)
+        {
+            //身份验证
+            var userresult = checkToken();
+
+            if (userresult.Value<int>("code") != 0)
+            {
+                return userresult.ToString();
+            }
+
+            if (string.IsNullOrWhiteSpace(id) || !PageValidate.checkID(id))
+            {
+                return XHDResult.Error("参数错误").ToString();
+            }
+
+            Expression<Func<Sale_contract, bool>> exp = a => a.id == id;
+
+            var result = await _contractservice.GridAsync(exp, 1, 1);
+
+            if (result.count == 0 || result.data == null || result.data.Count == 0)
+            {
+                return XHDResult.Error("数据不存在").ToString();
+            }
+
+            return SingleResult(WithSerialnumber(SerializeItem(result.data[0]), result.data[0].sn)).ToString();
         }
 
         public async Task<string> ContractAtta(string contract_id)
@@ -1240,7 +1303,92 @@ namespace XHD.Core.View.Controllers
 
         #endregion
 
+        #region 收款详情（移动端）
+
+        /// <summary>
+        /// 收款详情（单条）。移动端约定 res.data 为对象本身。
+        /// Finance_Receive 实体字段与 APP（A 版 Model）契约一致，无需别名。
+        /// </summary>
+        /// <param name="id">收款单 id</param>
+        public async Task<string> ReceiveInfo(string id)
+        {
+            //身份验证
+            var userresult = checkToken();
+
+            if (userresult.Value<int>("code") != 0)
+            {
+                return userresult.ToString();
+            }
+
+            if (string.IsNullOrWhiteSpace(id) || !PageValidate.checkID(id))
+            {
+                return XHDResult.Error("参数错误").ToString();
+            }
+
+            Expression<Func<Finance_Receive, bool>> exp = a => a.id == id;
+
+            var result = await _ReceiveService.GridAsync(exp, 1, 1);
+
+            if (result.count == 0 || result.data == null || result.data.Count == 0)
+            {
+                return XHDResult.Error("数据不存在").ToString();
+            }
+
+            return SingleResult(SerializeItem(result.data[0])).ToString();
+        }
 
 
+        #endregion
+
+        #region 移动端字段适配（API 边界别名）
+
+        /// <summary>
+        /// APP 按 A 版 Model 契约读取编号（Serialnumber），B 实体字段名为 sn。
+        /// 仅在此 API 边界补别名，Web 前端与实体本身不受影响。
+        /// </summary>
+        private static JObject WithSerialnumber(JObject obj, string sn)
+        {
+            if (obj != null)
+            {
+                obj["Serialnumber"] = sn ?? string.Empty;
+            }
+            return obj;
+        }
+
+        /// <summary>
+        /// 实体序列化为 JObject，日期格式与 XHDData.ToString 一致（yyyy-MM-dd HH:mm:ss）。
+        /// </summary>
+        private static JObject SerializeItem<T>(T item)
+            => JObject.Parse(JsonConvert.SerializeObject(item, new IsoDateTimeConverter { DateTimeFormat = "yyyy-MM-dd HH:mm:ss" }));
+
+        /// <summary>
+        /// 单条结果：{ code, msg, data: 对象本身, count: 1 }。移动端详情页约定 res.data 即单对象。
+        /// </summary>
+        private static JObject SingleResult(JObject data)
+        {
+            JObject obj = new JObject();
+            obj.Add("code", 0);
+            obj.Add("msg", "");
+            obj.Add("data", data);
+            obj.Add("count", 1);
+            obj.Add("rettime", DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss.fff"));
+            return obj;
+        }
+
+        /// <summary>
+        /// 分页结果逐行投影（保持 XHDData 的 code/msg/data/count 结构，只替换行形状）。
+        /// </summary>
+        private static XHDData<JObject> ProjectGrid<T>(XHDData<T> grid, Func<T, JObject> map)
+        {
+            return new XHDData<JObject>
+            {
+                code = grid.code,
+                msg = grid.msg,
+                count = grid.count,
+                data = grid.data != null ? grid.data.Select(map).ToList() : new List<JObject>()
+            };
+        }
+
+        #endregion
     }
 }

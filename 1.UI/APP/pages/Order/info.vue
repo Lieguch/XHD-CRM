@@ -140,6 +140,11 @@ export default {
         this.loadProduct();
     },
 
+    // 页面再次显示时（含从编辑页返回）刷新详情，使改动即时回显
+    onShow() {
+        this.loadOrderDetail();
+    },
+
     methods: {
 		updateData(data) {
 		    this.orderInfo = data;

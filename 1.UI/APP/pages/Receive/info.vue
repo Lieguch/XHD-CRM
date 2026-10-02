@@ -96,6 +96,11 @@ export default {
         console.log('onLoad 加载数据:', this.receiveData);
     },
 
+    // 页面再次显示时（含从编辑页返回）刷新详情，使改动即时回显
+    onShow() {
+        this.loadReceiveDetail();
+    },
+
 
     methods: {
 		updateData(data) {
