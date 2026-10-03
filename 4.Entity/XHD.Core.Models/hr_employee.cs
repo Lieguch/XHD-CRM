@@ -81,6 +81,16 @@ namespace XHD.Core.Models {
 		public string EntryDate { get; set; } = string.Empty;
 
         /// <summary>
+        /// 头像 URL（相对 wwwroot，如 /Upload/Header/2024-01-01/xxx.png）
+        /// </summary>
+        /// <remarks>
+        /// Sprint 10.38：补齐 A 版员工头像能力（A 侧为 base64 直存 DB，B 侧改为文件直传）。
+        /// FreeSql CodeFirst(UseAutoSyncStructure=true) 启动时自动 ALTER 加列。
+        /// </remarks>
+        [JsonProperty, Column(StringLength = 255)]
+        public string headimg { get; set; } = string.Empty;
+
+        /// <summary>
 		/// 身份证号码
 		/// </summary>
 		[JsonProperty, Column(StringLength = 50)]

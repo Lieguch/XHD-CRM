@@ -1,0 +1,126 @@
+﻿@{
+    Layout = null;
+    ViewData["Title"] = "选择联系人";
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>选择联系人</title>
+    <link rel="stylesheet" href="~/layuimini/lib/layui-v2.9.6/css/layui.css" media="all">
+    <link rel="stylesheet" href="~/layuimini/lib/font-awesome-4.7.0/css/font-awesome.min.css" media="all">
+    <style>
+        body { margin: 8px; background-color: #fff; }
+        .search-bar { margin-bottom: 8px; }
+        .search-bar .layui-input-inline { width: 160px; }
+    </style>
+</head>
+<body>
+
+    <!-- 搜索区域 -->
+    <fieldset class="layui-elem-field search-bar">
+        <form class="layui-form layui-form-pane" action="">
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">联系人</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="C_name" id="C_name" autocomplete="off" class="layui-input" placeholder="姓名">
+                </div>
+            </div>
+            <div class="layui-form-item layui-inline">
+                <label class="layui-form-label">客户</label>
+                <div class="layui-input-inline">
+                    <input type="text" name="cus_name" id="cus_name" autocomplete="off" class="layui-input" placeholder="客户名称">
+                </div>
+            </div>
+            <div class="layui-form-item layui-inline">
+                <button type="submit" class="layui-btn layui-btn-primary layui-btn-sm" lay-submit lay-filter="data-search-btn"><i class="layui-icon layui-icon-search"></i> 搜索</button>
+                <button type="reset" class="layui-btn layui-btn-primary layui-btn-sm"><i class="layui-icon layui-icon-error"></i> 重置</button>
+            </div>
+        </form>
+    </fieldset>
+
+    <!-- 表格工具栏（确定按钮） -->
+    <script type="text/html" id="contactToolbar">
+        <div class="layui-btn-container">
+            <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="ok"><i class="layui-icon layui-icon-ok"></i> 确定选择</button>
+        </div>
+    </script>
+
+    <!-- 表格主体 -->
+    <table id="contact-table" class="layui-table" lay-filter="currentTableFilter"></table>
+
+    <script src="~/layuimini/lib/layui-v2.9.6/layui.js" charset="utf-8"></script>
+    <script src="~/layuimini/js/lay-config.js?v=2.0.0" charset="utf-8"></script>
+    <script>
+        layui.use(['table', 'form', 'layer'], function () {
+            var table = layui.table;
+            var form = layui.form;
+            var layer = layui.layer;
+            var $ = layui.$;
+
+            var GRID_ID = 'contactGrid';
+
+            // --- 1. 表格渲染（默认只查有手机号的联系人） ---
+            table.render({
+                elem: '#contact-table',
+                id: GRID_ID,
+                url: '/CRM_Contact/Grid?mobile_only=1',
+                toolbar: '#contactToolbar',
+                defaultToolbar: ['filter'],
+                cols: [[
+                    { type: 'checkbox', fixed: 'left' },
+                    { field: 'C_name', width: 120, title: '联系人' },
+                    {
+                        field: 'C_tel', width: 150, title: '手机号',
+                        templet: function (d) {
+                            return d.C_tel ? '<i class="fa fa-phone"></i> ' + d.C_tel : '';
+                        }
+                    },
+                    {
+                        field: 'cus_name', width: 220, title: '所属客户',
+                        templet: function (d) { return d.customer ? d.customer.cus_name : ""; }
+                    }
+                ]],
+                page: true,
+                limit: 15,
+                limits: [10, 15, 20, 25, 50, 100]
+            });
+
+            // --- 2. 搜索提交 ---
+            form.on('submit(data-search-btn)', function (data) {
+                table.reload(GRID_ID, {
+                    page: { curr: 1 },
+                    where: $.extend({ mobile_only: 1 }, data.field)
+                });
+                return false;
+            });
+
+            // --- 3. 暴露给父页：返回选中行 [{C_name, C_tel}, ...] ---
+            window.f_selected = function () {
+                var rows = (table.checkStatus(GRID_ID) || {}).data || [];
+                return rows.map(function (d) {
+                    return { C_name: d.C_name, C_tel: d.C_tel };
+                });
+            };
+
+            // --- 4. 工具栏事件：确定 -> 主动推给父页回填 ---
+            table.on('toolbar(currentTableFilter)', function (obj) {
+                if (obj.event !== 'ok') return;
+
+                var rows = window.f_selected();
+                if (!rows.length) {
+                    layer.msg('请先勾选要添加的联系人', { icon: 2 });
+                    return;
+                }
+
+                if (parent && parent.f_contact_selected) {
+                    parent.f_contact_selected(rows);
+                } else {
+                    layer.msg('未找到父页回填接口', { icon: 2 });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

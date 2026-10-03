@@ -280,5 +280,40 @@ namespace XHD.Core.View.Controllers
             var result = await _service.GridAsync(exp, 1, 200, "executive_time asc");
             return result.ToString();
         }
+
+        /// <summary>
+        /// 门户任务提醒：对应 A 侧 Server.MSG_Task.TaskRemind
+        /// （A 侧 task.GetList(7, "executive_id='{emp_id}'", "executive_time desc")）。
+        /// 与 MyTodo 同口径：仅当前登录员工 + 未完成（task_status_id=0），
+        /// 按执行时间升序（最紧急/最逾期在前），默认 7 条。纯查询，不修改任何状态。
+        /// </summary>
+        /// <param name="limit">条数上限，默认 7（对齐 A 侧 GetList(7, ...)），有效范围夹逼到 1~50</param>
+        /// <returns>标准 XHDResult 字符串，data 承载未完成任务数组</returns>
+        [HttpGet("Remind")]
+        public async Task<string> Remind(int limit = 7)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return XHDResult.Error("登录状态已过期").ToString();
+            }
+
+            if (limit < 1) limit = 1;
+            if (limit > 50) limit = 50;
+
+            Expression<Func<TaskInfo, bool>> exp = t => t.executive_id == userId && t.task_status_id == 0;
+            var result = await _service.GridAsync(exp, 1, limit, "executive_time asc");
+
+            var arr = new JArray();
+            if (result?.data != null)
+            {
+                foreach (var item in result.data)
+                {
+                    arr.Add(JObject.FromObject(item));
+                }
+            }
+
+            return XHDResult.Success(arr).ToString();
+        }
     }
 }

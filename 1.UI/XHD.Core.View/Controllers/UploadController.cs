@@ -11,6 +11,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
 using XHD.Core.IServices;
@@ -258,6 +259,53 @@ namespace XHD.Core.View.Controllers
             }
 
             return XHDResult.Success(nowfileName).ToString();
+        }
+
+        /// <summary>
+        /// Sprint 10.38 员工头像上传（对应 A 侧 hr_employee 头像链路）。
+        /// 与 A 版 base64 直存不同：复用 B 版 Image() 的 IFormFile 直传范式，
+        /// 前端以 canvas 裁切为 120x120 正方形后上传，服务端落盘 wwwroot/Upload/Header/{日期}/。
+        /// </summary>
+        /// <returns>标准 XHDResult 字符串，成功时 data[0].url 为相对 wwwroot 的头像路径</returns>
+        [HttpPost("HeadImg")]
+        [ButtonAuth("hr_employee", "edit")]
+        public async Task<string> HeadImg()
+        {
+            var file = Request.Form.Files.FirstOrDefault();
+            if (file == null || file.Length == 0)
+            {
+                return XHDResult.Error("未接收到文件！").ToString();
+            }
+
+            var fileExtension = Path.GetExtension(file.FileName).ToLower();
+            if (fileExtension != ".jpg" && fileExtension != ".jpeg" && fileExtension != ".png" && fileExtension != ".gif")
+            {
+                return XHDResult.Error("仅支持 jpg/png/gif！").ToString();
+            }
+
+            if (file.Length > 2 * 1024 * 1024)
+            {
+                return XHDResult.Error("图片不能超过 2MB！").ToString();
+            }
+
+            var UploadDir = $"Upload/Header/{DateTime.Now.ToString("yyyy-MM-dd")}";
+            var fileDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", UploadDir);
+            if (!Directory.Exists(fileDir))
+                Directory.CreateDirectory(fileDir);
+
+            var filename = $"{DateTime.Now.ToString("yyyyMMddHHmmss")}_{new Random().Next(10000, 99999)}{fileExtension}";
+            var fullpath = Path.Combine(fileDir, filename);
+            using (var fs = new FileStream(fullpath, FileMode.Create, FileAccess.Write))
+            {
+                await file.CopyToAsync(fs);
+            }
+
+            var url = $"/{UploadDir}/{filename}";
+
+            JObject obj = new JObject();
+            obj.Add("url", url);
+
+            return XHDResult.Success(obj).ToString();
         }
     }
 }

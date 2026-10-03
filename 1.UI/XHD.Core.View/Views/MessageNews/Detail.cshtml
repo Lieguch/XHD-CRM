@@ -1,0 +1,45 @@
+@using XHD.Core.Models
+@{
+    var model = ViewData["model"] as Message_news;
+    ViewData["Title"] = model != null && model.is_notice ? "公告详情" : "新闻详情";
+}
+
+<style type="text/css">
+    #toolbar { padding: 5px 0; }
+    .news-detail { padding: 15px; }
+    .news-detail h2 { text-align: center; margin-bottom: 5px; }
+    .news-detail .meta { text-align: center; color: #999; font-size: 13px; margin-bottom: 15px; }
+    .news-detail .content { line-height: 1.8; font-size: 15px; }
+</style>
+
+<div class="layui-card">
+    <div class="layui-card-header">信息</div>
+    <div class="layui-card-body">
+        @Html.Hidden("news_content", model?.news_content)
+        <div class="news-detail">
+            <h2>@(model?.news_title)</h2>
+            <div class="meta">
+                <span>类型：@(model != null && model.is_notice ? "公告" : "新闻")</span>
+                <span style="margin-left: 15px;">发布时间：@(model?.create_time?.ToString("yyyy-MM-dd HH:mm"))</span>
+            </div>
+            <div class="content" id="news_content_view"></div>
+        </div>
+    </div>
+</div>
+
+<div class="layui-card">
+    <div class="layui-card-body" style="text-align: center;">
+        <button type="button" class="layui-btn" onclick="closeLayer()">关 闭</button>
+    </div>
+</div>
+
+<script>
+    // 内容入库时经 myHTMLEnCode 编码，展示前用 myHTMLDeCode 反解（与 Add.cshtml 同款）
+    document.getElementById("news_content_view").innerHTML =
+        myHTMLDeCode(document.getElementById("news_content").value || "");
+
+    function closeLayer() {
+        var index = parent.layer.getFrameIndex(window.name);
+        parent.layer.close(index);
+    }
+</script>

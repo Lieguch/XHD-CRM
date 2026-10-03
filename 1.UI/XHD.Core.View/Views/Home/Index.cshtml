@@ -56,7 +56,11 @@
                         <a href="javascript:;" data-check-screen="full"><i class="fa fa-arrows-alt"></i></a>
                     </li>
                     <li class="layui-nav-item layuimini-setting xhd-item">
-                        <a href="javascript:;">@ViewData["user_name"]</a>
+                        <a href="javascript:;">
+                            <img id="headimg_preview" src="/Images/man.png"
+                                 style="width:26px;height:26px;border-radius:50%;object-fit:cover;margin-right:6px;vertical-align:middle;" alt="头像">
+                            @ViewData["user_name"]
+                        </a>
                         <dl class="layui-nav-child">
                             <dd>
                                 <a href="javascript:;" layuimini-content-href="hremployee/me" data-title="基本资料" data-icon="fa fa-gears">基本资料<span class="layui-badge-dot"></span></a>
@@ -149,6 +153,19 @@
                 renderPageVersion: false
             };
             miniAdmin.render(options);
+
+            // 取当前登录员工头像，渲染到顶栏用户名下拉区（复用 Me 页的 Grid?id=me 数据源）
+            $.ajax({
+                type: 'get',
+                url: '/HrEmployee/Grid',
+                data: { id: 'me' },
+                dataType: 'json',
+                success: function (res) {
+                    if (res.count > 0 && res.data[0].headimg) {
+                        $('#headimg_preview').attr('src', res.data[0].headimg);
+                    }
+                }
+            });
 
             $('.login-out').on("click", function () {
                 $.ajax({

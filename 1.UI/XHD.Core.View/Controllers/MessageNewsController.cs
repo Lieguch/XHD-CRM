@@ -58,6 +58,30 @@ namespace XHD.Core.View.Controllers
             return View();
         }
 
+        /// <summary>
+        /// 详情（公告/新闻共用，一次补齐 A 侧 news_view + notice_view 两页）。
+        /// 按 id 查单条，空 id 或查不到返回 NotFound。
+        /// </summary>
+        public async Task<IActionResult> Detail(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                return NotFound();
+            }
+
+            Expression<Func<Message_news, bool>> exp = a => a.id == id;
+            var result = await _service.GridAsync(exp, 1, 1);
+
+            if (result.count == 0)
+            {
+                return NotFound();
+            }
+
+            ViewData["model"] = result.data[0];
+
+            return View();
+        }
+
         public async Task<string> Grid(PageView<Message_news> model)
         {
             Expression<Func<Message_news, bool>> exp = a => 1 == 1;
@@ -65,6 +89,12 @@ namespace XHD.Core.View.Controllers
             if (!string.IsNullOrWhiteSpace(Request.Query["T_name"]))
             {
                 exp = exp.And(a => a.news_title.Contains(Request.Query["T_name"]));
+            }
+
+            // 合并设计下按类型筛选：is_notice=true 仅公告，否则全部
+            if (Request.Query["is_notice"] == "true")
+            {
+                exp = exp.And(a => a.is_notice);
             }
 
             var result = await _service.GridAsync(exp, model.Page, model.Limit, "a.create_time desc");
@@ -122,7 +152,7 @@ namespace XHD.Core.View.Controllers
                         Sys_log logmodels = new Sys_log();
 
                         logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
-                        logmodels.EventType = "[新闻]修改";
+                        logmodels.EventType = model.is_notice ? "[公告]修改" : "[新闻]修改";
                         logmodels.EventID = model.id;
                         logmodels.EventTitle = model.news_title;
                         logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;
@@ -176,7 +206,7 @@ namespace XHD.Core.View.Controllers
                 Sys_log logmodels = new Sys_log();
 
                 logmodels.id = UUIDNext.Uuid.NewSequential().ToString();
-                logmodels.EventType = "[新闻]删除";
+                logmodels.EventType = checkdata.data[0].is_notice ? "[公告]删除" : "[新闻]删除";
                 logmodels.EventID = id;
                 logmodels.EventTitle = checkdata.data[0].news_title;
                 logmodels.UserID = User.FindFirst(ClaimTypes.Sid).Value;

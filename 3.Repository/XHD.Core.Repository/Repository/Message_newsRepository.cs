@@ -117,8 +117,9 @@ namespace XHD.Core.Repository
             if (limit > 50) limit = 50;
 
             // 1. 查询未读公告（按 create_time 降序）
+            // B 侧 public_notice 与 public_news 合并为单表，仅 is_notice=true 的为公告
             var list = await _fsql.Select<Message_news>()
-                .Where(a => !a.isRead)
+                .Where(a => a.is_notice && !a.isRead)
                 .OrderByDescending(a => a.create_time)
                 .Limit(limit)
                 .ToListAsync();
@@ -152,6 +153,7 @@ namespace XHD.Core.Repository
         /// Sprint 6 Wave 1 #98：新闻提醒（最新 N 条）。
         /// 对应 A 侧 Server.Public_news.newsremind：仅按 create_time desc 取前 N 条，
         /// 不过滤 isRead、不修改已读标记。参数化执行。
+        /// 合并设计下仅返回 is_notice=false 的新闻，公告走 NoticeRemindAsync。
         /// </summary>
         public async Task<List<Message_news>> NewsRemindAsync(int limit = 5)
         {
@@ -159,6 +161,7 @@ namespace XHD.Core.Repository
             if (limit > 50) limit = 50;
 
             return await _fsql.Select<Message_news>()
+                .Where(a => !a.is_notice)
                 .OrderByDescending(a => a.create_time)
                 .Limit(limit)
                 .ToListAsync();

@@ -1,0 +1,138 @@
+﻿@{
+    ViewData["Title"] = "上传头像";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>上传头像</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <link rel="stylesheet" href="~/layuimini/lib/layui-v2.9.6/css/layui.css" media="all">
+    <style>
+        body { padding: 15px; }
+        .headimg-wrap { text-align: center; }
+        #cut_canvas {
+            width: 120px;
+            height: 120px;
+            border: 1px solid #e2e2e2;
+            border-radius: 4px;
+            background-color: #f2f2f2;
+        }
+        .headimg-tip {
+            color: #999;
+            font-size: 12px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="headimg-wrap">
+    <canvas id="cut_canvas" width="120" height="120"></canvas>
+    <div class="headimg-tip">支持 jpg/png/gif，大小不超过 2MB，自动按居中正方形裁切</div>
+
+    <div class="layui-form-item" style="margin-top: 15px;">
+        <button type="button" class="layui-btn layui-btn-primary" id="btn_choose">
+            <i class="layui-icon layui-icon-upload"></i> 选择图片
+        </button>
+        <button type="button" class="layui-btn" id="btn_upload" disabled>
+            <i class="layui-icon layui-icon-ok"></i> 上传头像
+        </button>
+    </div>
+</div>
+
+<script src="~/layuimini/lib/layui-v2.9.6/layui.js" charset="utf-8"></script>
+<script>
+    layui.use(['upload', 'layer', 'jquery'], function () {
+        var upload = layui.upload,
+            layer = layui.layer,
+            $ = layui.jquery;
+
+        var canvas = document.getElementById('cut_canvas');
+        var ctx = canvas.getContext('2d');
+        var hasImage = false;
+
+        // 居中等比缩放裁切为 120x120 正方形（保留 A 版"头像裁切"语义，纯 canvas 不引三方库）
+        function drawSquare(img) {
+            var size = 120;
+            var scale = size / Math.min(img.width, img.height);
+            var sw = img.width * scale;
+            var sh = img.height * scale;
+            var sx = (sw - size) / 2;
+            var sy = (sh - size) / 2;
+
+            ctx.clearRect(0, 0, size, size);
+            ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
+            hasImage = true;
+            $('#btn_upload').prop('disabled', false);
+        }
+
+        var uploadInst = upload.render({
+            elem: '#btn_choose',
+            accept: 'images',
+            acceptMime: 'image/jpg,image/jpeg,image/png,image/gif',
+            auto: false,
+            choose: function (obj) {
+                obj.preview(function (index, file, result) {
+                    var img = new Image();
+                    img.onload = function () {
+                        drawSquare(img);
+                    };
+                    img.onerror = function () {
+                        layer.msg('图片加载失败，请重新选择', { icon: 5 });
+                    };
+                    img.src = result;
+                });
+            }
+        });
+
+        $('#btn_upload').on('click', function () {
+            if (!hasImage) {
+                layer.msg('请先选择图片', { icon: 7 });
+                return;
+            }
+            var btn = $(this);
+            btn.prop('disabled', true).text('上传中...');
+
+            canvas.toBlob(function (blob) {
+                var formData = new FormData();
+                formData.append('file', blob, 'headimg.png');
+
+                $.ajax({
+                    url: '/Upload/HeadImg',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    dataType: 'json',
+                    success: function (res) {
+                        btn.prop('disabled', false).html('<i class="layui-icon layui-icon-ok"></i> 上传头像');
+                        if (res.code === 0 && res.data && res.data.length > 0 && res.data[0].url) {
+                            var url = res.data[0].url;
+                            // 回写父页面（Me.cshtml）隐藏域与预览图
+                            var p$ = window.parent.layui.$;
+                            if (p$) {
+                                p$('#headimg').val(url);
+                                p$('#headimg_preview').attr('src', url);
+                            }
+                            var index = parent.layer.getFrameIndex(window.name);
+                            parent.layer.close(index);
+                            parent.layer.msg('头像上传成功', { icon: 1 });
+                        } else {
+                            layer.msg(res.msg || '上传失败', { icon: 5 });
+                        }
+                    },
+                    error: function (XMLHttpRequest, textStatus, errorThrown) {
+                        btn.prop('disabled', false).html('<i class="layui-icon layui-icon-ok"></i> 上传头像');
+                        layer.msg('上传失败：' + XMLHttpRequest.status, { icon: 5 });
+                    }
+                });
+            }, 'image/png');
+        });
+    });
+</script>
+</body>
+</html>

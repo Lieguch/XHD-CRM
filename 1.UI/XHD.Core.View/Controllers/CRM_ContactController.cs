@@ -75,6 +75,15 @@ namespace XHD.Core.View.Controllers
             return View();
         }
 
+        /// <summary>
+        /// 短信群发：联系人多选弹窗页面（整页 layui table，iframe 内打开）。
+        /// 表格数据仍走 Grid?mobile_only=1。
+        /// </summary>
+        public IActionResult Select()
+        {
+            return View();
+        }
+
         public async Task<string> Grid(PageView<CRM_Contact> model)
         {
             Expression<Func<CRM_Contact, bool>> exp = a => 1 == 1;
@@ -102,6 +111,12 @@ namespace XHD.Core.View.Controllers
             if (!string.IsNullOrWhiteSpace(Request.Query["C_tel"]))
             {
                 exp = exp.And(a => a.C_tel.Contains(Request.Query["C_tel"]));
+            }
+
+            // 短信群发场景：只列出有手机号的联系人
+            if (Request.Query["mobile_only"] == "1")
+            {
+                exp = exp.And(a => !string.IsNullOrEmpty(a.C_tel));
             }
 
             //exp = exp.And(a => _fsql.Select<hr_employee>().As("b").ToList(b => b.id).Contains(a.create_id));

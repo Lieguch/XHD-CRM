@@ -36,6 +36,19 @@
     <div class="layui-card">
         <div class="layui-card-header">员工信息</div>
         <div class="layui-card-body">
+            <div class="layui-form-item">
+                <label class="layui-form-label" style="padding-left:0px;">头像</label>
+                <div class="layui-input-inline" style="width:auto;">
+                    <img id="headimg_preview" src="/Images/man.png"
+                         style="width:120px;height:120px;border:1px solid #e2e2e2;border-radius:4px;object-fit:cover;" alt="头像">
+                </div>
+                <div class="layui-input-inline" style="vertical-align:bottom;">
+                    <button type="button" class="layui-btn layui-btn-primary" id="btn_headimg">
+                        <i class="layui-icon layui-icon-upload"></i> 上传头像
+                    </button>
+                </div>
+            </div>
+
             <div class="layui-form-item">  
                 <div class="layui-inline">
                     <label class="layui-form-label required" style="padding-left:0px;">账号</label>
@@ -176,6 +189,17 @@
             , trigger: 'click' //采用click弹出
         });
 
+        // 上传头像：iframe 打开裁切页，由子页回写 #headimg 与 #headimg_preview
+        $('#btn_headimg').on('click', function () {
+            layer.open({
+                type: 2,
+                title: '上传头像',
+                area: ['420px', '320px'],
+                shadeClose: false,
+                content: '/HrEmployee/HeadImg'
+            });
+        });
+
         $.ajax({
             type: 'get',
             url: 'Grid',
@@ -195,6 +219,10 @@
                     $("#" + val).val(value);
 
                     form.render();
+                }
+                // 回填头像预览（headimg 隐藏域已被上面的循环填入，这里补预览图）
+                if (data.headimg) {
+                    $("#headimg_preview").attr("src", data.headimg);
                 }
             },
             error: function (XMLHttpRequest, textStatus, errorThrown) {

@@ -70,6 +70,14 @@ namespace XHD.Core.Models {
 		[JsonProperty]
 		public DateTime? read_time { get; set; }
 
+		/// <summary>
+		/// 是否为公告（true=全局广播并走未读提醒；false=新闻）
+		/// B 侧将 A 侧 public_news + public_notice 合并为单表 Message_news
+		/// （db-schema-map.md:87/145），靠本字段区分两类记录。
+		/// </summary>
+		[JsonProperty]
+		public bool is_notice { get; set; } = false;
+
 	}
 
 }

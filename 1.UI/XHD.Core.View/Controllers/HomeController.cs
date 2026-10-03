@@ -86,6 +86,16 @@ namespace XHD.Core.View.Controllers
             return View();
         }
 
+        /// <summary>
+        /// 门户工作台首页（任务/新闻/公告/便签/日程提醒面板），替代 home 大屏成为默认首页。
+        /// </summary>
+        public IActionResult Portal()
+        {
+            ViewData["user_name"] = User.FindFirst(ClaimTypes.Name).Value;
+
+            return View();
+        }
+
         [HttpGet]
         public async Task<string> iniUrl()
         {
@@ -100,7 +110,7 @@ namespace XHD.Core.View.Controllers
 
                 objinfo.Add("homeInfo", new JObject{
                     { "title","首页"},
-                    { "href","/Home/home"},
+                    { "href","/Home/portal"},
                 });
 
                 Expression<Func<Sys_info, bool>> exp = a => 1 == 1;

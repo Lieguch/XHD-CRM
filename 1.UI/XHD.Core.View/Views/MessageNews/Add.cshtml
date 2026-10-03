@@ -14,6 +14,7 @@
     @Html.Hidden("id")
     @Html.Hidden("news_content")
     @Html.Hidden("news_type")
+    @Html.Hidden("is_notice")
 
     <div class="layui-card">
         <div class="layui-card-header">信息</div>
@@ -117,6 +118,11 @@
         var initContent = myHTMLDeCode($("#news_content").val() || "");
         if (initContent) {
             editor.txt.html(initContent);
+        }
+
+        // 从门户/列表"发布公告"进来时，url 带 is_notice=1 预置隐藏域
+        if (location.search.indexOf("is_notice=1") >= 0) {
+            $("#is_notice").val(1);
         }
 
         // ========== 保存函数，完全兼容原有业务逻辑 ==========

@@ -48,6 +48,14 @@
     "Menu_order": 40
   },
   {
+    "id": "home_dataview",
+    "Menu_name": "数据大屏",
+    "Menu_url": "Home/home",
+    "Menu_icon": "fa-dashboard",
+    "parentid": "mytable",
+    "Menu_order": 45
+  },
+  {
     "id": "CRM_Manager",
     "Menu_name": "客户管理",
     "Menu_url": null,    

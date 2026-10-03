@@ -58,7 +58,9 @@ namespace XHD.Core.Tests
             };
         }
 
-        private static Message_news NewNews(string id, bool isRead = false, DateTime? createTime = null)
+        // Sprint 10.38：Message_news 合并了 A 侧 public_news + public_notice，
+        // 公告种子数据须置 is_notice=true，否则 NoticeRemind 的 a.is_notice 过滤会漏掉
+        private static Message_news NewNews(string id, bool isRead = false, DateTime? createTime = null, bool is_notice = true)
         {
             return new Message_news
             {
@@ -68,7 +70,8 @@ namespace XHD.Core.Tests
                 news_title = $"公告-{id}",
                 news_content = "内容",
                 isRead = isRead,
-                read_time = isRead ? DateTime.Now : null
+                read_time = isRead ? DateTime.Now : null,
+                is_notice = is_notice
             };
         }
 
