@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Security.Claims;
 using System.Threading;
@@ -65,12 +66,14 @@ namespace XHD.Core.Tests
             };
             httpCtx.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
 
-            var files = file == null
-                ? new List<IFormFile>()
-                : new List<IFormFile> { file };
+            var formFiles = new FormFileCollection();
+            if (file != null)
+            {
+                formFiles.Add(file);
+            }
             httpCtx.Request.Form = new FormCollection(
                 new Dictionary<string, StringValues>(),
-                files);
+                formFiles);
 
             ctrl.ControllerContext = new ControllerContext { HttpContext = httpCtx };
             return ctrl;

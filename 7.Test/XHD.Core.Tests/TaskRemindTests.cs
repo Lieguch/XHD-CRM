@@ -134,9 +134,30 @@ namespace XHD.Core.Tests
             Assert.Equal("T2", (string)data[0]["id"]!);
             Assert.Equal("T1", (string)data[1]["id"]!);
             Assert.Equal("T3", (string)data[2]["id"]!);
-            // 执行时间随顺序单调不降
-            Assert.True((string)data[0]["executive_time"]! <= (string)data[1]["executive_time"]!);
-            Assert.True((string)data[1]["executive_time"]! <= (string)data[2]["executive_time"]!);
+            // 执行时间随顺序单调不降（JSON 里是字符串，比较前先转回 DateTime）
+            Assert.True(ParseExecTime(data[0]["executive_time"]) <= ParseExecTime(data[1]["executive_time"]));
+            Assert.True(ParseExecTime(data[1]["executive_time"]) <= ParseExecTime(data[2]["executive_time"]));
+        }
+
+        /// <summary>
+        /// 把 JSON 里的 executive_time（可能是 ISO 字符串或 /Date(...)/）解析回 DateTime 用于比较。
+        /// </summary>
+        private static DateTime ParseExecTime(object? val)
+        {
+            var s = val?.ToString() ?? string.Empty;
+
+            if (s.Contains("Date("))
+            {
+                // /Date(1717200000000+0800)/
+                var inner = s.Substring(s.IndexOf('(') + 1);
+                inner = inner.Substring(0, inner.IndexOf(')'));
+                var parts = inner.Split('+');
+                return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)
+                    .AddMilliseconds(long.Parse(parts[0]));
+            }
+
+            return DateTime.Parse(s, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.AdjustToUniversal);
         }
 
         [Fact]
