@@ -387,13 +387,14 @@ namespace XHD.Core.Tests
             mock.Setup(f => f.Length).Returns(bytes.Length);
             mock.Setup(f => f.OpenReadStream()).Returns(() => new MemoryStream(bytes));
             // IFormFile.CopyToAsync(Stream, CancellationToken) 的 CancellationToken 是可选参数，
-            // 表达式树不允许省略可选参数的调用（CS0854），故显式传入 CancellationToken 占位。
+            // 表达式树不允许省略可选参数的调用（CS0854），故显式传入 CancellationToken 占位；
+            // Returns 回调的参数个数必须与 Setup 的参数个数一致（含 CancellationToken）。
             mock.Setup(f => f.CopyToAsync(It.IsAny<Stream>(), It.IsAny<CancellationToken>()))
-                .Returns((Stream target) =>
+                .Returns((Stream target, CancellationToken token) =>
                 {
                     using (var ms = new MemoryStream(bytes))
                     {
-                        return ms.CopyToAsync(target);
+                        return ms.CopyToAsync(target, token);
                     }
                 });
             return mock.Object;
