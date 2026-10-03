@@ -49,6 +49,24 @@ namespace XHD.Core.View.Controllers
 
             Expression<Func<My_Calendar, bool>> exp = a => a.emp_id == emp_id;
 
+            //前端日历切换视图/翻页时会传 start/end（yyyy-MM-dd，见 Views/MyCalendar/Index.cshtml 的 onRangeChange），
+            //按日程起止时间过滤交集：StartDateTime <= end 23:59:59 且 EndDateTime >= start 00:00:00。
+            //无参数时返回该员工全部日程（兼容旧调用）。
+            string startStr = Request.Query["start"];
+            string endStr = Request.Query["end"];
+
+            if (PageValidate.IsDateTime(startStr))
+            {
+                DateTime start = DateTime.Parse(startStr);
+                exp = exp.And(a => a.EndDateTime >= start);
+            }
+
+            if (PageValidate.IsDateTime(endStr))
+            {
+                DateTime end = DateTime.Parse(endStr).AddDays(1).AddSeconds(-1);
+                exp = exp.And(a => a.StartDateTime <= end);
+            }
+
             var result = await _service.GridAsync(exp);
 
             return result.ToString();

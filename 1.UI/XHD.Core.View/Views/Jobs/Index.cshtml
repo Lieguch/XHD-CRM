@@ -12,9 +12,9 @@
                 <form class="layui-form layui-form-pane" action="">
 
                     <div class="layui-form-item layui-inline">
-                        <label class="layui-form-label">客户</label>
+                        <label class="layui-form-label">标题</label>
                         <div class="layui-input-inline">
-                            <input type="text" name="cus_name" id="cus_name" autocomplete="off" class="layui-input">
+                            <input type="text" name="T_name" id="T_name" autocomplete="off" class="layui-input">
                         </div>
                     </div>
                     <div class="layui-form-item layui-inline">
@@ -90,7 +90,7 @@
                 //}},
 
                 {
-                    field: '优先级', width: 120, title: '优先级', align: "center", templet: function (t) {
+                    field: 'priority', width: 120, title: '优先级', align: "center", templet: function (t) {
                         switch (t.priority) {
                             case 1: return '<div style="background:#FFF;Color:#000;">低</div>';
                             case 2: return '<div style="background:#0F0;Color:#000;">中</div>';
@@ -168,12 +168,6 @@
                             }
                             body.find("#" + val).val(value);
                         }
-                        body.find("#customer_id").val(data.customer_id);
-                        body.find("#customer_name").val(data.customer.cus_name);
-                        body.find("#contact_id").val(data.contact_id);
-                        body.find("#contact_name").val(data.contact.C_name);
-                        body.find("#follow_aim_val").val(data.follow_aim_id);
-                        body.find("#follow_type_val").val(data.follow_type_id);
                     }
                 },
                 btn2: function (index, layero) {
@@ -237,12 +231,6 @@
                             }
                             body.find("#" + val).val(value);
                         }
-                        body.find("#customer_id").val(edit.customer_id);
-                        body.find("#customer_name").val(edit.customer.cus_name);
-                        body.find("#contact_id").val(edit.contact_id);
-                        body.find("#contact_name").val(edit.contact.C_name);
-                        body.find("#follow_aim_val").val(edit.follow_aim_id);
-                        body.find("#follow_type_val").val(edit.follow_type_id);
                     }
                 },
                 yes: function (index, layero) {
@@ -324,47 +312,6 @@
             , trigger: 'click' //采用click弹出
         });
 
-        tableSelect.render({
-            elem: '#employee',
-            checkedKey: 'id',
-            table: {
-                url: '/HrEmployee/grid',
-                cols: [[
-                    { type: 'radio' },
-                    { field: 'name', width: 150, title: '员工姓名' },
-                    {
-                        field: 'dep_name', width: 150, title: '部门', templet: function (t) {
-                            if (t.department) {
-                                return t.department.dep_name;
-                            }
-                            return "";
-                        }
-                    },
-                    {
-                        field: 'position_name', width: 150, title: '职务', templet: function (t) {
-                            if (t.position) {
-                                return t.position.position_name;
-                            }
-                            return "";
-                        }
-                    },
-                ]]
-            },
-            done: function (elem, data) {
-                var NEWJSON = [];
-                var ids = [];
-
-                layui.each(data.data, function (index, item) {
-                    NEWJSON.push(item.name);
-                    ids.push(item.id);
-                })
-                elem.val(NEWJSON.join(","))
-
-                $("#emp_id").val(ids.join(','));
-
-
-            }
-        })
 
         // 展开/折叠额外条件
         $('#toggleBtn').on('click', function () {

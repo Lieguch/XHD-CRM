@@ -47,12 +47,13 @@
                         <input type="text" name="executive_time" id="executive_time" lay-verify="required" placeholder="待办时间" autocomplete="off" class="layui-input">
                     </div>
                 </div>
-                @*<div class="layui-inline">
+                <div class="layui-inline">
                     <label class="layui-form-label" style="padding-left:0px;">客户</label>
                     <div class="layui-input-inline">
                         <input type="text" name="customer_name" id="customer_name" placeholder="客户" autocomplete="off" class="layui-input">
                     </div>
-                </div>*@
+                </div>
+
 
 
                 <div class="layui-inline">
@@ -101,6 +102,10 @@
         });
 
         
+        // 客户选择（如果已有客户ID则禁用，避免编辑回填时被覆盖）
+        if ($("#customer_id").val()) {
+            $("#customer_name").addClass("layui-disabled").attr("readonly", true);
+        } else {
             tableSelect.render({
                 elem: '#customer_name',
                 checkedKey: 'id',
@@ -150,11 +155,10 @@
                     elem.val(NEWJSON.join(","))
 
                     $("#customer_id").val(ids.join(','));
-
-                    tableSelectContact();
                 }
             })
-        
+        }
+
 
        
 

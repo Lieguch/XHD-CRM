@@ -169,9 +169,6 @@
                 //layer.msg('删除' + data.id);
             }
             else if (layEvent === 'edit') {
-                if (data.isMenu == 1) {
-                    return;
-                }
                 add(data);
             }
             else if (layEvent === "info") {
@@ -199,8 +196,6 @@
                             }
                             body.find("#" + val).val(value);
                         }
-                        body.find("#customer_val").val(data.customer_id);
-                        body.find("#customer_name").val(data.customer.cus_name);
                     }
                 },
                 btn2: function (index, layero) {

@@ -36,12 +36,14 @@ namespace XHD.Core.View.Controllers
         private readonly ILogger<CustomerAttaController> _logger;
         private readonly ICRM_CustomerService _service;
         private readonly ICRM_Customer_attaService _detailservice;
+        private readonly IDBAuthService _dBAuthService;
 
-        public CustomerAttaController(ILogger<CustomerAttaController> logger, ICRM_CustomerService service, ICRM_Customer_attaService detailservice)
+        public CustomerAttaController(ILogger<CustomerAttaController> logger, ICRM_CustomerService service, ICRM_Customer_attaService detailservice, IDBAuthService dBAuthService)
         {
             _service = service;
             _logger = logger;
             _detailservice = detailservice;
+            _dBAuthService = dBAuthService;
         }
 
         public IActionResult Index()
@@ -64,12 +66,22 @@ namespace XHD.Core.View.Controllers
                 {
                     exp = a => a.cus_id == Request.Query["id"];
                 }
-                else if (Request.Query["id"] == "all")
-                {
-                    exp = a => 1 == 1;
-                }
             }
 
+            // 数据权限：非全公司权限（authtype != 4）只能看到权限范围内员工创建的附件
+            var empId = User.FindFirst(ClaimTypes.Sid).Value;
+            var roledata = await _dBAuthService.GetDataAuth(empId);
+            if (roledata.authtype != 4)
+            {
+                if (roledata.empList != null && roledata.empList.Count > 0)
+                {
+                    exp = exp.And(a => roledata.empList.Contains(a.create_id));
+                }
+                else
+                {
+                    return XHDResult.Error("无权限").ToString();
+                }
+            }
 
             var result = await _detailservice.GridAsync(exp, model.Page, model.Limit, "a.create_time desc");
 

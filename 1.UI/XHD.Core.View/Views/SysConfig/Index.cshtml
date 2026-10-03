@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "Add";
+    ViewData["Title"] = "系统配置";
 }
 
 <style type="text/css">
@@ -133,74 +133,6 @@
             $("#div_welcome").removeClass("layui-hide");
             $("#div_Config").addClass("layui-hide");
         }
-
-        form.on('select(ServerType)', function (data) {
-            // console.log(data.elem); //得到select原始DOM对象
-            //console.log(data.value); //得到被选中的值
-            // console.log(data.othis); //得到美化后的DOM对象
-            var port = 3306;
-            switch (data.value) {
-                case "0": port = 3306; break;
-                case "1": port = 1433; break;
-                case "2": port = 5432; break;
-                case "3": port = 1521; break;
-                //case "4": port = 1521; break;
-            }
-            //console.log(port);
-            $("#server_port").val(port);
-
-            var category = $('#server_table');
-            category.html("");
-            form.render("select");
-
-            $("#btn_config").addClass("layui-btn-disabled");
-        });
-
-        $("#btn_connect").on("click", function () {
-            $.ajax({
-                type: 'POST',
-                url: 'tryConnect',
-                data: {
-                    servertype: $("#ServerType").val(),
-                    servername: $("#server_name").val(),
-                    serverport: $("#server_port").val(),
-                    serveruid: $("#server_uid").val(),
-                    serverpwd: $("#server_pwd").val()
-                },
-                dataType: "json",
-                //headers: {
-                //    "X-CSRF-TOKEN-XHD": $("input[name='AntiforgeryKey_XHD']").val()
-                //},
-                success: function (res) {//res为相应体,function为回调函数
-                    console.log(res);
-                    if (res.code === 0) {
-                        layer.alert("连接成功！", { icon: 1 });
-
-                        var data = res.data;
-
-                        var category = $('#server_table');
-                        category.html("");
-                        for (var i = 0; i < data.length; i++) {
-
-                            console.log(data[i]);
-                            category.append("<option value='" + data[i]["table"] + "'>" + data[i]["table"] + "</option>");
-
-                            form.render("select");
-                        }
-
-                        $("#btn_config").removeClass("layui-btn-disabled");
-                    }
-                    else {
-                        layer.alert(res.msg, { icon: 5 });
-                    }
-
-
-                },
-                error: function (XMLHttpRequest, textStatus, errorThrown) {
-                    layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
-                }
-            });
-        });
 
         $("#btn_config").on("click", function () {
             if ($(this).hasClass("layui-btn-disabled")) {

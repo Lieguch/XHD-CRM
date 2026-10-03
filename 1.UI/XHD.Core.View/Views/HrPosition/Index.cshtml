@@ -13,7 +13,6 @@
         </script>
 
         <table id="munu-table" class="layui-table" lay-filter="currentTableFilter"></table>
-        <table id="munu-table" class="layui-table" lay-filter="currentTableFilter"></table>
     </div>
 </div>
 <!-- 操作列 -->
@@ -78,9 +77,6 @@
                 //layer.msg('删除' + data.id);
             }
             else if (layEvent === 'edit') {
-                if (data.isMenu == 1) {
-                    return;
-                }
                 add(data);
             }
             else if (layEvent === "info") {

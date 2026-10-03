@@ -1204,10 +1204,13 @@ namespace XHD.Core.View.Controllers
             }
 
             //权限
+            // A 版口径：客户=负责人(emp_id)、跟进=跟进人(employee_id)、订单=业务员(emp_id)、合同=我方签约人(Our_Contractor_id)。
+            // A 版 CRM_contract 无 emp_id 字段（DAL/CRM_contract.cs:37），员工维度只能是 Our_Contractor_id；
+            // B 版同口径见 SaleContractController.Grid (Our_Contractor_id) 与 HrEmployeeController 删除前合同检查。
             _fsql.Select<CRM_Customer>().Where(a => a.emp_id == employee.id).Count(out var cuscount).Page(1, 1);
             _fsql.Select<CRM_follow>().Where(a => a.employee_id == employee.id).Count(out var followcount).Page(1, 1);
             _fsql.Select<Sale_order>().Where(a => a.emp_id == employee.id).Count(out var ordercount).Page(1, 1);
-            _fsql.Select<Sale_contract>().Where(a => a.customer_id == employee.id).Count(out var contractcount).Page(1, 1);
+            _fsql.Select<Sale_contract>().Where(a => a.Our_Contractor_id == employee.id).Count(out var contractcount).Page(1, 1);
             //_fsql.Select<Finance_Receive>().Where(a => 1 == 1).Count(out var receivecount).Page(1, 1);
 
             JObject obj=new JObject();

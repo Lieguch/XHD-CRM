@@ -45,6 +45,14 @@ namespace XHD.Core.View.Controllers
         {
             Expression<Func<hr_employee, bool>> exp = a => true;
 
+            //数据权限：非全部权限（authtype!=4）只能看到权限范围内的员工
+            var empId = User.FindFirst(ClaimTypes.Sid).Value;
+            var roledata = await _dBAuthService.GetDataAuth(empId);
+            if (roledata.authtype != 4)
+            {
+                exp = exp.And(a => roledata.empList.Contains(a.id));
+            }
+
             if (!string.IsNullOrWhiteSpace(Request.Query["emp_id"]))
             {
                 string[] empArray = Request.Query["emp_id"].ToString().Split(',', StringSplitOptions.RemoveEmptyEntries);

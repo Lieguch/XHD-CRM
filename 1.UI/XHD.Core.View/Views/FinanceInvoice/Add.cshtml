@@ -1,5 +1,5 @@
 ﻿@{
-    ViewData["Title"] = "MenuAdd";
+    ViewData["Title"] = "Add";
 }
 
 <style type="text/css">
@@ -149,7 +149,7 @@
                         },
                         {
                             field: 'Order_status_id', width: 120, title: '订单状态', templet: function (item) {
-                                if (item.PayType) {
+                                if (item.OrderStatus) {
                                     return item.OrderStatus.params_name;
                                 }
                             }

@@ -73,7 +73,6 @@
         openTable.render({
             elem: '#currentTableId',
             url: 'Grid',
-            toolbar: '#toolbarDemo',
             defaultToolbar: ['filter'],
             id: "mainGrid1",
             cols: [[
@@ -160,8 +159,7 @@
                     curr: 1 //重新从第 1 页开始
                 },
                 where: {
-                    keyword: $("#keyword").val()  //搜索的关键字
-                    , date1: $("#date1").val()
+                    date1: $("#date1").val()
                     , date2: $("#date2").val()
                     , logtype: $('#logtype').val()
                 }
@@ -203,7 +201,9 @@
                     curr: curr //重新从第 1 页开始
                 }
                 , where: {
-                    T_name: $("#T_name").val()
+                    date1: $("#date1").val()
+                    , date2: $("#date2").val()
+                    , logtype: $('#logtype').val()
                 }
             }, 'data');
         }

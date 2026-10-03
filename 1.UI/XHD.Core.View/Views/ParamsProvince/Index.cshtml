@@ -63,7 +63,7 @@
             id: "mainGrid4",
             cols: [[
                 { type: 'numbers' ,title:"序号" },
-                { field: 'Provinces', width: 250, title: '客户姓名' },
+                { field: 'Provinces', width: 250, title: '省份名称' },
                 {
                     field: 'Provinces_type', width: 80, title: '类型', align: "center", templet: function (t) {
                         if (t.Provinces_type == "sys") {
@@ -111,9 +111,6 @@
                 //layer.msg('删除' + data.id);
             }
             else if (layEvent === 'edit') {
-                if (data.isMenu == 1) {
-                    return;
-                }
                 add(data);
             }
             else if (layEvent === "info") {
@@ -141,7 +138,6 @@
                             }
                             body.find("#" + val).val(value);
                         }
-                        body.find("#position_val").val(data.position_id);
                     }
                 },
                 btn2: function (index, layero) {
@@ -205,7 +201,6 @@
                             }
                             body.find("#" + val).val(value);
                         }
-                        body.find("#position_val").val(edit.position_id);
                     }
                 },
                 yes: function (index, layero) {

@@ -1,43 +1,185 @@
 ﻿@{
-    ViewData["Title"] = "添加附件";
+    ViewData["Title"] = "客户附件";
 }
-<div class="layui-form">
+
+<style type="text/css">
+    .downpanel .layui-select-title span { line-height: 38px; }
+</style>
+
+<div class="layui-form layui-form-pane" action="">
     <input type="hidden" id="id" name="id" />
+    <input type="hidden" id="cus_id" name="cus_id" />
+    <input type="hidden" id="file_name" name="file_name" />
+    <input type="hidden" id="real_name" name="real_name" />
+    <input type="hidden" id="file_size" name="file_size" />
+
     <div class="layui-form-item">
         <label class="layui-form-label">客户ID</label>
         <div class="layui-input-block">
-            <input type="text" id="cus_id" name="cus_id" lay-verify="required" placeholder="请输入客户ID" class="layui-input" readonly />
+            <input type="text" id="customer_id" name="customer_id" lay-verify="required" placeholder="客户ID" class="layui-input" readonly />
         </div>
     </div>
-    <div class="layui-form-item">
-        <label class="layui-form-label">文件名</label>
-        <div class="layui-input-block">
-            <input type="text" id="file_name" name="file_name" lay-verify="required" placeholder="请输入文件名" class="layui-input" />
+
+    <div class="layui-upload" style="background:#fff;">
+        <button type="button" class="layui-btn layui-btn-normal" id="testList">选择文件</button>
+        <div class="layui-upload-list">
+            <table class="layui-table">
+                <thead>
+                    <tr>
+                        <th>文件名</th>
+                        <th>大小</th>
+                        <th>状态</th>
+                        <th style="width:80px;">操作</th>
+                    </tr>
+                </thead>
+                <tbody id="demoList3">
+                </tbody>
+            </table>
         </div>
     </div>
-    <div class="layui-form-item">
-        <label class="layui-form-label">实际文件名</label>
-        <div class="layui-input-block">
-            <input type="text" id="real_name" name="real_name" lay-verify="required" placeholder="请输入实际文件名" class="layui-input" />
-        </div>
-    </div>
-    <div class="layui-form-item">
-        <label class="layui-form-label">文件大小(KB)</label>
-        <div class="layui-input-block">
-            <input type="text" id="file_size" name="file_size" lay-verify="required" placeholder="请输入文件大小(KB)" class="layui-input" />
-        </div>
-    </div>
+
     <div class="layui-form-item">
         <div class="layui-input-block">
+            <button type="button" class="layui-btn" id="btnUpload">开始上传</button>
             <button class="layui-btn" id="LAY-user-front-submit" lay-submit lay-filter="form-submit">确认</button>
         </div>
     </div>
 </div>
+
+<link href="~/layuimini/js/lay-module/webuploader/webuploader.css" rel="stylesheet" />
+
 <script>
-layui.use(['form', 'layer'], function () {
-    var form = layui.form;
-    var layer = layui.layer;
-    // 初始化表单
-    form.render();
-});
+    layui.use(['form', 'layer', 'webuploader', 'element'], function () {
+        var form = layui.form;
+        var layer = layui.layer;
+        var $ = layui.$;
+        var webuploader = layui.webuploader;
+        var element = layui.element;
+
+        var customer_id = getparastr("id") || "";
+        $("#customer_id").val(customer_id);
+        $("#cus_id").val(customer_id);
+
+        form.render();
+
+        var guid3 = webuploader.Base.guid();
+        var uploader3 = webuploader.create({
+            swf: "../../js/webuploader/uploader.swf",
+            server: "/CustomerAtta/Upload",
+            pick: "#testList",
+            resize: false,
+            formData: { guid: guid3, customer_id: customer_id },
+            chunked: true
+        });
+
+        // 记录已上传完成的文件，用于提交 Save 前校验
+        var uploadedFiles = [];
+
+        uploader3.on('fileQueued', function (file) {
+            var tr = $(['<tr id="upload-' + file.id + '" class="uplist">'
+                , '<td>' + file.name + '</td>'
+                , '<td>' + (file.size / 1024).toFixed(1) + 'kb</td>'
+                , '<td></td>'
+                , '<td><div class="layui-progress" lay-filter="progress-demo-' + file.id + '"><div class="layui-progress-bar" lay-percent=""></div></div></td>'
+                , '<td>'
+                , '<button class="layui-btn layui-btn-xs layui-btn-danger demo-delete" id="' + file.id + '">删除</button>'
+                , '</td>'
+                , '</tr>'].join(''));
+
+            //删除
+            tr.find('.demo-delete').on('click', function () {
+                var id = $(this).attr("id");
+                uploader3.removeFile(id);
+                tr.remove();
+            });
+
+            $('#demoList3').append(tr);
+        });
+
+        // 文件上传过程中创建进度条实时显示。
+        uploader3.on('uploadProgress', function (file, percentage) {
+            element.progress('progress-demo-' + file.id, percentage * 100 + '%');
+            $("#upload-" + file.id + " td").eq(2).text(Math.round(percentage * 100) + '%');
+        });
+
+        uploader3.on('uploadSuccess', function (file) {
+            $.ajax({
+                type: 'POST',
+                url: '/CustomerAtta/Meger',
+                data: {
+                    name: file.name,
+                    id: file.id,
+                    guid: guid3,
+                    customer_id: customer_id
+                },
+                dataType: "json",
+                success: function (res) {
+                    if (res.code != 0) {
+                        layer.alert(res.msg || res.Message || '合并失败', { icon: 5 });
+                        return;
+                    }
+
+                    // 合并成功后，把隐藏域填充为落库所需字段
+                    uploadedFiles.push(file);
+                    if (!$("#id").val()) {
+                        $("#id").val(webuploader.Base.guid());
+                    }
+                    $("#cus_id").val(customer_id);
+                    $("#file_name").val(file.name);
+                    $("#real_name").val(res.real_name || file.name);
+                    $("#file_size").val(Math.round(file.size / 1024));
+                },
+                error: function () {
+                    layer.alert('合并失败', { icon: 5 });
+                }
+            });
+        });
+
+        uploader3.on('uploadError', function (file) {
+            layer.alert('上传失败：' + file.name, { icon: 5 });
+        });
+
+        uploader3.on('uploadFinished', function () {
+            layer.msg('上传完成', { icon: 1 });
+        });
+
+        $("#btnUpload").on('click', function () {
+            uploader3.upload();
+        });
+
+        // 提交保存
+        form.on('submit(form-submit)', function (data) {
+            if (uploadedFiles.length === 0) {
+                layer.alert('请先上传文件', { icon: 5 });
+                return false;
+            }
+
+            $.ajax({
+                type: 'POST',
+                url: '/CustomerAtta/Save',
+                data: data.field,
+                dataType: "json",
+                success: function (res) {
+                    if (res.code == 0) {
+                        layer.msg('保存成功', { icon: 1 });
+                        try {
+                            parent.f_reload();
+                        } catch (e) {
+                        }
+                        try {
+                            parent.layer.close(parent.layer.getFrameIndex(window.name));
+                        } catch (e) {
+                        }
+                    } else {
+                        layer.alert(res.msg || '保存失败', { icon: 5 });
+                    }
+                },
+                error: function () {
+                    layer.alert('保存失败', { icon: 5 });
+                }
+            });
+
+            return false;
+        });
+    });
 </script>

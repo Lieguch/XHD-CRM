@@ -5,8 +5,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using FreeSql;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json.Linq;
+using System.Security.Claims;
 using XHD.Core.Common;
 using XHD.Core.Common.DEncrypt;
 using XHD.Core.Common.SMS;
@@ -15,6 +18,7 @@ using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.Repository;
 using XHD.Core.Services;
+using XHD.Core.View.Controllers;
 using Xunit;
 
 namespace XHD.Core.Tests
@@ -25,9 +29,9 @@ namespace XHD.Core.Tests
     ///   #101 Sys_base.getUserTree
     ///   #102 Sys_base.GetOnline
     ///   #103 Sys_base.GetIcons
-    ///   #115 Sys_info.regSMS
-    ///   #119 upload.cus_import
-    ///   #120 upload.contact_import
+    ///   #115 Sys_info.regSMS（SysInfoController.RegSMS，走控制器管线）
+    ///   #119 upload.cus_import（UploadController.CusImport，走控制器管线）
+    ///   #120 upload.contact_import（UploadController.ContactImport，走控制器管线）
     ///   #124 SMS.send
     ///   #125 SMS_Helper.getBalance
     /// 全部走 Repository + SQLite 内存库；SMSHelper 与 IFormFile 走 Moq 桥接。
@@ -268,37 +272,58 @@ namespace XHD.Core.Tests
             }
         }
 
-        // ============ #115 regSMS ============
+        // ============ #115 regSMS（SysInfoController.RegSMS） ============
+
+        /// <summary>
+        /// 构造 SysInfoController，注入真实 Sys_infoService（走 SQLite 内存库）
+        /// 与 Moq 桥接的 ISMSHelper，并模拟登录态。
+        /// </summary>
+        private SysInfoController CreateSysInfoController()
+        {
+            var infoService = new Sys_infoService(new Sys_infoRepository(_fsql));
+            var ctrl = new SysInfoController(
+                new Mock<ILogger<SysLogController>>().Object,
+                infoService,
+                _smsHelper);
+
+            var httpCtx = new DefaultHttpContext();
+            httpCtx.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Sid, "TEST_USER"),
+                new Claim(ClaimTypes.Name, "Test User")
+            };
+            httpCtx.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+            ctrl.ControllerContext = new ControllerContext { HttpContext = httpCtx };
+            return ctrl;
+        }
 
         [Fact]
         public async Task RegSMS_HelperSucceeds_WritesThreeSysInfoRows()
         {
-            var infoRepo = new Sys_infoRepository(_fsql);
-            // 预置三条 sys_key（Update 语义）
+            // 预置三条 sys_key（与 A 侧 sys_info 种子数据语义一致）
             foreach (var k in new[] { "sms_no", "sms_key", "sms_done" })
             {
                 await _fsql.Insert(new Sys_info { sys_key = k, sys_value = "" }).ExecuteAffrowsAsync();
             }
 
             _smsHelperMock.Setup(h => h.RegistEx("SER123", "KEYABC", "KEYABC")).Returns(0);
-            var infoService = new Sys_infoService(infoRepo);
-            var svc = new Sys_baseService(_menuRepo, _onlineRepo, _authRepo, _roleEmpRepo, _deptRepo, _postRepo);
+            var ctrl = CreateSysInfoController();
 
-            // 用真实 controller 逻辑（简化：直接调 service）
-            await infoService.UpdateAsync(new Sys_info { sys_key = "sms_no", sys_value = "SER123" });
-            var encrypted = DESEncrypt.Encrypt("KEYABC");
-            await infoService.UpdateAsync(new Sys_info { sys_key = "sms_key", sys_value = encrypted });
-            _smsHelperMock.Object.RegistEx("SER123", "KEYABC", "KEYABC");
-            await infoService.UpdateAsync(new Sys_info { sys_key = "sms_done", sys_value = "1" });
+            var json = await ctrl.RegSMS("SER123", "KEYABC");
+            var obj = JObject.Parse(json);
+
+            Assert.Equal(0, (int)obj["code"]!);
+            _smsHelperMock.Verify(h => h.RegistEx("SER123", "KEYABC", "KEYABC"), Times.Once);
 
             var no = await _fsql.Select<Sys_info>().Where(a => a.sys_key == "sms_no").FirstAsync();
             var key = await _fsql.Select<Sys_info>().Where(a => a.sys_key == "sms_key").FirstAsync();
             var done = await _fsql.Select<Sys_info>().Where(a => a.sys_key == "sms_done").FirstAsync();
 
             Assert.Equal("SER123", no.sys_value);
-            Assert.Equal(encrypted, key.sys_value);
-            Assert.Equal("1", done.sys_value);
+            Assert.Equal(DESEncrypt.Encrypt("KEYABC"), key.sys_value);
             Assert.NotEqual("KEYABC", key.sys_value); // 已加密
+            Assert.Equal("1", done.sys_value);
         }
 
         [Fact]
@@ -310,134 +335,187 @@ namespace XHD.Core.Tests
             }
 
             _smsHelperMock.Setup(h => h.RegistEx(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>())).Returns(-1);
+            var ctrl = CreateSysInfoController();
 
-            var infoRepo = new Sys_infoRepository(_fsql);
-            var infoService = new Sys_infoService(infoRepo);
-            await infoService.UpdateAsync(new Sys_info { sys_key = "sms_no", sys_value = "SER123" });
-            await infoService.UpdateAsync(new Sys_info { sys_key = "sms_key", sys_value = DESEncrypt.Encrypt("KEYABC") });
+            var json = await ctrl.RegSMS("SER123", "KEYABC");
+            var obj = JObject.Parse(json);
 
-            var result = _smsHelperMock.Object.RegistEx("SER123", "KEYABC", "KEYABC");
-            // 失败：不写 sms_done="1"
+            // 失败：返回 Error（code=-1，消息为错误码中文映射），且不写 sms_done="1"
+            Assert.Equal(-1, (int)obj["code"]!);
+            Assert.Equal(ISMSHelper.SmsResult(-1), (string)obj["msg"]!);
 
             var done = await _fsql.Select<Sys_info>().Where(a => a.sys_key == "sms_done").FirstAsync();
             Assert.NotEqual("1", done.sys_value);
-            Assert.Equal(-1, result);
         }
 
         [Fact]
-        public void RegSMS_EmptySerialNo_ShouldReturnError_LogicCheck()
+        public async Task RegSMS_EmptySerialNo_ReturnsError()
         {
-            // 纯逻辑校验：空序列号应拒绝（controller 层已处理）
-            var serialNo = "";
-            Assert.True(string.IsNullOrWhiteSpace(serialNo));
+            var ctrl = CreateSysInfoController();
+
+            var json = await ctrl.RegSMS("", "KEYABC");
+            var obj = JObject.Parse(json);
+
+            Assert.Equal(-1, (int)obj["code"]!);
+            Assert.Contains("序列号不能为空", (string)obj["msg"]!);
+            // 参数校验失败，不应写入任何配置
+            Assert.Empty(await _fsql.Select<Sys_info>().ToListAsync());
         }
 
         [Fact]
-        public void RegSMS_EmptyKey_ShouldReturnError_LogicCheck()
+        public async Task RegSMS_EmptyKey_ReturnsError()
         {
-            var key = "";
-            Assert.True(string.IsNullOrWhiteSpace(key));
+            var ctrl = CreateSysInfoController();
+
+            var json = await ctrl.RegSMS("SER123", "");
+            var obj = JObject.Parse(json);
+
+            Assert.Equal(-1, (int)obj["code"]!);
+            Assert.Contains("密钥不能为空", (string)obj["msg"]!);
+            Assert.Empty(await _fsql.Select<Sys_info>().ToListAsync());
         }
 
-        // ============ #119 cus_import ============
+        // ============ #119 cus_import / #120 contact_import（UploadController） ============
+
+        /// <summary>
+        /// 用 Moq 构造一个 IFormFile，从 byte[] 提供 Stream（供 Controller 测试用）。
+        /// </summary>
+        private static IFormFile CreateFormFile(string fileName, byte[] bytes)
+        {
+            var mock = new Mock<IFormFile>();
+            mock.Setup(f => f.FileName).Returns(fileName);
+            mock.Setup(f => f.Length).Returns(bytes.Length);
+            mock.Setup(f => f.OpenReadStream()).Returns(() => new MemoryStream(bytes));
+            mock.Setup(f => f.CopyToAsync(It.IsAny<Stream>()))
+                .Returns((Stream target) =>
+                {
+                    using (var ms = new MemoryStream(bytes))
+                    {
+                        return ms.CopyToAsync(target);
+                    }
+                });
+            return mock.Object;
+        }
+
+        /// <summary>
+        /// 构造 UploadController，依赖均走 Moq（CusImport/ContactImport 不触业务 service）。
+        /// </summary>
+        private UploadController CreateUploadController()
+        {
+            var ctrl = new UploadController(
+                new Mock<ICRM_Customer_attaService>().Object,
+                new Mock<ILogger<UploadController>>().Object);
+
+            var httpCtx = new DefaultHttpContext();
+            httpCtx.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Sid, "TEST_USER"),
+                new Claim(ClaimTypes.Name, "Test User")
+            };
+            httpCtx.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+            ctrl.ControllerContext = new ControllerContext { HttpContext = httpCtx };
+            return ctrl;
+        }
 
         [Fact]
         public async Task CusImport_HappyPath_SavesToFixedNameAndReturnsFilename()
         {
-            var tmpDir = Path.Combine(Path.GetTempPath(), "sprint7_cus_" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tmpDir);
+            // UploadController.CusImport 落盘到 <cwd>/wwwroot/file/customer/Customer.xls
+            var fullDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "file", "customer");
             try
             {
-                var (fileName, savedPath) = await SimulateCusImportAsync(tmpDir);
-                Assert.Equal("Customer.xls", fileName);
+                var ctrl = CreateUploadController();
+                var file = CreateFormFile("客户导入模板.xls", new byte[] { (byte)'N', (byte)'E', (byte)'W' });
+
+                var json = await ctrl.CusImport(file);
+                var obj = JObject.Parse(json);
+
+                Assert.Equal(0, (int)obj["code"]!);
+                Assert.Equal("Customer.xls", (string)obj["msg"]!);
+
+                var savedPath = Path.Combine(fullDir, "Customer.xls");
                 Assert.True(File.Exists(savedPath));
+                Assert.Equal("NEW", File.ReadAllText(savedPath));
             }
             finally
             {
-                Directory.Delete(tmpDir, true);
+                if (Directory.Exists(fullDir)) Directory.Delete(fullDir, true);
             }
         }
 
         [Fact]
         public async Task CusImport_OverwritesExisting()
         {
-            var tmpDir = Path.Combine(Path.GetTempPath(), "sprint7_cus_ov_" + Guid.NewGuid().ToString("N"));
-            var fullDir = Path.Combine(tmpDir, "wwwroot/file/customer");
+            var fullDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "file", "customer");
             Directory.CreateDirectory(fullDir);
+            var fullPath = Path.Combine(fullDir, "Customer.xls");
+            File.WriteAllText(fullPath, "OLD");
             try
             {
-                var p = Path.Combine(fullDir, "Customer.xls");
-                File.WriteAllText(p, "OLD");
-                var (_, savedPath) = await SimulateCusImportAsync(tmpDir);
-                var content = File.ReadAllText(savedPath);
-                Assert.Equal("NEW", content);
+                var ctrl = CreateUploadController();
+                var file = CreateFormFile("客户导入模板.xls", new byte[] { (byte)'N', (byte)'E', (byte)'W' });
+
+                var json = await ctrl.CusImport(file);
+                var obj = JObject.Parse(json);
+
+                Assert.Equal(0, (int)obj["code"]!);
+                Assert.Equal("NEW", File.ReadAllText(fullPath));
             }
             finally
             {
-                Directory.Delete(tmpDir, true);
+                if (Directory.Exists(fullDir)) Directory.Delete(fullDir, true);
             }
         }
-
-        private async Task<(string name, string path)> SimulateCusImportAsync(string baseDir)
-        {
-            var fullDir = Path.Combine(baseDir, "wwwroot/file/customer");
-            if (!Directory.Exists(fullDir)) Directory.CreateDirectory(fullDir);
-            var fullPath = Path.Combine(fullDir, "Customer.xls");
-            using (var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write))
-            {
-                await fs.WriteAsync(new byte[] { (byte)'N', (byte)'E', (byte)'W' });
-            }
-            return ("Customer.xls", fullPath);
-        }
-
-        // ============ #120 contact_import ============
 
         [Fact]
         public async Task ContactImport_HappyPath_SavesToFixedNameAndReturnsFilename()
         {
-            var tmpDir = Path.Combine(Path.GetTempPath(), "sprint7_ct_" + Guid.NewGuid().ToString("N"));
-            Directory.CreateDirectory(tmpDir);
+            // UploadController.ContactImport 落盘到 <cwd>/wwwroot/file/contact/contact.xls
+            var fullDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "file", "contact");
             try
             {
-                var (fileName, savedPath) = await SimulateContactImportAsync(tmpDir);
-                Assert.Equal("contact.xls", fileName);
+                var ctrl = CreateUploadController();
+                var file = CreateFormFile("联系人导入模板.xls", new byte[] { (byte)'N', (byte)'E', (byte)'W' });
+
+                var json = await ctrl.ContactImport(file);
+                var obj = JObject.Parse(json);
+
+                Assert.Equal(0, (int)obj["code"]!);
+                Assert.Equal("contact.xls", (string)obj["msg"]!);
+
+                var savedPath = Path.Combine(fullDir, "contact.xls");
                 Assert.True(File.Exists(savedPath));
+                Assert.Equal("NEW", File.ReadAllText(savedPath));
             }
             finally
             {
-                Directory.Delete(tmpDir, true);
+                if (Directory.Exists(fullDir)) Directory.Delete(fullDir, true);
             }
         }
 
         [Fact]
         public async Task ContactImport_OverwritesExisting()
         {
-            var tmpDir = Path.Combine(Path.GetTempPath(), "sprint7_ct_ov_" + Guid.NewGuid().ToString("N"));
-            var fullDir = Path.Combine(tmpDir, "wwwroot/file/contact");
+            var fullDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "file", "contact");
             Directory.CreateDirectory(fullDir);
+            var fullPath = Path.Combine(fullDir, "contact.xls");
+            File.WriteAllText(fullPath, "OLD");
             try
             {
-                var p = Path.Combine(fullDir, "contact.xls");
-                File.WriteAllText(p, "OLD");
-                var (_, savedPath) = await SimulateContactImportAsync(tmpDir);
-                Assert.Equal("NEW", File.ReadAllText(savedPath));
+                var ctrl = CreateUploadController();
+                var file = CreateFormFile("联系人导入模板.xls", new byte[] { (byte)'N', (byte)'E', (byte)'W' });
+
+                var json = await ctrl.ContactImport(file);
+                var obj = JObject.Parse(json);
+
+                Assert.Equal(0, (int)obj["code"]!);
+                Assert.Equal("NEW", File.ReadAllText(fullPath));
             }
             finally
             {
-                Directory.Delete(tmpDir, true);
+                if (Directory.Exists(fullDir)) Directory.Delete(fullDir, true);
             }
-        }
-
-        private async Task<(string name, string path)> SimulateContactImportAsync(string baseDir)
-        {
-            var fullDir = Path.Combine(baseDir, "wwwroot/file/contact");
-            if (!Directory.Exists(fullDir)) Directory.CreateDirectory(fullDir);
-            var fullPath = Path.Combine(fullDir, "contact.xls");
-            using (var fs = new FileStream(fullPath, FileMode.Create, FileAccess.Write))
-            {
-                await fs.WriteAsync(new byte[] { (byte)'N', (byte)'E', (byte)'W' });
-            }
-            return ("contact.xls", fullPath);
         }
 
         // ============ #124 SMS.send ============

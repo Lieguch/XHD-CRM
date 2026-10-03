@@ -40,21 +40,17 @@
 
         <script type="text/html" id="toolbarDemo">
             <div class="layui-btn-container">
-                @*<button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="add">添加</button>
-                    <button class="layui-btn layui-btn-sm layui-bg-orange" lay-event="export">导出</button>*@
+                <button class="layui-btn layui-btn-sm layui-btn-normal" lay-event="add">上传附件</button>
             </div>
         </script>
 
         <table id="munu-table" class="layui-table" lay-filter="currentTableFilter"></table>
     </div>
 </div>
-<!-- 操作列 -->
-<script type="text/html" id="auth-state">
-    @*<a class="layui-btn layui-btn-xs" lay-event="info">详情</a>
-        <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="edit">修改</a>
-        <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>*@
-    <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="down">下载</a>
-</script>
+        <script type="text/html" id="auth-state">
+            <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
+            <a class="layui-btn layui-btn-xs" href="/upload/DownloadCustomerAtta?id={{ d.id }}" target="_blank">下载</a>
+        </script>
 <form id="form_excel"></form>
 <script>
     layui.use(['table', 'treetable', 'form'], function () {
@@ -67,8 +63,7 @@
         layer.load(2);
         table.render({
             elem: '#munu-table',
-            url: 'Grid?id=all',
-            page: false,
+            url: '/CustomerAtta/Grid?id=all',
             toolbar: '#toolbarDemo',
             defaultToolbar: ['filter'],
             id: "mainGrid4",
@@ -95,14 +90,9 @@
                 },
 
                 { field: 'create_time', width: 180, title: '创建时间' },
+                { field: 'file_size', width: 120, title: '文件大小(KB)' },
 
-                {
-                    width: 200, align: 'center', fixed: "right", title: '操作', fixed: 'right', templet: function (t) {
-                        var html = "<a href='/upload/DownloadCustomerAtta?id=" + t.id + "' target='_blank'>下载</a>";
-
-                        return html;
-                    }
-                }
+                { width: 200, align: 'center', fixed: "right", title: '操作', templet: '#auth-state' }
             ]],
             limits: [10, 15, 20, 25, 50, 100],
             limit: 15,
@@ -195,7 +185,9 @@
                             body.find("#" + val).val(value);
                         }
                         body.find("#customer_val").val(data.customer_id);
-                        body.find("#customer_name").val(data.customer.cus_name);
+                        if (data.customer) {
+                            body.find("#customer_name").val(data.customer.cus_name);
+                        }
                     }
                 },
                 btn2: function (index, layero) {
@@ -209,7 +201,7 @@
         function del(id) {
             $.ajax({
                 type: 'POST',
-                url: "Delete",
+                url: "/CustomerAtta/Del",
                 data: { id: id },
                 dataType: "json",
                 success: function (res) {//res为相应体,function为回调函数
@@ -260,7 +252,9 @@
                             body.find("#" + val).val(value);
                         }
                         body.find("#customer_val").val(edit.customer_id);
-                        body.find("#customer_name").val(edit.customer.cus_name);
+                        if (edit.customer) {
+                            body.find("#customer_name").val(edit.customer.cus_name);
+                        }
                     }
                 },
                 yes: function (index, layero) {
