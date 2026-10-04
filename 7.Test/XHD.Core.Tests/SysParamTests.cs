@@ -120,8 +120,8 @@ namespace XHD.Core.Tests
         private static Mock<IFinance_ReceiveService> CreateReceiveServiceMock(Finance_ReceiveRepository repo)
         {
             var mock = new Mock<IFinance_ReceiveService>();
-            mock.Setup(s => s.GridAsync(It.IsAny<Expression<Func<Finance_Receivable, bool>>>(), It.IsAny<int>(), It.IsAny<int>()))
-                .Returns((Expression<Func<Finance_Receivable, bool>> e, int p, int l) => repo.GridAsync(e, p, l));
+            mock.Setup(s => s.GridAsync(It.IsAny<Expression<Func<Finance_Receive, bool>>>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Returns((Expression<Func<Finance_Receive, bool>> e, int p, int l) => repo.GridAsync(e, p, l));
             return mock;
         }
 

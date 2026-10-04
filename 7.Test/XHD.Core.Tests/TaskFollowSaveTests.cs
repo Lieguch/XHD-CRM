@@ -45,7 +45,7 @@ namespace XHD.Core.Tests
 
         // ============ 测试数据工厂 ============
 
-        private static Task_follow NewFollow(string id, string taskId, string followId, DateTime followTime, string content = "跟进内容", int? status = null)
+        private static Task_follow NewFollow(string id, string taskId, string followId, DateTime? followTime, string content = "跟进内容", int? status = null)
         {
             return new Task_follow
             {
