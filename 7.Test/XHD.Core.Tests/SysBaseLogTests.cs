@@ -9,6 +9,7 @@ using FreeSql;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -58,16 +59,29 @@ namespace XHD.Core.Tests
                 .Returns(Task.CompletedTask);
             return new ServiceCollection()
                 .AddSingleton(authMock.Object)
+                // 根因修复：Controller.View() 经 TempData 属性取 ITempDataDictionaryFactory，
+                // 缺注册时 View() 抛 InvalidOperationException（生产由 AddControllersWithViews 提供）。
+                // 本测试只构造 ViewResult 不执行它，Provider 不会被真正调用，注册实现即可。
+                .AddSingleton<ITempDataDictionaryFactory, TempDataDictionaryFactory>()
+                .AddSingleton<ITempDataProvider, SessionStateTempDataProvider>()
                 .BuildServiceProvider();
         }
 
         /// <summary>
-        /// 构造带 uid claim 的 Controller（TestControllerHelper 默认只带 Sid/Name）。
+        /// 把 uid claim 并入 Controller 当前的 Identity。
+        /// 根因修复：原实现 User.AddIdentity(...) 追加了**第二个** Identity，而
+        /// HomeController.iniUrl:104 取 User.Identity（= 第一个 Identity）后再 FindFirst("uid")，
+        /// uid 落在第二个 Identity 上必然查不到 => NullReferenceException => 进 catch 返回「系统错误！」。
+        /// 生产环境 AccountController.SignIn 是「单一 Identity 承载全部 claim」，测试与之对齐。
         /// </summary>
         private static TController WithUid<TController>(TController ctrl, string uid) where TController : Controller
         {
-            ctrl.ControllerContext.HttpContext.User.AddIdentity(
-                new ClaimsIdentity(new[] { new Claim("uid", uid) }, "TestAuth"));
+            var httpContext = ctrl.ControllerContext.HttpContext;
+            var existing = httpContext.User.Identity as ClaimsIdentity;
+            var claims = (existing?.Claims ?? Enumerable.Empty<Claim>())
+                .Append(new Claim("uid", uid));
+            httpContext.User = new ClaimsPrincipal(
+                new ClaimsIdentity(claims, existing?.AuthenticationType ?? "TestAuth"));
             return ctrl;
         }
 

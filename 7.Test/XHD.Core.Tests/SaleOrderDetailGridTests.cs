@@ -171,8 +171,11 @@ namespace XHD.Core.Tests
         }
 
         [Fact]
-        public async Task Grid_Pagination_ReturnsPagedData()
+        public async Task Grid_IgnoresPagination_ReturnsAllRows()
         {
+            // 产品契约：Views/SaleOrder/Add.cshtml:263 明确 page:false，明细网格按全量客户端渲染，
+            // SaleOrderDetailController.Grid:82 因此用无分页重载 _service.GridAsync(exp)。
+            // 分页参数必须被忽略——count 与 data 都等于该主单的全量明细数。
             await InsertOrderAsync(NewOrder("O1", "E_A"));
             for (int i = 0; i < 3; i++)
             {
@@ -186,7 +189,7 @@ namespace XHD.Core.Tests
 
             Assert.Equal(0, (int)obj["code"]!);
             Assert.Equal(3, (int)obj["count"]!);
-            Assert.Equal(2, ((JArray)obj["data"]!).Count);
+            Assert.Equal(3, ((JArray)obj["data"]!).Count);
         }
 
         [Fact]

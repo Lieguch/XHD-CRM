@@ -36,10 +36,13 @@ internal class Sys_logService : BaseService<Sys_log>, ISys_logService
             return XHDResult.Result(0, "", arr);
         }
 
-        //更新日志
+        //修改日志（INSERT 语义）
+        //根因修复：所有 ~26 个调用点都是先 new Sys_log { id = UUIDNext... } 再调用本方法，
+        //语义是「新增一条修改日志」。原实现走 UpdateAsync（按主键 UPDATE），新 id 在库里不存在
+        // => 0 行受影响 => 全站修改日志从未落库。改为 AddAsync 真正插入。
         public async Task<int> UpdateLog(Sys_log models)
         {
-           return await _irepository.UpdateAsync(models);
+           return await _irepository.AddAsync(models);
         }
 
         //删除日志

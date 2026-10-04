@@ -41,8 +41,11 @@ namespace XHD.Core.Tests
 
         /// <summary>
         /// 测试用 AES 密钥（16 字符，满足 CBC 的 Key/IV 长度约束：IV 取 key 末 16 字符）。
+        /// 根因修复：AESEncrypt.AesEncrypt 直接 aes.Key = UTF8Bytes(key)，只接受 16/24/32 字节；
+        /// 原值 "XHD_TEST_AES_KEY!" 是 17 字符（多了个 !），必然抛 CryptographicException。
+        /// 生产登录页用 RandomNum(16) 生成 16 字符，测试与之对齐。
         /// </summary>
-        private const string TestAesKey = "XHD_TEST_AES_KEY!";
+        private const string TestAesKey = "XHD_TEST_AES_KEY";
 
         /// <summary>
         /// 造数用的「另一把」AES 密钥，仅用于制造解密失败场景。

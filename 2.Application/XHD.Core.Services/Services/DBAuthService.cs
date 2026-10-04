@@ -31,6 +31,15 @@ namespace XHD.Core.Services
         /// <returns>0无，1本人，2本部，3本部及下级，4全部</returns>
         public async Task<int> GetAuthType(string emp_id)
         {
+            //系统管理员，绝对的权限
+            //根因修复：GetAuth(:46) 与 GetDataAuth(:65) 都有 admin 短路，唯独本方法漏了。
+            //A 版 GetDataAuth.cs:91「管理员不受权限控制」是原始契约，B 版 GetDataAuth 的 admin
+            //分支返回 authtype=4（全部），此处与同文件另两法保持一致返回 4。
+            if (emp_id.ToLower().Equals("admin"))
+            {
+                return 4;
+            }
+
             return await _irepository.GetAuthType(emp_id);
         }
 

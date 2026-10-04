@@ -1240,7 +1240,10 @@ namespace XHD.Core.View.Controllers
 
             Expression<Func<Sys_Param, bool>> exp = a => a.params_type == type;
 
-            var result = await _SysParamService.GridAsync(exp, "params_order");
+            //根因修复：Sys_ParamRepository 的查询带 LeftJoin(Sys_Param_Type)，而 Sys_Param 与
+            //Sys_Param_Type 都有 params_order 列，裸列名在 SQLite 下报 ambiguous column name。
+            //FreeSql 文档：Select 主表默认别名 a，OrderBy(string) 按原生 SQL 透传 => 限主表别名消歧。
+            var result = await _SysParamService.GridAsync(exp, "a.params_order");
 
             return result.ToString();
         }

@@ -125,11 +125,11 @@ namespace XHD.Core.Tests
 
             var data = Ok(await ctrl.GenerateRsaKeyPair());
 
-            Assert.Equal(2048, (int)data["data"]!["keySize"]!);
-            Assert.StartsWith("<RSAKeyValue>", (string)data["data"]!["publicKey"]!);
-            Assert.StartsWith("<RSAKeyValue>", (string)data["data"]!["privateKey"]!);
+            Assert.Equal(2048, (int)data["data"]![0]!["keySize"]!);
+            Assert.StartsWith("<RSAKeyValue>", (string)data["data"]![0]!["publicKey"]!);
+            Assert.StartsWith("<RSAKeyValue>", (string)data["data"]![0]!["privateKey"]!);
             // 私钥含额外密钥材料，必然长于公钥
-            Assert.True(((string)data["data"]!["privateKey"]!).Length > ((string)data["data"]!["publicKey"]!).Length);
+            Assert.True(((string)data["data"]![0]!["privateKey"]!).Length > ((string)data["data"]![0]!["publicKey"]!).Length);
         }
 
         [Fact]
@@ -140,7 +140,7 @@ namespace XHD.Core.Tests
 
             var data = Ok(await ctrl.GenerateRsaKeyPair(keySize: 64));
 
-            Assert.Equal(2048, (int)data["data"]!["keySize"]!);
+            Assert.Equal(2048, (int)data["data"]![0]!["keySize"]!);
         }
 
         // ============ RSA 加解密往返（根因级：必须配对） ============
@@ -153,17 +153,17 @@ namespace XHD.Core.Tests
         {
             var ctrl = CreateController();
 
-            var keyPair = Ok(await ctrl.GenerateRsaKeyPair(1024))["data"]!;
+            var keyPair = Ok(await ctrl.GenerateRsaKeyPair(1024))["data"]![0]!;
             string publicKey = (string)keyPair["publicKey"]!;
             string privateKey = (string)keyPair["privateKey"]!;
 
             var encData = Ok(await ctrl.RsaEncrypt(new RsaEncryptRequest { PublicKey = publicKey, PlainText = plain }));
-            string cipher = (string)encData["data"]!["cipher"]!;
+            string cipher = (string)encData["data"]![0]!["cipher"]!;
             Assert.NotEqual(plain, cipher);
 
             var decData = Ok(await ctrl.RsaDecrypt(new RsaDecryptRequest { PrivateKey = privateKey, Cipher = cipher }));
 
-            Assert.Equal(plain, (string)decData["data"]!["plainText"]!);
+            Assert.Equal(plain, (string)decData["data"]![0]!["plainText"]!);
         }
 
         [Fact]
@@ -193,10 +193,10 @@ namespace XHD.Core.Tests
             // 密文来自密钥对 A，用密钥对 B 的私钥解密必然失败
             var ctrl = CreateController();
 
-            var pairA = Ok(await ctrl.GenerateRsaKeyPair(1024))["data"]!;
-            var pairB = Ok(await ctrl.GenerateRsaKeyPair(1024))["data"]!;
+            var pairA = Ok(await ctrl.GenerateRsaKeyPair(1024))["data"]![0]!;
+            var pairB = Ok(await ctrl.GenerateRsaKeyPair(1024))["data"]![0]!;
             string cipher = (string)Ok(await ctrl.RsaEncrypt(
-                new RsaEncryptRequest { PublicKey = (string)pairA["publicKey"]!, PlainText = "secret" }))["data"]!["cipher"]!;
+                new RsaEncryptRequest { PublicKey = (string)pairA["publicKey"]!, PlainText = "secret" }))["data"]![0]!["cipher"]!;
 
             var obj = Fail(await ctrl.RsaDecrypt(new RsaDecryptRequest
             {
@@ -216,8 +216,8 @@ namespace XHD.Core.Tests
 
             var data = Ok(await ctrl.GenerateCDKey(new GenerateCDKeyRequest { MachineCode = "VM-XYZ-12345" }));
 
-            Assert.Equal("VM-XYZ-12345", (string)data["data"]!["machineCode"]!);
-            string cdkey = (string)data["data"]!["cdkey"]!;
+            Assert.Equal("VM-XYZ-12345", (string)data["data"]![0]!["machineCode"]!);
+            string cdkey = (string)data["data"]![0]!["cdkey"]!;
             Assert.StartsWith("XHDRC-", cdkey);
             Assert.Equal(4, cdkey.Split('-').Length);
         }
@@ -249,12 +249,12 @@ namespace XHD.Core.Tests
             var ctrl = CreateController();
             const string MachineCode = "VM-XYZ-12345";
 
-            string cdkey = (string)Ok(await ctrl.GenerateCDKey(new GenerateCDKeyRequest { MachineCode = MachineCode }))["data"]!["cdkey"]!;
+            string cdkey = (string)Ok(await ctrl.GenerateCDKey(new GenerateCDKeyRequest { MachineCode = MachineCode }))["data"]![0]!["cdkey"]!;
 
             var data = Ok(await ctrl.VerifyCDKey(new VerifyCDKeyRequest { MachineCode = MachineCode, Cdkey = cdkey }));
 
-            Assert.True((bool)data["data"]!["valid"]!);
-            Assert.Equal("验证通过", (string)data["data"]!["message"]!);
+            Assert.True((bool)data["data"]![0]!["valid"]!);
+            Assert.Equal("验证通过", (string)data["data"]![0]!["message"]!);
         }
 
         [Fact]
@@ -268,8 +268,8 @@ namespace XHD.Core.Tests
                 Cdkey = "XHDRC-AAAAA-BBBBB-CCCCC"
             }));
 
-            Assert.False((bool)obj["data"]!["valid"]!);
-            Assert.Equal("验证失败", (string)obj["data"]!["message"]!);
+            Assert.False((bool)obj["data"]![0]!["valid"]!);
+            Assert.Equal("验证失败", (string)obj["data"]![0]!["message"]!);
         }
 
         [Fact]
@@ -293,8 +293,8 @@ namespace XHD.Core.Tests
 
             var data = Ok(await ctrl.CacheGet("test-cache-key"));
 
-            Assert.True((bool)data["data"]!["found"]!);
-            Assert.Equal("test-cache-value", (string)data["data"]!["value"]!);
+            Assert.True((bool)data["data"]![0]!["found"]!);
+            Assert.Equal("test-cache-value", (string)data["data"]![0]!["value"]!);
         }
 
         [Fact]
@@ -304,8 +304,8 @@ namespace XHD.Core.Tests
 
             var data = Ok(await ctrl.CacheGet("no-such-key"));
 
-            Assert.False((bool)data["data"]!["found"]!);
-            Assert.Equal(JTokenType.Null, data["data"]!["value"]!.Type);
+            Assert.False((bool)data["data"]![0]!["found"]!);
+            Assert.Equal(JTokenType.Null, data["data"]![0]!["value"]!.Type);
         }
 
         // ============ 邮件：参数校验 + 配置缺失/不可达分支（不发真邮件） ============

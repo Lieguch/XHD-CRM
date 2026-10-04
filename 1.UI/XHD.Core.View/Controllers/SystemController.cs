@@ -98,7 +98,9 @@ namespace XHD.Core.View.Controllers
                     { "valid", valid },
                     { "message", valid ? "验证通过" : "验证失败" }
                 };
-                return valid ? XHDResult.Success(obj).ToString() : XHDResult.Error(obj.ToString()).ToString();
+                // 失败分支与成功分支同构：失败时 valid/message 同样要进 data，
+                // 不能 Error(obj.ToString()) 把对象序列化进 msg（结构丢失，data 变空数组）。
+                return valid ? XHDResult.Success(obj).ToString() : XHDResult.Result(-1, "验证失败", obj).ToString();
             }
             catch (Exception ex)
             {
