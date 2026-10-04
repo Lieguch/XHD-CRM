@@ -78,12 +78,10 @@ namespace XHD.Core.Tests
             public IEnumerable<string> Keys => _store.Keys;
 
             public Task LoadAsync() => Task.CompletedTask;
+            public Task LoadAsync(CancellationToken cancellationToken) => Task.CompletedTask;
             public Task CommitAsync() => Task.CompletedTask;
-            public Task ClearAsync()
-            {
-                _store.Clear();
-                return Task.CompletedTask;
-            }
+            public Task CommitAsync(CancellationToken cancellationToken) => Task.CompletedTask;
+            public void Clear() => _store.Clear();
             public void Remove(string key) => _store.Remove(key);
             public void Set(string key, byte[] value) => _store[key] = value;
             public bool TryGetValue(string key, out byte[] value)
