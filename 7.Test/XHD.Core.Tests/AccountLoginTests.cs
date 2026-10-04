@@ -112,13 +112,15 @@ namespace XHD.Core.Tests
                     It.IsAny<HttpContext>(), It.IsAny<string>(),
                     It.IsAny<AuthenticationProperties>()))
                 .Returns(Task.CompletedTask);
-            return new ServiceCollection()
-                .AddSingleton(authMock.Object)
-                // 根因修复：AccountController.Index():158 调 View()，经 TempData 属性解析
-                // ITempDataDictionaryFactory（生产由 AddControllersWithViews 提供整套 TempData 栈）。
-                // 与生产同构，补齐 ITempDataDictionaryFactory / ITempDataProvider / TempDataSerializer。
-                .AddControllersWithViews()
-                .BuildServiceProvider();
+            // 根因修复：AccountController.Index():158 调 View()，经 TempData 属性解析
+            // ITempDataDictionaryFactory（生产由 AddControllersWithViews 提供整套 TempData 栈）。
+            // 与生产同构，补齐 ITempDataDictionaryFactory / ITempDataProvider / TempDataSerializer。
+            // 注：AddControllersWithViews 返回 IMvcBuilder，注册实际作用在 collection 上，
+            // 故分两步写，最后由 IServiceCollection.BuildServiceProvider() 构造容器。
+            var services = new ServiceCollection();
+            services.AddSingleton(authMock.Object);
+            services.AddControllersWithViews();
+            return services.BuildServiceProvider();
         }
 
         /// <summary>

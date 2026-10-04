@@ -57,15 +57,17 @@ namespace XHD.Core.Tests
             authMock.Setup(a => a.SignOutAsync(
                     It.IsAny<HttpContext>(), It.IsAny<string>(), It.IsAny<AuthenticationProperties>()))
                 .Returns(Task.CompletedTask);
-            return new ServiceCollection()
-                .AddSingleton(authMock.Object)
-                // 根因修复：Controller.View() 经 TempData 属性取 ITempDataDictionaryFactory ->
-                // TempDataDictionary -> ITempDataProvider + TempDataSerializer，缺任一即激活失败。
-                // 生产 Startup 用 services.AddControllersWithViews(...) 注册完整 TempData 栈
-                // （默认 CookieTempDataProvider + internal DefaultTempDataSerializer，internal 类
-                // 无法在测试里手工 new，必须走框架官方注册）。这里与生产同构，不再手工零散注册。
-                .AddControllersWithViews()
-                .BuildServiceProvider();
+            // 根因修复：Controller.View() 经 TempData 属性取 ITempDataDictionaryFactory ->
+            // TempDataDictionary -> ITempDataProvider + TempDataSerializer，缺任一即激活失败。
+            // 生产 Startup 用 services.AddControllersWithViews(...) 注册完整 TempData 栈
+            // （默认 CookieTempDataProvider + internal DefaultTempDataSerializer，internal 类
+            // 无法在测试里手工 new，必须走框架官方注册）。这里与生产同构，不再手工零散注册。
+            // 注：AddControllersWithViews 返回 IMvcBuilder，注册实际作用在 collection 上，
+            // 故分两步写，最后由 IServiceCollection.BuildServiceProvider() 构造容器。
+            var services = new ServiceCollection();
+            services.AddSingleton(authMock.Object);
+            services.AddControllersWithViews();
+            return services.BuildServiceProvider();
         }
 
         /// <summary>
