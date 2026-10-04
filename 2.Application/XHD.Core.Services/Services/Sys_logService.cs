@@ -45,10 +45,21 @@ internal class Sys_logService : BaseService<Sys_log>, ISys_logService
            return await _irepository.AddAsync(models);
         }
 
-        //删除日志
+        //删除日志（INSERT 语义）
+        //根因修复：与 UpdateLog 同类。全部 26 个调用点（CRMFollowController:234、
+        //CRM_ContactController:267/479、CustomerController:696/848/924/1282、
+        //FinanceInvoiceController:229、FinanceReceiveController:222、Finance_ReceivableController:267、
+        //HrDepartmentController:236、HrEmployeeController:315、HrPositionController:209、
+        //MessageNewsController:219、ParamsCityController:121、ParamsProvinceController:233、
+        //ProductController:197、ProductCategoryController:226、SaleOrderController:305、
+        //SaleContractController:246、SysParamController:321、SysRoleController:133）都是先
+        // new Sys_log { id = UUIDNext.Uuid.NewSequential()/Guid.NewGuid()... } 再调用本方法，
+        //语义是「新增一条删除事件日志」（A 版 Syslog.Add_log = log.Add(modellog)，INSERT）。
+        //原实现走 DeleteAsync(models.id)（按主键 DELETE 一个刚 new 出来、库里不存在的 id）
+        // => 0 行受影响 => 全站删除日志从未落库。改为 AddAsync 真正插入。
         public async Task<int> DeleteLog(Sys_log models)
         {
-            return await _irepository.DeleteAsync(models.id);
+            return await _irepository.AddAsync(models);
         }
 
         //登录日志

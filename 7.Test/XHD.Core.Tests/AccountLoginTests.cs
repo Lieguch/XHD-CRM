@@ -114,6 +114,10 @@ namespace XHD.Core.Tests
                 .Returns(Task.CompletedTask);
             return new ServiceCollection()
                 .AddSingleton(authMock.Object)
+                // 根因修复：AccountController.Index():158 调 View()，经 TempData 属性解析
+                // ITempDataDictionaryFactory（生产由 AddControllersWithViews 提供整套 TempData 栈）。
+                // 与生产同构，补齐 ITempDataDictionaryFactory / ITempDataProvider / TempDataSerializer。
+                .AddControllersWithViews()
                 .BuildServiceProvider();
         }
 

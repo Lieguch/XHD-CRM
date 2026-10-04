@@ -59,11 +59,12 @@ namespace XHD.Core.Tests
                 .Returns(Task.CompletedTask);
             return new ServiceCollection()
                 .AddSingleton(authMock.Object)
-                // 根因修复：Controller.View() 经 TempData 属性取 ITempDataDictionaryFactory，
-                // 缺注册时 View() 抛 InvalidOperationException（生产由 AddControllersWithViews 提供）。
-                // 本测试只构造 ViewResult 不执行它，Provider 不会被真正调用，注册实现即可。
-                .AddSingleton<ITempDataDictionaryFactory, TempDataDictionaryFactory>()
-                .AddSingleton<ITempDataProvider, SessionStateTempDataProvider>()
+                // 根因修复：Controller.View() 经 TempData 属性取 ITempDataDictionaryFactory ->
+                // TempDataDictionary -> ITempDataProvider + TempDataSerializer，缺任一即激活失败。
+                // 生产 Startup 用 services.AddControllersWithViews(...) 注册完整 TempData 栈
+                // （默认 CookieTempDataProvider + internal DefaultTempDataSerializer，internal 类
+                // 无法在测试里手工 new，必须走框架官方注册）。这里与生产同构，不再手工零散注册。
+                .AddControllersWithViews()
                 .BuildServiceProvider();
         }
 
