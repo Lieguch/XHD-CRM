@@ -76,11 +76,21 @@ namespace XHD.Core.Tests
             };
         }
 
-        private async Task InsertAsync(params object[] rows)
+        // FreeSql.Insert<T1> 按【编译期】类型绑定 T1，必须用强类型集合，不能用 object[]（否则报
+        // "data type ... is inconsistent with AsType (System Object)"）
+        private async Task InsertCustomersAsync(params CRM_Customer[] rows)
         {
-            foreach (var row in rows)
+            foreach (var c in rows)
             {
-                await _fsql.Insert(row).ExecuteAffrowsAsync();
+                await _fsql.Insert(c).ExecuteAffrowsAsync();
+            }
+        }
+
+        private async Task InsertTasksAsync(params TaskInfo[] rows)
+        {
+            foreach (var t in rows)
+            {
+                await _fsql.Insert(t).ExecuteAffrowsAsync();
             }
         }
 
@@ -145,9 +155,8 @@ namespace XHD.Core.Tests
         [Fact]
         public async Task Grid_TaskWithCustomer_FillsCustomerName()
         {
-            await InsertAsync(
-                NewCustomer("C1", "测试客户A"),
-                NewTask("T1", "C1"));
+            await InsertCustomersAsync(NewCustomer("C1", "测试客户A"));
+            await InsertTasksAsync(NewTask("T1", "C1"));
 
             var map = await GridAsMapAsync(CreateController());
 
@@ -157,10 +166,8 @@ namespace XHD.Core.Tests
         [Fact]
         public async Task Grid_TaskWithoutCustomer_KeepsEmptyCustomerName()
         {
-            await InsertAsync(
-                NewCustomer("C1", "测试客户A"),
-                NewTask("T1", ""),
-                NewTask("T2"));
+            await InsertCustomersAsync(NewCustomer("C1", "测试客户A"));
+            await InsertTasksAsync(NewTask("T1", ""), NewTask("T2"));
 
             var map = await GridAsMapAsync(CreateController());
 
@@ -172,7 +179,7 @@ namespace XHD.Core.Tests
         public async Task Grid_CustomerMissing_LeavesEmptyCustomerName()
         {
             // customer_id 指向不存在的客户（历史脏数据），不得抛异常，且回填为空
-            await InsertAsync(NewTask("T1", "GONE"));
+            await InsertTasksAsync(NewTask("T1", "GONE"));
 
             var map = await GridAsMapAsync(CreateController());
 
@@ -182,12 +189,8 @@ namespace XHD.Core.Tests
         [Fact]
         public async Task Grid_MultipleTasksShareCustomer_FillsAll()
         {
-            await InsertAsync(
-                NewCustomer("C1", "共享客户"),
-                NewCustomer("C2", "另一客户"),
-                NewTask("T1", "C1"),
-                NewTask("T2", "C2"),
-                NewTask("T3", "C1"));
+            await InsertCustomersAsync(NewCustomer("C1", "共享客户"), NewCustomer("C2", "另一客户"));
+            await InsertTasksAsync(NewTask("T1", "C1"), NewTask("T2", "C2"), NewTask("T3", "C1"));
 
             var map = await GridAsMapAsync(CreateController());
 
