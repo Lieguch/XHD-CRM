@@ -94,9 +94,26 @@ namespace XHD.Core.View.Controllers
             return View();
         }
 
+        /// <summary>
+        /// 员工选择器列表（被 8 处前端 tableSelect 调用）。
+        /// 数据权限：非全部权限（authtype&lt;5）只能选到权限范围内员工；对应 A 版
+        /// Getemp_Auth 语义（A 版 Server/hr_employee.cs:80-96 服务端过滤已被 A 版自己整体注释失效，
+        /// B 版以 DataScope 统一收口，不复活 A 版注释逻辑）。admin（authtype=5）不过滤。
+        /// </summary>
         public async Task<string> Grid(PageView<hr_employee> model)
         {
             Expression<Func<hr_employee, bool>> exp = a => a.id != "admin";
+
+            // 数据权限收口：非全部权限（authtype<5）只能选到 empList 范围内员工。
+            // 注意：不能用 EmployeeIds.Count>0 守卫——authtype=0（无权限）时 empList 为空，
+            // 那样会跳过过滤变成全可见（越权）。DataScope.Resolve 保证 NeedsFilter=true 时
+            // EmployeeIds 非空（null 归一为空列表），空列表 Contains 即空集，与既有 21 个控制器口径一致。
+            var role = await _dBAuthService.GetDataAuth(GetUserId());
+            var scope = DataScope.Resolve(role);
+            if (scope.NeedsFilter)
+            {
+                exp = exp.And(a => scope.EmployeeIds.Contains(a.id));
+            }
 
             if (Request.Query["id"].Equals("me"))
             {

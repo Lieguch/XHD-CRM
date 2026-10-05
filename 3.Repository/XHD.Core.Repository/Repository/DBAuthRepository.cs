@@ -148,6 +148,33 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
+        /// 公客修改权限（对应 A 版 Controller/GetDataAuth.cs:40-60 getPrivateCusEdit）。
+        /// 经 Sys_role_emp 取该用户绑定的所有 Sys_role，对 PublicAuth（0=否 1=是）
+        /// 取最大值 &gt;0 即放行；admin 由调用方（Service 层）旁路，此处不特殊处理。
+        /// </summary>
+        /// <param name="emp_id">员工ID</param>
+        /// <returns>true=具备公客修改权限</returns>
+        public async Task<bool> GetPrivateCusEdit(string emp_id)
+        {
+            // 1. 取该用户绑定的所有角色ID（B 侧 Sys_role_emp 支持一人多角色）
+            var roleIds = await _fsql.Select<Sys_role_emp>()
+                .Where(e => e.emp_id == emp_id)
+                .ToListAsync(e => e.role_id);
+
+            if (roleIds == null || roleIds.Count == 0)
+            {
+                return false;
+            }
+
+            // 2. 对这些角色的 PublicAuth 取最大值，无值归 0，>0 放行
+            var maxPublicAuth = await _fsql.Select<Sys_role>()
+                .Where(r => roleIds.Contains(r.id))
+                .MaxAsync(r => r.PublicAuth);
+
+            return (maxPublicAuth ?? 0) > 0;
+        }
+
+        /// <summary>
         /// 递归获取部门及其所有下级部门ID列表
         /// </summary>
         private List<string> GetAllChildDeptIds(List<hr_department> allDepts, string parentId)

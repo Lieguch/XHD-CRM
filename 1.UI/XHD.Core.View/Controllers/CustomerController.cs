@@ -367,6 +367,18 @@ namespace XHD.Core.View.Controllers
                     return XHDResult.Error("找不到数据！").ToString();
                 }
 
+                // 公客修改闸门（对应 A 版 Server/CRM_Customer.cs:728-737 + GetDataAuth.getPrivateCusEdit）：
+                // isPrivate==1（公客）且非 admin 时，必须具备公客修改权限（角色 PublicAuth 最大值 > 0）。
+                // 必须用旧值 old.isPrivate 判断——否则用户可先把公客改成私客绕过闸门。
+                var userId = GetUserId();
+                if (old.isPrivate == 1 && !string.Equals(userId, "admin", StringComparison.OrdinalIgnoreCase))
+                {
+                    if (!await _dBAuthService.GetPrivateCusEdit(userId))
+                    {
+                        return XHDResult.Error("您不具备公客的修改权限！").ToString();
+                    }
+                }
+
                 var result = await _service.UpdateAsync(model);
                 if (result == 0)
                 {

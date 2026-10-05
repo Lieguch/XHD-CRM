@@ -78,5 +78,23 @@ namespace XHD.Core.Services
 
             return await _irepository.GetDataAuth(emp_id);
         }
+
+        /// <summary>
+        /// 公客修改权限（对应 A 版 Controller/GetDataAuth.cs:40-60 getPrivateCusEdit）。
+        /// admin 直接放行（对齐 A 版 Server/CRM_Customer.cs:728-737 调用方 uid=="admin" 旁路），
+        /// 其余转仓储取该用户所有角色 PublicAuth 最大值 &gt;0。
+        /// </summary>
+        /// <param name="emp_id">员工ID</param>
+        /// <returns>true=可修改公客</returns>
+        public async Task<bool> GetPrivateCusEdit(string emp_id)
+        {
+            //系统管理员，绝对的权限
+            if (emp_id.ToLower().Equals("admin"))
+            {
+                return true;
+            }
+
+            return await _irepository.GetPrivateCusEdit(emp_id);
+        }
     }
 }

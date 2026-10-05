@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -13,6 +14,7 @@ using XHD.Core.Common;
 using XHD.Core.IServices;
 using XHD.Core.Models;
 using XHD.Core.Repository;
+using XHD.Core.Services;
 using XHD.Core.View.Controllers;
 using XHD.Core.View.Models.Dtos;
 using Xunit;
@@ -49,7 +51,8 @@ namespace XHD.Core.Tests
             string industryId = "",
             string keyword = "",
             DateTime? lastFollow = null,
-            int isDelete = 0)
+            int isDelete = 0,
+            int isPrivate = 1)
         {
             return new CRM_Customer
             {
@@ -65,7 +68,7 @@ namespace XHD.Core.Tests
                 create_time = lastFollow ?? new DateTime(2024, 6, 15, 10, 30, 0),
                 create_id = empId,
                 isDelete = isDelete,
-                isPrivate = 1,
+                isPrivate = isPrivate,
                 sn = $"CU-{id}"
             };
         }
@@ -938,6 +941,184 @@ namespace XHD.Core.Tests
             var obj = JObject.Parse(json);
             Assert.Equal(0, (int)obj["code"]!);
             Assert.Equal(0, (int)obj["count"]!);
+        }
+
+        // =========================================================
+        // #14 Save 公客修改闸门（对应 A 版 Server/CRM_Customer.cs:728-737
+        //     + Controller/GetDataAuth.cs:40-60 getPrivateCusEdit）
+        // =========================================================
+
+        /// <summary>
+        /// 用真实 DBAuthService（连本测试同一个 SQLite 库）桥接 IDBAuthService，
+        /// 使 Save 的公客闸门走到真实仓储（Sys_role_emp + Sys_role）而非 Mock 返回值。
+        /// </summary>
+        private static Mock<IDBAuthService> CreateRealBackedAuth(IFreeSql fsql)
+        {
+            var svc = new DBAuthService(new DBAuthRepository(fsql));
+            var mock = new Mock<IDBAuthService>();
+            mock.Setup(a => a.GetPrivateCusEdit(It.IsAny<string>()))
+                .Returns((string id) => svc.GetPrivateCusEdit(id));
+            // Save 闸门只依赖 GetPrivateCusEdit；其余方法给出与全公司权限一致的行为以免干扰。
+            mock.Setup(a => a.GetDataAuth(It.IsAny<string>()))
+                .ReturnsAsync(new XHDRoleData { authtype = 5, empList = new List<string>() });
+            mock.Setup(a => a.GetAuth(It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync(true);
+            return mock;
+        }
+
+        /// <summary>
+        /// 创建桥接到真实 Repository 的 Service Mock，并补上 Save 编辑分支需要的 UpdateAsync。
+        /// </summary>
+        private static Mock<ICRM_CustomerService> CreateSaveServiceMock(CRM_CustomerRepository repo)
+        {
+            var mock = CreateServiceMock(repo);
+            mock.Setup(s => s.UpdateAsync(It.IsAny<CRM_Customer>()))
+                .Returns((CRM_Customer m) => repo.UpdateAsync(m));
+            return mock;
+        }
+
+        private async Task InsertRoleAsync(string id, int? publicAuth)
+        {
+            await _fsql.Insert(new Sys_role
+            {
+                id = id,
+                RoleName = $"角色-{id}",
+                PublicAuth = publicAuth
+            }).ExecuteAffrowsAsync();
+        }
+
+        private async Task InsertRoleEmpAsync(string roleId, string empId)
+        {
+            await _fsql.Insert(new Sys_role_emp
+            {
+                id = Guid.NewGuid().ToString(),
+                role_id = roleId,
+                emp_id = empId
+            }).ExecuteAffrowsAsync();
+        }
+
+        private async Task InsertEmpAsync(string id)
+        {
+            await _fsql.Insert(new hr_employee
+            {
+                id = id,
+                name = $"员工-{id}",
+                isDelete = 0
+            }).ExecuteAffrowsAsync();
+        }
+
+        // (a) 公客 + 普通角色（无 PublicAuth）→ 拦截且 DB 未变
+        [Fact]
+        public async Task Controller_Save_PublicCustomer_RoleWithoutPublicAuth_Blocked()
+        {
+            await InsertEmpAsync("E001");
+            await InsertRoleAsync("R1", publicAuth: 0);
+            await InsertRoleEmpAsync("R1", "E001");
+            await InsertAsync(NewCustomer("C1", 0, "旧名字", empId: "E001", isPrivate: 1));
+
+            var svc = CreateSaveServiceMock(_custRepo);
+            var ctrl = CreateController(svc.Object, CreateRealBackedAuth(_fsql), userId: "E001");
+
+            var model = NewCustomer("C1", 0, "新名字", empId: "E001", isPrivate: 1);
+            var json = await ctrl.Save(model);
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(-1, (int)obj["code"]!);
+            Assert.Equal("您不具备公客的修改权限！", (string)obj["msg"]!);
+
+            // DB 未变：仍是旧名字、仍是公客
+            var c = await _fsql.Select<CRM_Customer>().Where(a => a.id == "C1").FirstAsync();
+            Assert.Equal("旧名字", c.cus_name);
+            Assert.Equal(1, c.isPrivate);
+        }
+
+        // (b) 公客 + PublicAuth=1 角色 → 放行
+        [Fact]
+        public async Task Controller_Save_PublicCustomer_RoleWithPublicAuth_Allowed()
+        {
+            await InsertEmpAsync("E001");
+            await InsertRoleAsync("R1", publicAuth: 1);
+            await InsertRoleEmpAsync("R1", "E001");
+            await InsertAsync(NewCustomer("C1", 0, "旧名字", empId: "E001", isPrivate: 1));
+
+            var svc = CreateSaveServiceMock(_custRepo);
+            var ctrl = CreateController(svc.Object, CreateRealBackedAuth(_fsql), userId: "E001");
+
+            var model = NewCustomer("C1", 0, "新名字", empId: "E001", isPrivate: 1);
+            var json = await ctrl.Save(model);
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+
+            var c = await _fsql.Select<CRM_Customer>().Where(a => a.id == "C1").FirstAsync();
+            Assert.Equal("新名字", c.cus_name);
+        }
+
+        // (c) 公客 + admin → 放行（admin 旁路，不需要任何角色）
+        [Fact]
+        public async Task Controller_Save_PublicCustomer_Admin_Allowed()
+        {
+            await InsertAsync(NewCustomer("C1", 0, "旧名字", empId: "E999", isPrivate: 1));
+
+            var svc = CreateSaveServiceMock(_custRepo);
+            var ctrl = CreateController(svc.Object, CreateRealBackedAuth(_fsql), userId: "admin");
+
+            var model = NewCustomer("C1", 0, "新名字", empId: "E999", isPrivate: 1);
+            var json = await ctrl.Save(model);
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+
+            var c = await _fsql.Select<CRM_Customer>().Where(a => a.id == "C1").FirstAsync();
+            Assert.Equal("新名字", c.cus_name);
+        }
+
+        // (d) 私客（isPrivate=0）+ 无 PublicAuth 角色 → 放行（不拦截）
+        [Fact]
+        public async Task Controller_Save_PrivateCustomer_NoPublicAuth_Allowed()
+        {
+            await InsertEmpAsync("E001");
+            await InsertRoleAsync("R1", publicAuth: 0);
+            await InsertRoleEmpAsync("R1", "E001");
+            await InsertAsync(NewCustomer("C1", 0, "旧名字", empId: "E001", isPrivate: 0));
+
+            var svc = CreateSaveServiceMock(_custRepo);
+            var ctrl = CreateController(svc.Object, CreateRealBackedAuth(_fsql), userId: "E001");
+
+            var model = NewCustomer("C1", 0, "新名字", empId: "E001", isPrivate: 0);
+            var json = await ctrl.Save(model);
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+
+            var c = await _fsql.Select<CRM_Customer>().Where(a => a.id == "C1").FirstAsync();
+            Assert.Equal("新名字", c.cus_name);
+        }
+
+        // (e) 闸门用旧值：model.isPrivate=0 但 old.isPrivate=1 仍拦截
+        [Fact]
+        public async Task Controller_Save_GateUsesOldValue_FlippingToPrivateStillBlocked()
+        {
+            await InsertEmpAsync("E001");
+            await InsertRoleAsync("R1", publicAuth: 0);
+            await InsertRoleEmpAsync("R1", "E001");
+            await InsertAsync(NewCustomer("C1", 0, "旧名字", empId: "E001", isPrivate: 1));
+
+            var svc = CreateSaveServiceMock(_custRepo);
+            var ctrl = CreateController(svc.Object, CreateRealBackedAuth(_fsql), userId: "E001");
+
+            // 提交的 model 把公客改成私客，企图绕过闸门
+            var model = NewCustomer("C1", 0, "新名字", empId: "E001", isPrivate: 0);
+            var json = await ctrl.Save(model);
+
+            var obj = JObject.Parse(json);
+            Assert.Equal(-1, (int)obj["code"]!);
+            Assert.Equal("您不具备公客的修改权限！", (string)obj["msg"]!);
+
+            // DB 未变：仍是旧名字、仍是公客
+            var c = await _fsql.Select<CRM_Customer>().Where(a => a.id == "C1").FirstAsync();
+            Assert.Equal("旧名字", c.cus_name);
+            Assert.Equal(1, c.isPrivate);
         }
     }
 }

@@ -49,6 +49,20 @@
                                 </div>
                             </div>
                         </div>
+
+                        <div class="layui-form-item">
+                            <div class="layui-input-group">
+                                <div class="layui-input-split layui-input-prefix">
+                                    当前版本号
+                                </div>
+                                <input type="text" class="layui-input layui-disabled" readonly="readonly" id="T_Version">
+                                <div class="layui-input-split layui-input-suffix">
+                                    <button type="button" class="layui-btn layui-btn-sm" id="T_CheckUpdate" lay-on="config-checkupdate">
+                                        <i class="layui-icon layui-icon-refresh"></i>检查更新
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -142,6 +156,37 @@
                             }
                         });
                     });
+                },
+                "config-checkupdate": function () {
+                    // 对应 A 版 Sys_version.aspx:46-88 checkup()：POST /SysInfo/CheckUpdate 比较本地与远程版本号
+                    var $btn = $("#T_CheckUpdate");
+                    $btn.addClass("layui-btn-disabled").attr("disabled", true);
+
+                    $.ajax({
+                        type: 'POST',
+                        url: "CheckUpdate",
+                        dataType: "json",
+                        success: function (res) {
+                            if (res.code == 0 && res.data && res.data.length > 0) {
+                                var info = res.data[0];
+                                if (info.hasUpdate) {
+                                    // A 版:77 口径
+                                    layer.alert("有 " + info.latest + " 版本可以更新，请前往小黄豆CRM官网下载。", { icon: 7 });
+                                } else {
+                                    // A 版:80 口径
+                                    layer.msg("已经是最新版本，无需升级！", { icon: 1 });
+                                }
+                            } else {
+                                layer.alert(res.msg || '检查更新失败', { icon: 5 });
+                            }
+                        },
+                        error: function (XMLHttpRequest, textStatus, errorThrown) {
+                            layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                        },
+                        complete: function () {
+                            $btn.removeClass("layui-btn-disabled").attr("disabled", false);
+                        }
+                    });
                 }
             }
         );
@@ -170,6 +215,7 @@
 
                     $("#T_Company").val(infos.sys_name || '');
                     $("#T_MapKey").val(infos.map_key || '');
+                    $("#T_Version").val(infos.sys_version || '');
                     $("#ID-upload-demo-img").attr("src", infos.sys_logo || '');
                 } else {
                     layer.alert(res.msg, { icon: 5 });

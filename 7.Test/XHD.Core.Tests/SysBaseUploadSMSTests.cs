@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using FreeSql;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json.Linq;
@@ -284,7 +286,9 @@ namespace XHD.Core.Tests
             var ctrl = new SysInfoController(
                 new Mock<ILogger<SysLogController>>().Object,
                 infoService,
-                _smsHelper);
+                _smsHelper,
+                new Mock<IConfiguration>().Object,
+                new Mock<IHttpClientFactory>().Object);
 
             var httpCtx = new DefaultHttpContext();
             httpCtx.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
