@@ -226,14 +226,22 @@ namespace XHD.Core.Tests
         }
 
         [Fact]
-        public void HasUpdate_RemoteNewerMajorVersion_HasUpdate()
+        public void HasUpdate_RemoteBiggerMajorButZeroDateSegment_NoUpdate()
         {
             // A 版口径的反直觉特性：第 3 段日期 ×1e5 后权重高达万亿级，远大于主版本 1e9 差值。
-            // 本地 v3.0.20250920.0 权重 = 3*1e9 + 20250920*1e5 = 5025092000000
+            // 本地 v3.0.20250920.0 权重 = 3*1e9 + 20250920*1e5 = 2028092000000
             // 远程 v4.0.0.0 权重 = 4*1e9 + 0 = 4000000000
             // 本地 > 远程 → 判定「无更新」。这是 A 版算法的真实结果（种子版本号里日期段过大），
             // 忠实复刻即如此；不是实现 bug。换用「更合理」的主版本优先比较会偏离 A 版。
             Assert.False(VersionHelper.HasUpdate("v3.0.20250920.0", "v4.0.0.0"));
+        }
+
+        [Fact]
+        public void HasUpdate_RemoteNewerDateSegment_HasUpdate()
+        {
+            // A 版口径下日期段（a[2]，权重 1e5）是种子版本号区间最显著的段：
+            // v3.0.20251001.0 权重 = 20251001*1e5 + 3*1e9 = 2028100100000 > 2028092000000
+            Assert.True(VersionHelper.HasUpdate("v3.0.20250920.0", "v3.0.20251001.0"));
         }
 
         [Fact]
