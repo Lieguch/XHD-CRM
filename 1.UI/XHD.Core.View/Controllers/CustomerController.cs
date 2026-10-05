@@ -195,7 +195,7 @@ namespace XHD.Core.View.Controllers
             {
                 var c = (await _service.GridAsync(x => x.id == id, 1, 1)).data.FirstOrDefault();
                 if (c == null) continue;
-                if (roledata.authtype != 4 && !roledata.empList.Contains(c.emp_id))
+                if (roledata.authtype != DataScope.ScopeAll && !roledata.empList.Contains(c.emp_id))
                 {
                     resp["code"] = 1; resp["msg"] = "无权限！"; resp["data"] = null;
                     return resp.ToString();
@@ -564,7 +564,7 @@ namespace XHD.Core.View.Controllers
                 resp["data"] = null;
                 return resp.ToString();
             }
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 ownExp = ownExp.And(c => roledata.empList.Contains(c.emp_id));
             }
@@ -684,7 +684,7 @@ namespace XHD.Core.View.Controllers
                 var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
                 if (roledata.authtype == 0)
                     return XHDResult.Error("无数据权限！").ToString();
-                if (roledata.authtype != 4 && customer.emp_id != null && !roledata.empList.Contains(customer.emp_id))
+                if (roledata.authtype != DataScope.ScopeAll && customer.emp_id != null && !roledata.empList.Contains(customer.emp_id))
                     return XHDResult.Error("无权限！").ToString();
             result = await _service.DeleteAsync(id);
             if (result == 0)
@@ -782,7 +782,7 @@ namespace XHD.Core.View.Controllers
                 return XHDResult.Result(0, "", new JArray(), 0).ToString();
             }
 
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.emp_id));
             }
@@ -822,7 +822,7 @@ namespace XHD.Core.View.Controllers
             {
                 return XHDResult.Error("无权限！").ToString();
             }
-            if (roledata.authtype != 4 && !roledata.empList.Contains(customer.emp_id))
+            if (roledata.authtype != DataScope.ScopeAll && !roledata.empList.Contains(customer.emp_id))
             {
                 return XHDResult.Error("无权限！").ToString();
             }
@@ -908,7 +908,7 @@ namespace XHD.Core.View.Controllers
                 return XHDResult.Error("系统错误，找不到数据！").ToString();
             }
 
-            if (roledata.authtype != 4 && !roledata.empList.Contains(customer.emp_id))
+            if (roledata.authtype != DataScope.ScopeAll && !roledata.empList.Contains(customer.emp_id))
             {
                 return XHDResult.Error("无权限！").ToString();
             }
@@ -975,7 +975,7 @@ namespace XHD.Core.View.Controllers
                 return XHDResult.Error("找不到数据！").ToString();
             }
 
-            if (roledata.authtype != 4 && !roledata.empList.Contains(existing.emp_id))
+            if (roledata.authtype != DataScope.ScopeAll && !roledata.empList.Contains(existing.emp_id))
             {
                 return XHDResult.Error("无权限更新该客户").ToString();
             }
@@ -1372,7 +1372,7 @@ namespace XHD.Core.View.Controllers
             //   4 = 全公司（不追加过滤，看全部）
             // 参照 A 侧 CRM_Customer.Auth()（ext_rar2018\Server\CRM_Customer.cs L1414-1431）
             var roledata = await _dBAuthService.GetDataAuth(GetUserId());
-            var isFullAccess = roledata.authtype == 4;
+            var isFullAccess = roledata.authtype == DataScope.ScopeAll;
 
             // 无权限（authtype=0）直接返回空结果，避免后续 isPrivate 分支绕过
             if (roledata.authtype == 0)

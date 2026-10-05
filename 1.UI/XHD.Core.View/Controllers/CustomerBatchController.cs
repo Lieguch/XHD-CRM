@@ -92,7 +92,7 @@ namespace XHD.Core.View.Controllers
 
             //权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.old_emp_id) || roledata.empList.Contains(a.new_emp_id));
             }

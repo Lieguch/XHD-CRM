@@ -293,7 +293,7 @@ namespace XHD.Core.View.Controllers
             if (exec != currentUserId)
             {
                 var roledata = await _dBAuthService.GetDataAuth(currentUserId);
-                if (roledata.authtype != 4 && !await _dBAuthService.GetAuth(currentUserId, "task_manager|view_others"))
+                if (roledata.authtype != DataScope.ScopeAll && !await _dBAuthService.GetAuth(currentUserId, "task_manager|view_others"))
                 {
                     return XHDResult.Error("无权限查看他人待办").ToString();
                 }

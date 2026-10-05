@@ -1,4 +1,4 @@
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.AspNetCore.Authorization;
 using System;
@@ -10,6 +10,7 @@ using System.Linq.Expressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using XHD.Core.IServices;
+using XHD.Core.View.Authorization;
 using XHD.Core.Common;
 using XHD.Core.Models;
 
@@ -48,7 +49,7 @@ namespace XHD.Core.View.Controllers
             //数据权限：非全部权限（authtype!=4）只能看到权限范围内的员工
             var empId = User.FindFirst(ClaimTypes.Sid).Value;
             var roledata = await _dBAuthService.GetDataAuth(empId);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.id));
             }
@@ -144,11 +145,11 @@ namespace XHD.Core.View.Controllers
             Expression<Func<CRM_follow, bool>> exp = a => true;
 
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4 && roledata.empList != null && roledata.empList.Count > 0)
+            if (roledata.authtype != DataScope.ScopeAll && roledata.empList != null && roledata.empList.Count > 0)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.employee_id));
             }
-            else if (roledata.authtype != 4)
+            else if (roledata.authtype != DataScope.ScopeAll)
             {
                 return XHDResult.Error("权限不足！").ToString();
             }

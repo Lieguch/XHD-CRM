@@ -89,7 +89,7 @@ namespace XHD.Core.View.Controllers
             {
                 return "{\"code\":0,\"data\":[],\"count\":0}";
             }
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 // 数据范围跟随订单客户归属（与编辑/删除归属校验同一字段）
                 exp = exp.And(a => roledata.empList.Contains(a.Order.customer.emp_id));
@@ -130,7 +130,7 @@ namespace XHD.Core.View.Controllers
                 var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
                 if (roledata.authtype == 0)
                     return XHDResult.Error("无数据权限！").ToString();
-                if (roledata.authtype != 4)
+                if (roledata.authtype != DataScope.ScopeAll)
                 {
                     var inScope = await _service.GridAsync(
                         a => a.id == model.id && roledata.empList.Contains(a.Order.customer.emp_id), 1, 1);
@@ -192,7 +192,7 @@ namespace XHD.Core.View.Controllers
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
             if (roledata.authtype == 0)
                 return XHDResult.Error("无数据权限！").ToString();
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 var inScope = await _service.GridAsync(
                     a => a.id == id && roledata.empList.Contains(a.Order.customer.emp_id), 1, 1);

@@ -170,7 +170,7 @@ namespace XHD.Core.View.Controllers
 
             // 仅允许删除自己的日历（admin 除外）
             var roledata = await _dBAuthService.GetDataAuth(userId);
-            if (roledata.authtype != 4 && calendardata.data[0].emp_id != userId)
+            if (roledata.authtype != DataScope.ScopeAll && calendardata.data[0].emp_id != userId)
             {
                 return XHDResult.Error("无权限删除他人日程").ToString();
             }

@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 using XHD.Core.IServices;
+using XHD.Core.View.Authorization;
 using XHD.Core.IRepository;
 using XHD.Core.Common;
 using XHD.Core.Models;
@@ -63,7 +64,7 @@ namespace XHD.Core.View.Controllers
                 return XHDResult.Error("参数错误！").ToString();
             }
 
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 // 非全量权限：目标主单必须属于当前用户可见范围（口径同 SaleOrderController / APIController：
                 // roledata.empList.Contains(sale_order.emp_id)）。

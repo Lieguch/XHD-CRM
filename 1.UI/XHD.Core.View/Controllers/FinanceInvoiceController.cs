@@ -95,7 +95,7 @@ namespace XHD.Core.View.Controllers
             {
                 return "{\"code\":0,\"data\":[],\"count\":0}";
             }
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 // 数据范围跟随订单客户归属：发票新增只写 create_id，emp_id 恒为空串，
                 // 按emp_id 过滤会让非全员权限角色看到 0 条（实证见 DataScopeExpressionProbeTests）
@@ -137,7 +137,7 @@ namespace XHD.Core.View.Controllers
                 var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
                 if (roledata.authtype == 0)
                     return XHDResult.Error("无数据权限！").ToString();
-                if (roledata.authtype != 4)
+                if (roledata.authtype != DataScope.ScopeAll)
                 {
                     var inScope = await _service.GridAsync(
                         a => a.id == model.id && roledata.empList.Contains(a.Order.customer.emp_id), 1, 1);
@@ -199,7 +199,7 @@ namespace XHD.Core.View.Controllers
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
             if (roledata.authtype == 0)
                 return XHDResult.Error("无数据权限！").ToString();
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 var inScope = await _service.GridAsync(
                     a => a.id == id && roledata.empList.Contains(a.Order.customer.emp_id), 1, 1);

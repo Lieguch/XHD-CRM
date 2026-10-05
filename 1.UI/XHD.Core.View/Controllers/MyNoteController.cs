@@ -100,7 +100,7 @@ namespace XHD.Core.View.Controllers
             }
 
             var roledata = await _dBAuthService.GetDataAuth(userId);
-            if (roledata.authtype != 4 && existing.data[0].emp_id != userId)
+            if (roledata.authtype != DataScope.ScopeAll && existing.data[0].emp_id != userId)
             {
                 return XHDResult.Error("无权限修改他人便签").ToString();
             }
@@ -134,7 +134,7 @@ namespace XHD.Core.View.Controllers
             }
 
             var roledata = await _dBAuthService.GetDataAuth(userId);
-            if (roledata.authtype != 4 && existing.data[0].emp_id != userId)
+            if (roledata.authtype != DataScope.ScopeAll && existing.data[0].emp_id != userId)
             {
                 return XHDResult.Error("无权限删除他人便签").ToString();
             }

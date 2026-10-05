@@ -71,7 +71,7 @@ namespace XHD.Core.View.Controllers
             // 数据权限：非全公司权限（authtype != 4）只能看到权限范围内员工创建的附件
             var empId = User.FindFirst(ClaimTypes.Sid).Value;
             var roledata = await _dBAuthService.GetDataAuth(empId);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (roledata.empList != null && roledata.empList.Count > 0)
                 {

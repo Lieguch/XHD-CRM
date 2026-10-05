@@ -21,6 +21,7 @@ using System.Security.Claims;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using XHD.Core.Common;
+using XHD.Core.View.Authorization;
 using XHD.Core.Common.DEncrypt;
 using XHD.Core.IRepository;
 using XHD.Core.IServices;
@@ -257,7 +258,7 @@ namespace XHD.Core.View.Controllers
 
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.emp_id) || a.isPrivate == 1);
             }
@@ -400,7 +401,7 @@ namespace XHD.Core.View.Controllers
 
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.create_id));
             }
@@ -534,7 +535,7 @@ namespace XHD.Core.View.Controllers
 
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.employee_id));
             }
@@ -675,7 +676,7 @@ namespace XHD.Core.View.Controllers
 
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.create_id));
             }
@@ -901,7 +902,7 @@ namespace XHD.Core.View.Controllers
             //权限
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.create_id));
             }
@@ -1087,7 +1088,7 @@ namespace XHD.Core.View.Controllers
             //权限
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.create_id));
             }
@@ -1297,7 +1298,7 @@ namespace XHD.Core.View.Controllers
             //权限
             var roledata = await _dBAuthService.GetDataAuth(employee.id);
 
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.id));
             }

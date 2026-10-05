@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Security.Claims;
 using Newtonsoft.Json.Linq;
 using XHD.Core.IServices;
+using XHD.Core.View.Authorization;
 using XHD.Core.Common;
 using XHD.Core.Models;
 
@@ -61,7 +62,7 @@ namespace XHD.Core.View.Controllers
             }
 
             var roledata = await _dBAuthService.GetDataAuth(sid);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 return XHDResult.Error("无操作权限").ToString();
             }
@@ -94,7 +95,7 @@ namespace XHD.Core.View.Controllers
             }
 
             var roledata = await _dBAuthService.GetDataAuth(sid);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 return XHDResult.Error("无操作权限").ToString();
             }

@@ -17,6 +17,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 using XHD.Core.IServices;
+using XHD.Core.View.Authorization;
 using XHD.Core.IRepository;
 using XHD.Core.Common;
 using XHD.Core.Models;
@@ -63,7 +64,7 @@ namespace XHD.Core.View.Controllers
 
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (roledata.empList != null && roledata.empList.Count > 0)
                 {
@@ -156,11 +157,11 @@ namespace XHD.Core.View.Controllers
 
             // DataAuth：非全公司权限按 employee_id 过滤
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4 && roledata.empList != null && roledata.empList.Count > 0)
+            if (roledata.authtype != DataScope.ScopeAll && roledata.empList != null && roledata.empList.Count > 0)
             {
                 exp = exp.And(a => roledata.empList.Contains(a.employee_id));
             }
-            else if (roledata.authtype != 4)
+            else if (roledata.authtype != DataScope.ScopeAll)
             {
                 // 无 empList 时拒绝访问（避免绕过）
                 return XHDResult.Error("权限不足！").ToString();
@@ -188,7 +189,7 @@ namespace XHD.Core.View.Controllers
 
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (roledata.empList != null && roledata.empList.Count > 0)
                 {
@@ -246,7 +247,7 @@ namespace XHD.Core.View.Controllers
 
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (roledata.empList != null && roledata.empList.Count > 0)
                 {
@@ -305,7 +306,7 @@ namespace XHD.Core.View.Controllers
 
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (roledata.empList != null && roledata.empList.Count > 0)
                 {
@@ -364,7 +365,7 @@ namespace XHD.Core.View.Controllers
 
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (roledata.empList != null && roledata.empList.Count > 0)
                 {
@@ -423,7 +424,7 @@ namespace XHD.Core.View.Controllers
 
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (roledata.empList != null && roledata.empList.Count > 0)
                 {
@@ -481,7 +482,7 @@ namespace XHD.Core.View.Controllers
 
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (roledata.empList != null && roledata.empList.Count > 0)
                 {
@@ -543,7 +544,7 @@ namespace XHD.Core.View.Controllers
         {
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (roledata.empList == null || roledata.empList.Count == 0)
                 {
@@ -586,7 +587,7 @@ namespace XHD.Core.View.Controllers
         {
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (empIds != null)
                 {
@@ -629,7 +630,7 @@ namespace XHD.Core.View.Controllers
         {
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (empIds != null)
                 {
@@ -673,7 +674,7 @@ namespace XHD.Core.View.Controllers
         {
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (empIds != null)
                 {
@@ -713,7 +714,7 @@ namespace XHD.Core.View.Controllers
         {
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (empIds != null)
                 {
@@ -755,7 +756,7 @@ namespace XHD.Core.View.Controllers
         {
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (empIds != null)
                 {
@@ -796,7 +797,7 @@ namespace XHD.Core.View.Controllers
         {
             // 权限
             var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
-            if (roledata.authtype != 4)
+            if (roledata.authtype != DataScope.ScopeAll)
             {
                 if (roledata.empList == null || roledata.empList.Count == 0)
                 {

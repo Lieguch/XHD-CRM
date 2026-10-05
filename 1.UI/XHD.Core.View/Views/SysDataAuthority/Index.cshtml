@@ -1,0 +1,169 @@
+@{
+    ViewData["Title"] = "指定部门";
+    string roleId = ViewData["roleId"]?.ToString() ?? string.Empty;
+}
+
+<div class="layuimini-card">
+    <div class="layui-card-body">
+        <div style="margin-bottom: 10px; color: #7d7e7e; font-size: 13px; line-height: 1.7;">
+            <i class="fa fa-info-circle"></i>
+            当角色「数据权限」设置为 <b>4 - 指定部门</b> 时，此处勾选的部门即为该角色可见的数据范围
+           （对应 A 版 <code>Sys_data_authorized.aspx</code>）。保存即时生效。
+        </div>
+
+        <div style="margin-bottom: 8px;">
+            <button class="layui-btn layui-btn-sm" id="btnCheckAll">
+                <i class="fa fa-check-square-o"></i> 全选
+            </button>
+            <button class="layui-btn layui-btn-sm layui-btn-primary" id="btnUncheckAll">
+                <i class="fa fa-square-o"></i> 全不选
+            </button>
+            <button class="layui-btn layui-btn-sm layui-btn-normal" id="btnSave" style="margin-left: 16px;">
+                <i class="fa fa-floppy-o"></i> 保存
+            </button>
+            <span id="saveTip" style="margin-left: 10px; color: #999;"></span>
+        </div>
+
+        <div id="depTree" style="max-height: 60vh; overflow: auto; padding: 6px 10px; border: 1px solid #e6e6e6;"></div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    var ROLE_ID = '@roleId';
+
+    layui.use(['tree', 'layer', 'jquery'], function () {
+        var tree = layui.tree;
+        var layer = layui.layer;
+        var $ = layui.jquery;
+
+        var treeInstance = null;
+        var allNodes = [];
+
+        // 把已勾选的 dep_id 集合合并进树数据（递归打 checked 标记）
+        function markChecked(nodes, checkedSet) {
+            if (!nodes) return;
+            for (var i = 0; i < nodes.length; i++) {
+                var n = nodes[i];
+                if (checkedSet.indexOf(n.id) >= 0) {
+                    n.checked = true;
+                }
+                if (n.children && n.children.length > 0) {
+                    markChecked(n.children, checkedSet);
+                }
+            }
+        }
+
+        // 收集全部节点 id（递归）
+        function collectIds(nodes, arr) {
+            if (!nodes) return arr;
+            for (var i = 0; i < nodes.length; i++) {
+                arr.push(nodes[i].id);
+                if (nodes[i].children && nodes[i].children.length > 0) {
+                    collectIds(nodes[i].children, arr);
+                }
+            }
+            return arr;
+        }
+
+        function renderTree(treeData) {
+            treeInstance = tree.render({
+                elem: '#depTree',
+                data: treeData,
+                showCheckbox: true,
+                checkedKey: 'id',
+                spread: true,
+                click: function (obj) {
+                    // 点击节点文本也切换勾选，与 A 版 ligerGrid checkbox 体验一致。
+                    // layui 2.9.6 树组件的 checkbox 与文本是独立元素，这里手动触发 checkbox 切换。
+                    var input = obj.elem.find('input[same="layuiTreeCheck"]');
+                    if (input.length) {
+                        input.next().click();
+                    }
+                }
+            });
+        }
+
+        function load() {
+            if (!ROLE_ID) {
+                layer.msg('缺少角色参数 roleId', { icon: 2 });
+                return;
+            }
+
+            layer.load(2);
+            $.when(
+                $.get('/HrDepartment/Combo'),
+                $.get('/SysDataAuthority/Get', { roleId: ROLE_ID })
+            ).done(function (treeResp, checkedResp) {
+                layer.closeAll('loading');
+
+                var treeData = (treeResp[0] && treeResp[0].code === 0) ? (treeResp[0].data || []) : [];
+                var checked = (checkedResp[0] && checkedResp[0].code === 0) ? (checkedResp[0].data || []) : [];
+
+                if (!treeData.length) {
+                    $('#depTree').html('<span style="color:#999;">暂无部门数据，请先在组织架构中创建部门。</span>');
+                    return;
+                }
+
+                markChecked(treeData, checked);
+                allNodes = collectIds(treeData, []);
+                renderTree(treeData);
+            }).fail(function () {
+                layer.closeAll('loading');
+                layer.msg('加载部门数据失败', { icon: 2 });
+            });
+        }
+
+        $('#btnCheckAll').on('click', function () {
+            if (treeInstance) tree.setChecked('#depTree', allNodes);
+        });
+        $('#btnUncheckAll').on('click', function () {
+            // setChecked 只能勾选不能取消，取消需手动点击已勾选的 checkbox
+            $('#depTree input[same="layuiTreeCheck"]').each(function () {
+                if (this.checked) {
+                    $(this).next().click();
+                }
+            });
+        });
+
+        $('#btnSave').on('click', function () {
+            if (!treeInstance) {
+                layer.msg('部门数据尚未加载', { icon: 2 });
+                return;
+            }
+
+            var checkedNodes = tree.getChecked('#depTree') || [];
+            var depIds = [];
+            for (var i = 0; i < checkedNodes.length; i++) {
+                if (checkedNodes[i].id) depIds.push(checkedNodes[i].id);
+            }
+
+            $('#saveTip').text('正在保存…');
+            layer.load(2);
+            $.ajax({
+                type: 'POST',
+                url: '/SysDataAuthority/Save',
+                data: { role_id: ROLE_ID, depids: depIds.join(',') },
+                dataType: 'json',
+                success: function (res) {
+                    layer.closeAll('loading');
+                    if (res.code === 0) {
+                        $('#saveTip').text('已保存（' + depIds.length + ' 个部门）');
+                        layer.msg('保存成功', { icon: 1 });
+                    } else {
+                        $('#saveTip').text('');
+                        layer.alert(res.msg || '保存失败', { icon: 5 });
+                    }
+                },
+                error: function (xhr, status, err) {
+                    layer.closeAll('loading');
+                    $('#saveTip').text('');
+                    layer.alert('操作失败！' + status + '|' + err, { icon: 5 });
+                }
+            });
+        });
+
+        load();
+    });
+</script>
+}
