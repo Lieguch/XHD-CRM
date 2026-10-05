@@ -32,6 +32,7 @@
     @Html.Hidden("position_id")
     @Html.Hidden("canlogin")
     @Html.Hidden("remarks")
+    @Html.Hidden("headimg")
 
     <div class="layui-card">
         <div class="layui-card-header">员工信息</div>
@@ -89,7 +90,7 @@
                 <div class="layui-inline">
                     <label class="layui-form-label " style="padding-left:0px;">性别</label>
                     <div class="layui-input-inline">
-                        <select id="sex" name="sex" autocomplete="off" class="layui-input" disabled>
+                        <select id="sex" name="sex" autocomplete="off" class="layui-input">
                             <option value="">请选择</option>
                             <option value=1>男</option>
                             <option value=2>女</option>
@@ -157,9 +158,9 @@
                 </div>                
             </div>
             
-           @* <div class="layui-form-item">
-                <button type="button" class="layui-btn">确定</button>
-            </div>*@
+            <div class="layui-form-item">
+                <button type="submit" class="layui-btn" lay-submit="" lay-filter="submit">确定</button>
+            </div>
 
 
         </div>
@@ -198,6 +199,33 @@
                 shadeClose: false,
                 content: '/HrEmployee/HeadImg'
             });
+        });
+
+        // 保存个人资料（对应 A 版 emp_personal_update.aspx 的 f_save → hr_employee.PersonalUpdate）。
+        // 服务端以登录态强制自作用域 + 列白名单更新，表单里带的管理字段（uid/部门/职务/状态/排序）不生效。
+        form.on('submit(submit)', function (Data) {
+            var obj = $(this);
+            obj.text("保存中...").attr("disabled", "disabled").addClass("layui-disabled");
+            $.ajax({
+                type: 'POST',
+                url: '/HrEmployee/PersonalUpdate',
+                data: Data.field,
+                dataType: "json",
+                success: function (res) {
+                    if (res.code === 0) {
+                        layer.msg('保存成功', { icon: 1 });
+                    } else {
+                        layer.alert(res.msg || '保存失败', { icon: 5 });
+                    }
+                },
+                error: function (XMLHttpRequest, textStatus, errorThrown) {
+                    layer.alert('操作失败！！！' + XMLHttpRequest.status + "|" + XMLHttpRequest.readyState + "|" + textStatus, { icon: 5 });
+                },
+                complete: function () {
+                    obj.text("确定").removeAttr("disabled").removeClass("layui-disabled");
+                }
+            });
+            return false;
         });
 
         $.ajax({

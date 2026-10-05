@@ -226,6 +226,128 @@ namespace XHD.Core.View.Controllers
             return XHDResult.Success().ToString();
         }
 
+        /// <summary>
+        /// 员工自助修改个人资料（对应 A 版 <c>Server/hr_employee.cs:321 PersonalUpdate</c>）。
+        /// </summary>
+        /// <remarks>
+        /// <para>根因设计（复刻 A 版安全语义）：更新目标固定为当前登录用户，<b>忽略表单传入的任何 id</b>
+        /// —— A 版 Server 用 <c>model.id = emp_id</c> 强制自作用域，B 版同语义取 <c>ClaimTypes.Sid</c>，
+        /// 从根上杜绝「提交他人 id 改他人资料」的越权路径。</para>
+        /// <para>只更新个人资料白名单字段（对齐 A 版 <c>DAL/hr_employee.cs:578-588</c> 的 UPDATE 列集，
+        /// B 版 <c>headimg</c> 替代 A 版 <c>title</c>）；uid / 部门 / 职务 / 岗位 / 状态 / 能否登录 /
+        /// 排序 / 密码 / 入职日期等管理字段一律不动。</para>
+        /// <para>权限：登录即可自助修改本人资料（A 版 PersonalUpdate 无按钮授权，个人主页入口在顶栏
+        /// 用户下拉而非菜单），故不走 <c>[ButtonAuth]</c>，仅 controller 级 <c>[Authorize]</c>。</para>
+        /// <para>更新方式：FreeSql <c>Set(表达式)</c> 只更新被赋值的列（官方文档实证），避免全列更新
+        /// 冲掉未提交的管理字段。</para>
+        /// </remarks>
+        /// <param name="model">表单提交的个人资料（仅白名单字段生效）</param>
+        /// <returns>XHDResult JSON</returns>
+        [HttpPost]
+        public async Task<string> PersonalUpdate(hr_employee model)
+        {
+            // 自作用域：以登录态为准，忽略表单 id（A 版 model.id = emp_id 同语义）
+            var empId = GetUserId();
+            if (string.IsNullOrWhiteSpace(empId))
+            {
+                return XHDResult.Error("未登录！").ToString();
+            }
+
+            // 必填校验（与 Me.cshtml 的 lay-verify="required" 口径一致，服务端兜底）
+            if (string.IsNullOrWhiteSpace(model.name))
+            {
+                return XHDResult.Error("姓名不能为空！").ToString();
+            }
+            if (string.IsNullOrWhiteSpace(model.tel))
+            {
+                return XHDResult.Error("电话不能为空！").ToString();
+            }
+
+            // 取旧实体：既用于变更日志 diff，也确认目标记录存在
+            Expression<Func<hr_employee, bool>> exp = a => a.id == empId;
+            var oldData = await _service.GridAsync(exp, 1, 1);
+            if (oldData.count == 0)
+            {
+                return XHDResult.Error("找不到数据！").ToString();
+            }
+            var old = oldData.data[0];
+
+            // 列白名单更新（FreeSql Set(表达式) 只更新被赋值的列，未列字段保持原值）
+            var result = await _service.UpdateAsync(
+                a => new hr_employee
+                {
+                    name = model.name,
+                    idcard = model.idcard,
+                    birthday = model.birthday,
+                    email = model.email,
+                    sex = model.sex,
+                    tel = model.tel,
+                    address = model.address,
+                    education = model.education,
+                    professional = model.professional,
+                    schools = model.schools,
+                    headimg = model.headimg
+                },
+                a => a.id == empId);
+
+            if (result == 0)
+            {
+                return XHDResult.Error("操作失败，系统错误！").ToString();
+            }
+
+            // 变更日志：构造「旧值 + 白名单新值」的 after 副本，使 logext 只 diff 白名单字段
+            // （非白名单字段沿用旧值，不会产生假 diff；pwd 保持旧值，避免把密码哈希写进日志）
+            var after = new hr_employee
+            {
+                id = old.id,
+                uid = old.uid,
+                dep_id = old.dep_id,
+                position_id = old.position_id,
+                post_id = old.post_id,
+                role_id = old.role_id,
+                status = old.status,
+                canlogin = old.canlogin,
+                sort = old.sort,
+                default_city = old.default_city,
+                EntryDate = old.EntryDate,
+                pwd = old.pwd,
+                create_id = old.create_id,
+                create_time = old.create_time,
+                remarks = old.remarks,
+                Delete_id = old.Delete_id,
+                name = model.name,
+                idcard = model.idcard,
+                birthday = model.birthday,
+                email = model.email,
+                sex = model.sex,
+                tel = model.tel,
+                address = model.address,
+                education = model.education,
+                professional = model.professional,
+                schools = model.schools,
+                headimg = model.headimg
+            };
+
+            var content = logext.LogContent(old, after);
+            if (content.Length > 0)
+            {
+                Sys_log logmodel = new Sys_log();
+                logmodel.id = UUIDNext.Uuid.NewSequential().ToString();
+                logmodel.EventType = "个人信息修改";
+                logmodel.EventID = empId;
+                logmodel.EventTitle = model.name;
+                logmodel.UserID = empId;
+                logmodel.UserName = User.FindFirst(ClaimTypes.Name)?.Value;
+                logmodel.IPStreet = HttpContext.Connection.RemoteIpAddress.ToString();
+                logmodel.EventDate = DateTime.Now;
+                logmodel.Log_Content = content;
+
+                await _LogService.UpdateLog(logmodel);
+            }
+
+            return XHDResult.Success().ToString();
+        }
+
         public async Task<string> Delete(string id)
         {
             if (id.Equals("admin"))
