@@ -282,7 +282,8 @@ layui.use(['layer', 'jquery'], function() {
         if (!selectLngLat) return null;
         return {
             x: selectLngLat.lng.toFixed(6),
-            y: selectLngLat.lat.toFixed(6)
+            y: selectLngLat.lat.toFixed(6),
+            address: selectedAddress || ''
         };
     };
 

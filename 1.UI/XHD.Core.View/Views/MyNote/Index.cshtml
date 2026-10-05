@@ -24,11 +24,6 @@
         var layer = layui.layer;
         var $ = layui.jquery;
 
-        // 模拟后端 ID 生成（实际应由后端返回）
-        function mockGenerateId() {
-            return 'note_' + Date.now() + '_' + Math.floor(Math.random() * 10000);
-        }
-
         // 颜色列表（供外部弹窗使用）
         //var colorList = ['#FFF2CC', '#FADADD', '#D5E8D4', '#D9E1F2', '#F9E0BB', '#E3D7FF', '#FFD9B5'];
         var colorList = ['#FDFB8C', '#A6E3FC', '#A5F88B', '#D9E1F2', '#F9E0BB', '#E3D7FF', '#FFD9B5'];

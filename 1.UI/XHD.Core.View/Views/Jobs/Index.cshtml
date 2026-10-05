@@ -312,25 +312,5 @@
             , trigger: 'click' //采用click弹出
         });
 
-
-        // 展开/折叠额外条件
-        $('#toggleBtn').on('click', function () {
-            var $extra = $('#extraConditions');
-            var $icon = $(this).find('i');
-            var $span = $(this).find('span');
-
-            if ($extra.is(':visible')) {
-                $extra.slideUp(200);
-                $icon.removeClass('layui-icon-up').addClass('layui-icon-down');
-                $span.text('展开');
-            } else {
-                $extra.slideDown(200, function () {
-                    form.render('select'); // 重新渲染下拉框
-                });
-                $icon.removeClass('layui-icon-down').addClass('layui-icon-up');
-                $span.text('收起');
-            }
-        });
-
     });
 </script>

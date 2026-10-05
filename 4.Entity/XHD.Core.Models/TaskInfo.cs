@@ -46,6 +46,13 @@ namespace XHD.Core.Models
         public string customer_id { get; set; } = string.Empty;
 
         /// <summary>
+        /// 相关客户名称（仅用于列表/表单显示，不落库；
+        /// 由 TaskController.Grid 按 customer_id 批量回填，对应 A 版任务列表的客户名展示）
+        /// </summary>
+        [JsonProperty, Column(IsIgnore = true)]
+        public string customer_name { get; set; } = string.Empty;
+
+        /// <summary>
         /// 指派人 ID
         /// </summary>
         [JsonProperty, Column(StringLength = 50)]

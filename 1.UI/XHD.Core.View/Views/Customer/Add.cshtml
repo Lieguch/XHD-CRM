@@ -130,16 +130,6 @@
                     <input type="text" name="DesCripe" id="DesCripe" placeholder="描述" autocomplete="off" class="layui-input">
                 </div>
             </div>
-            <!--<div class="layui-form-item">
-                <div class="layui-input-group">-->
-            @*<div class="layui-input-split layui-input-prefix">
-                    地址
-                </div>*@
-            <!--<label class="layui-form-label ">地址</label>
-                    <input type="text" name="cus_add" id="cus_add" placeholder="地址" autocomplete="off" class="layui-input" lay-affix="location" lay-filter="location">
-
-                </div>
-            </div>-->
             <div class="layui-form-item">
                 <label class="layui-form-label ">地址</label>
                 <div class="layui-input-block">
@@ -482,7 +472,9 @@
                     // 回填
                     $("#x").val(data.x);
                     $("#y").val(data.y);
-                    
+                    if (data.address) {
+                        $("#cus_add").val(data.address);
+                    }
 
                     layer.close(index);
                     layer.msg('✅ 已选坐标：' + data.x + ', ' + data.y, { icon:1, time:1500 });

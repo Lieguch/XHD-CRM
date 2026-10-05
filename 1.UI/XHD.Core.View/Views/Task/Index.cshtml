@@ -180,7 +180,7 @@
                 },
                 { field: 'task_status_id', width: 90, title: '状态', align: 'center', templet: '#status-demo' },
                 { field: 'priority_id', width: 80, title: '优先级', align: 'center', templet: '#priority-demo' },
-                { field: 'customer_id', width: 140, title: '相关客户' },
+                { field: 'customer_name', width: 140, title: '相关客户', templet: function (d) { return d.customer_name || d.customer_id || ''; } },
                 { field: 'create_time', width: 170, title: '创建时间' },
                 { templet: '#op-demo', width: 280, align: 'center', fixed: 'right', title: '操作' }
             ]],
@@ -276,7 +276,7 @@
                     var iframe = window["layui-layer-iframe" + index];
                     var body = iframe.document;
                     if (edit) {
-                        var fields = ['id', 'task_title', 'task_content', 'task_type_id', 'customer_id',
+                        var fields = ['id', 'task_title', 'task_content', 'task_type_id', 'customer_id', 'customer_name',
                                       'assign_id', 'executive_id', 'executive_time', 'task_status_id',
                                       'priority_id', 'remind_time', 'is_check'];
                         fields.forEach(function (f) {

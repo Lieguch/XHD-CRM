@@ -22,14 +22,16 @@
                         <input type="text" name="RoleName" id="RoleName" autocomplete="off" placeholder="角色名称" class="layui-input" lay-verify="required">
                     </div>
                 </div>
-                @*<label class="layui-form-label " style="padding-left:0px;">公客查看</label>
-        <div class="layui-input-inline">
-            <select id="PublicAuth" name="PublicAuth" autocomplete="off" class="layui-input" lay-verify="required">
-                <option value="">请选择</option>
-                <option value=1>是</option>
-                <option value=0>否</option>
-            </select>
-        </div>*@
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="padding-left:0px;">公客查看</label>
+                    <div class="layui-input-inline">
+                        <select id="PublicAuth" name="PublicAuth" autocomplete="off" class="layui-input">
+                            <option value="">请选择</option>
+                            <option value="1">是</option>
+                            <option value="0">否</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="layui-inline">
                     <label class="layui-form-label required" style="padding-left:0px;">私客权限</label>
                     <div class="layui-input-inline">

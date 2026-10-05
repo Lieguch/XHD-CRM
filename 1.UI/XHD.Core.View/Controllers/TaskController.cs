@@ -107,6 +107,28 @@ namespace XHD.Core.View.Controllers
             }
 
             var result = await _service.GridAsync(exp, model.Page, model.Limit, "create_time desc");
+
+            // Sprint 10.42：批量回填 customer_name，使任务列表/编辑表单显示客户名而非 GUID（P1-17）
+            var custIds = result.data
+                .Where(t => !string.IsNullOrEmpty(t.customer_id))
+                .Select(t => t.customer_id)
+                .Distinct()
+                .ToList();
+            if (custIds.Count > 0)
+            {
+                // 客户名为可选展示增强，不得影响 Grid 主流程；客户服务无结果时保持空名
+                var custResult = await _customerService.GridAsync(c => custIds.Contains(c.id));
+                var nameMap = (custResult?.data ?? new List<CRM_Customer>())
+                    .ToDictionary(c => c.id, c => c.cus_name);
+                foreach (var t in result.data)
+                {
+                    if (!string.IsNullOrEmpty(t.customer_id) && nameMap.TryGetValue(t.customer_id, out var nm))
+                    {
+                        t.customer_name = nm;
+                    }
+                }
+            }
+
             return result.ToString();
         }
 

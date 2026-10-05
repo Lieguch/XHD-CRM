@@ -12,6 +12,7 @@
     @Html.Hidden("id")
     <input type="hidden" name="executive_id" id="executive_id">
     <input type="hidden" name="assign_id" id="assign_id">
+    <input type="hidden" name="customer_id" id="customer_id">
 
     <div class="layui-card">
         <div class="layui-card-header">任务信息</div>
@@ -84,9 +85,11 @@
             </div>
 
             <div class="layui-form-item">
-                <label class="layui-form-label">相关客户</label>
-                <div class="layui-input-block">
-                    <input type="text" name="customer_id" id="customer_id" placeholder="客户 ID（可留空）" autocomplete="off" class="layui-input">
+                <div class="layui-inline">
+                    <label class="layui-form-label" style="padding-left:0px;">相关客户</label>
+                    <div class="layui-input-inline">
+                        <input type="text" name="customer_name" id="customer_name" placeholder="客户名称（可留空）" autocomplete="off" class="layui-input">
+                    </div>
                 </div>
             </div>
 
@@ -198,6 +201,30 @@
                 });
                 elem.val(names.join(','));
                 $("#assign_id").val(ids.join(','));
+            }
+        });
+
+        // 相关客户选择器（对应 A 版 task_list_add.aspx 的 f_selectCustomer）
+        tableSelect.render({
+            elem: '#customer_name',
+            checkedKey: 'id',
+            table: {
+                url: '/Customer/grid',
+                cols: [[
+                    { type: 'radio' },
+                    { field: 'cus_name', width: 200, title: '客户名称' },
+                    { field: 'cus_add', width: 250, title: '地址' }
+                ]]
+            },
+            done: function (elem, data) {
+                var ids = [];
+                var names = [];
+                layui.each(data.data, function (idx, item) {
+                    ids.push(item.id);
+                    names.push(item.cus_name);
+                });
+                elem.val(names.join(','));
+                $("#customer_id").val(ids.join(','));
             }
         });
 
