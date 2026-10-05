@@ -38,6 +38,7 @@ namespace XHD.Core.Tests
     ///   #125 SMS_Helper.getBalance
     /// 全部走 Repository + SQLite 内存库；SMSHelper 与 IFormFile 走 Moq 桥接。
     /// </summary>
+    [Collection("XhdFileSystem")]
     public class SysBaseUploadSMSTests : IDisposable
     {
         private readonly IFreeSql _fsql;

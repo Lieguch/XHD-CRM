@@ -35,6 +35,7 @@ namespace XHD.Core.Tests
     /// Save、Del（记录删除 + 物理文件删除）、Grid（按 cus_id 过滤 + 数据权限）。
     /// 全部走真实 SQLite 内存库 + 真实 CRM_Customer_attaRepository + 真实文件 IO（隔离在临时目录）。
     /// </summary>
+    [Collection("XhdFileSystem")]
     public class CustomerAttaUploadTests : IDisposable
     {
         private readonly IFreeSql _fsql;

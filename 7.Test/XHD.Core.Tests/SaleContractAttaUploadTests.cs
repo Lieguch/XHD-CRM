@@ -35,6 +35,7 @@ namespace XHD.Core.Tests
     /// Meger 合并、Del（删记录 + 删物理文件）、Grid（按 contract_id 过滤）。
     /// 全部走真实 SQLite 内存库 + 真实 Sale_contract_attaRepository + 真实文件 IO（隔离在临时目录）。
     /// </summary>
+    [Collection("XhdFileSystem")]
     public class SaleContractAttaUploadTests : IDisposable
     {
         private readonly IFreeSql _fsql;
