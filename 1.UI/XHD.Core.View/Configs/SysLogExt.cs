@@ -24,12 +24,18 @@ namespace XHD.Core.View.Configs
             {
                 PropertyInfo pi = mPi[i];
 
+                // 根因修复：switch 匹配串已是 pi.Name.ToLower()，而 C# switch 对字符串常量执行
+                // 「与 == 相同的大小写敏感序数比较」（官方文档实证），故原写的 Pascal 大小写标签
+                // "Delete_time" / "isDelete" 永远匹配不到 "delete_time" / "isdelete"，属于死分支——
+                // 后果是全站 25 处 LogContent 调用对含 isDelete 列的实体（hr_employee/hr_department/
+                // hr_position/CRM_Customer/Sys_role/Sys_Param/Product…）每次修改都多记一条
+                // 【isDelete】:【0】=>【】 的假 diff，污染审计日志。统一改成小写后跳过规则真正生效。
                 switch (pi.Name.ToLower())
                 {
                     case "id":
                     case "create_id":
                     case "create_time":
-                    case "Delete_time":
+                    case "delete_time":
                     case "follow_time":
                     case "customer_id":
                     case "arrears_invoice":
@@ -39,7 +45,7 @@ namespace XHD.Core.View.Configs
                     case "discount_amount":
                     case "news_content":
                     case "lastfollow":
-                    case "isDelete":
+                    case "isdelete":
                     case "sn":
                         continue;
                 }

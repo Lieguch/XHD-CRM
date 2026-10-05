@@ -314,6 +314,8 @@ namespace XHD.Core.View.Controllers
                 create_id = old.create_id,
                 create_time = old.create_time,
                 remarks = old.remarks,
+                isDelete = old.isDelete,
+                Delete_time = old.Delete_time,
                 Delete_id = old.Delete_id,
                 name = model.name,
                 idcard = model.idcard,
