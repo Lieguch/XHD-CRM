@@ -131,7 +131,7 @@ namespace XHD.Core.Tests
         private SysLogErrController CreateSysLogErrController(
             string userId = "TEST_USER",
             string userName = "Test User",
-            int authType = 4,
+            int authType = 5,
             string queryString = "")
         {
             var svc = new Sys_log_ErrService(new Sys_log_ErrRepository(_fsql));

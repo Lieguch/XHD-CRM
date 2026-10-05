@@ -553,7 +553,7 @@ namespace XHD.Core.View.Controllers
             // 去重：同 Claimlist，避免重复 id 让 ownData.data.Count < list.Count 误拒正常请求。
             list = list.Distinct().ToList();
 
-            // 数据权限校验：只能放弃自己名下的客户（全公司权限 authtype==4 不受限）。
+            // 数据权限校验：只能放弃自己名下的客户（全部权限 authtype==5 不受限）。
             // 底层 AbanDonAsync 无归属过滤，必须在此预筛。
             var roledata = await _dBAuthService.GetDataAuth(empId);
             Expression<Func<CRM_Customer, bool>> ownExp = c => list.Contains(c.id) && c.state == 0;
@@ -611,8 +611,8 @@ namespace XHD.Core.View.Controllers
         /// <summary>
         /// 公共客户池 Grid（state=1）
         /// 语义：所有已放弃或从未认领的客户；员工可在本列表点「认领」按钮把客户划归自己
-        /// 数据权限已过滤：经 BuildCustomerQueryExpression 按 authtype（0/1/2/3/4）过滤，
-        /// authtype=0 直接返回空；authtype=4 不追加过滤；1/2/3 按 roledata.empList 过滤
+        /// 数据权限已过滤：经 BuildCustomerQueryExpression 按 authtype（0/1/2/3/4/5）过滤，
+        /// authtype=0 直接返回空；authtype=5 不追加过滤；1/2/3/4 按 roledata.empList 过滤
         /// </summary>
         [HttpGet("Poolgrid")]
         public async Task<string> Poolgrid(PageView<CRM_Customer> model)
@@ -625,8 +625,8 @@ namespace XHD.Core.View.Controllers
 
         /// <summary>
         /// 意向客户 Grid（state=3）
-        /// 数据权限已过滤：经 BuildCustomerQueryExpression 按 authtype（0/1/2/3/4）过滤，
-        /// authtype=0 直接返回空；authtype=4 不追加过滤；1/2/3 按 roledata.empList 过滤
+        /// 数据权限已过滤：经 BuildCustomerQueryExpression 按 authtype（0/1/2/3/4/5）过滤，
+        /// authtype=0 直接返回空；authtype=5 不追加过滤；1/2/3/4 按 roledata.empList 过滤
         /// </summary>
         [HttpGet("Intentiongrid")]
         public async Task<string> Intentiongrid(PageView<CRM_Customer> model)
@@ -639,8 +639,8 @@ namespace XHD.Core.View.Controllers
 
         /// <summary>
         /// 高意向客户 Grid（state=2）
-        /// 数据权限已过滤：经 BuildCustomerQueryExpression 按 authtype（0/1/2/3/4）过滤，
-        /// authtype=0 直接返回空；authtype=4 不追加过滤；1/2/3 按 roledata.empList 过滤
+        /// 数据权限已过滤：经 BuildCustomerQueryExpression 按 authtype（0/1/2/3/4/5）过滤，
+        /// authtype=0 直接返回空；authtype=5 不追加过滤；1/2/3/4 按 roledata.empList 过滤
         /// </summary>
         [HttpGet("HighIntentiongrid")]
         public async Task<string> HighIntentiongrid(PageView<CRM_Customer> model)
@@ -774,7 +774,7 @@ namespace XHD.Core.View.Controllers
             }
 
             // 数据权限过滤（口径同 BuildCustomerQueryExpression）：
-            // authtype=0 直接返回 0；1/2/3 叠加 empList 过滤；4 不过滤。
+            // authtype=0 直接返回 0；1/2/3/4 叠加 empList 过滤；5 不过滤。
             // 与 empList 取交集后，客户端传入的 q.emp_id 只能限定在本人可见范围内。
             var roledata = await _dBAuthService.GetDataAuth(GetUserId());
             if (roledata.authtype == 0)
@@ -875,7 +875,7 @@ namespace XHD.Core.View.Controllers
         /// 与 <see cref="AdvanceDelete"/> 语义镜像、方向相反：isDelete 置 0，清空 Delete_time / Delete_id。
         /// 权限口径：复用 CRM_Customer|del 按钮权限（A 侧用按钮 GUID D2769CAF-8BC2-46D4-9758-7EE5EC4626C6，
         /// Sprint 3 落地时映射为 CRM_Customer|del，保持业务口径一致）。
-        /// 数据权限：沿用 AdvanceDelete 的 authtype 判定（0 直接拒绝；非 4 且 emp_id 不在 empList 内拒绝）。
+        /// 数据权限：沿用 AdvanceDelete 的 authtype 判定（0 直接拒绝；非 5 且 emp_id 不在 empList 内拒绝）。
         /// 幂等安全：未预删除的客户再次调用返回成功（已处于恢复态）。
         /// </summary>
         /// <param name="id">客户 ID（GUID 格式）</param>
@@ -944,7 +944,7 @@ namespace XHD.Core.View.Controllers
         /// （cus_name/cus_add/cus_tel/cus_fax/cus_website/cus_industry_id/Provinces_id/City_id/
         /// cus_type_id/cus_level_id/cus_source_id/DesCripe/Remarks/emp_id/isPrivate），
         /// create_time/sn/isDelete/Delete_time/Delete_id/lastfollow/state/x/y 等管理字段保持不变。
-        /// 权限口径：CRM_Customer|edit；数据权限：authtype=0 直接拒绝，非 4 且归属人不在 empList 内拒绝。
+        /// 权限口径：CRM_Customer|edit；数据权限：authtype=0 直接拒绝，非 5 且归属人不在 empList 内拒绝。
         /// </summary>
         /// <param name="model">移动端提交的客户模型（id 必填）</param>
         /// <returns>标准 XHDResult 字符串</returns>

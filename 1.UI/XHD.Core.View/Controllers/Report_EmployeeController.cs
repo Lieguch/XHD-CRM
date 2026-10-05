@@ -46,7 +46,7 @@ namespace XHD.Core.View.Controllers
         {
             Expression<Func<hr_employee, bool>> exp = a => true;
 
-            //数据权限：非全部权限（authtype!=4）只能看到权限范围内的员工
+            //数据权限：非全部权限（authtype!=5）只能看到权限范围内的员工
             var empId = User.FindFirst(ClaimTypes.Sid).Value;
             var roledata = await _dBAuthService.GetDataAuth(empId);
             if (roledata.authtype != DataScope.ScopeAll)

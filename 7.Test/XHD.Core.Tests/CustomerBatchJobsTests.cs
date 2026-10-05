@@ -125,7 +125,7 @@ namespace XHD.Core.Tests
             Mock<IDBAuthService> authMock = null,
             Mock<ISys_logService> logMock = null)
         {
-            authMock ??= CreateAuthMock(4, new List<string>());
+            authMock ??= CreateAuthMock(5, new List<string>());
             logMock ??= CreateLogMock();
 
             // 构造顺序：service, dBAuthService, paramService, provincesService,

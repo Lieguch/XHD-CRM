@@ -150,7 +150,7 @@ namespace XHD.Core.Tests
             Mock<ISys_logService> logMock = null,
             string userId = UserId)
         {
-            authMock ??= CreateAuthMock(4, new List<string>());
+            authMock ??= CreateAuthMock(5, new List<string>());
             logMock ??= CreateLogMock();
 
             return TestControllerHelper.CreateWithHttpContext<FinanceInvoiceController>(
@@ -168,7 +168,7 @@ namespace XHD.Core.Tests
             Mock<ISys_logService> logMock = null,
             string userId = UserId)
         {
-            authMock ??= CreateAuthMock(4, new List<string>());
+            authMock ??= CreateAuthMock(5, new List<string>());
             logMock ??= CreateLogMock();
 
             // 第 3 个构造参数 IFreeSql 直传测试库实例（不 Mock）

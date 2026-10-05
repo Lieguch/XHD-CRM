@@ -505,14 +505,14 @@ namespace XHD.Core.Tests
 
         [Theory]
         [InlineData(-1)]
-        [InlineData(5)]
+        [InlineData(6)]
         public async Task DataAuth_Save_OutOfRangeLevel_ReturnsError(int level)
         {
             await _fsql.Insert(NewRole("R1", "管理员", dataAuth: 1)).ExecuteAffrowsAsync();
 
             var json = await CreateDataAuthController().Save("R1", level);
 
-            AssertError(json, "参数错误：DataAuth 必须是 0-4 之间的整数");
+            AssertError(json, "参数错误：DataAuth 必须是 0-5 之间的整数（4=指定部门，5=全部）");
 
             // 未被改动
             var role = await _fsql.Select<Sys_role>()
@@ -527,7 +527,7 @@ namespace XHD.Core.Tests
 
             var json = await CreateDataAuthController().Save("R1", null);
 
-            AssertError(json, "参数错误：DataAuth 必须是 0-4 之间的整数");
+            AssertError(json, "参数错误：DataAuth 必须是 0-5 之间的整数（4=指定部门，5=全部）");
         }
 
         [Fact]

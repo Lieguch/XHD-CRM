@@ -106,7 +106,7 @@ namespace XHD.Core.Tests
             Mock<ISys_logService> logMock = null,
             string userId = UserId)
         {
-            authMock ??= CreateAuthMock(4, new List<string>());
+            authMock ??= CreateAuthMock(5, new List<string>());
             logMock ??= new Mock<ISys_logService>();
             logMock.Setup(l => l.UpdateLog(It.IsAny<Sys_log>())).ReturnsAsync(1);
             logMock.Setup(l => l.DeleteLog(It.IsAny<Sys_log>())).ReturnsAsync(1);
@@ -220,7 +220,7 @@ namespace XHD.Core.Tests
         {
             await InsertCustomerAsync(NewCustomer("C1", "E_A"));
 
-            var ctrl = CreateController(authMock: CreateAuthMock(4, new List<string>(), grantButtons: false));
+            var ctrl = CreateController(authMock: CreateAuthMock(5, new List<string>(), grantButtons: false));
             var model = NewContract(string.Empty, "C1", "新合同", 5000m, new DateTime(2024, 6, 1), string.Empty);
 
             var json = await ctrl.Save(model);
@@ -277,7 +277,7 @@ namespace XHD.Core.Tests
             await InsertCustomerAsync(NewCustomer("C1", "E_A"));
             await InsertContractAsync(NewContract("H1", "C1", "旧合同", 1000m, new DateTime(2024, 3, 1), UserId));
 
-            var ctrl = CreateController(authMock: CreateAuthMock(4, new List<string>(), grantButtons: false));
+            var ctrl = CreateController(authMock: CreateAuthMock(5, new List<string>(), grantButtons: false));
             var model = NewContract("H1", "C1", "新名称", 3000m, new DateTime(2024, 7, 1), UserId);
 
             var json = await ctrl.Save(model);
@@ -350,7 +350,7 @@ namespace XHD.Core.Tests
             await InsertCustomerAsync(NewCustomer("C1", "E_A"));
             await InsertContractAsync(NewContract("H1", "C1", "合同甲", 1000m, new DateTime(2024, 3, 1), UserId));
 
-            var ctrl = CreateController(authMock: CreateAuthMock(4, new List<string>(), grantButtons: false));
+            var ctrl = CreateController(authMock: CreateAuthMock(5, new List<string>(), grantButtons: false));
 
             var json = await ctrl.Delete("H1");
             var obj = JObject.Parse(json);

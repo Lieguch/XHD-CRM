@@ -92,7 +92,7 @@ namespace XHD.Core.View.Controllers
 
             var userId = User.FindFirst(ClaimTypes.Sid).Value;
 
-            // 归属校验：只能移动自己的便签（全公司权限 authtype==4 不受限），与 Delete 口径一致
+            // 归属校验：只能移动自己的便签（全部权限 authtype==5 不受限），与 Delete 口径一致
             var existing = await _service.GridAsync(a => a.id == model.id);
             if (existing.count == 0)
             {
@@ -126,7 +126,7 @@ namespace XHD.Core.View.Controllers
 
             var userId = User.FindFirst(ClaimTypes.Sid).Value;
 
-            // 归属校验：只能删除自己的便签（全公司权限 authtype==4 不受限），与 MyCalendarController.Delete 口径一致
+            // 归属校验：只能删除自己的便签（全部权限 authtype==5 不受限），与 MyCalendarController.Delete 口径一致
             var existing = await _service.GridAsync(a => a.id == id);
             if (existing.count == 0)
             {
