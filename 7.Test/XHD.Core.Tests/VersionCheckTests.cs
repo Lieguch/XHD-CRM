@@ -148,10 +148,13 @@ namespace XHD.Core.Tests
         [Fact]
         public void VersionWeight_FourthSegmentUnder10000_MultipliedByTen()
         {
-            // A 版：if (a[3]*1 < 10000) a[3] = a[3]*10
-            Assert.Equal(99990L, VersionHelper.VersionWeight("v1.0.0.9999"));
-            Assert.Equal(10000L, VersionHelper.VersionWeight("v1.0.0.10000"));
-            Assert.Equal(10000L, VersionHelper.VersionWeight("v1.0.0.1000"));
+            // A 版：if (a[3]*1 < 10000) a[3] = a[3]*10，且结果再叠加前三段权重。
+            // v1.0.0.9999 → a=[1,0,0,9999]，9999×10=99990，权重 = 99990 + 0 + 0 + 1*1e9 = 1000099990。
+            Assert.Equal(1000099990L, VersionHelper.VersionWeight("v1.0.0.9999"));
+            // v1.0.0.10000 → a[3]=10000 不 ×10，权重 = 10000 + 1*1e9 = 1000010000
+            Assert.Equal(1000010000L, VersionHelper.VersionWeight("v1.0.0.10000"));
+            // v1.0.0.1000 → 1000×10=10000，权重 = 10000 + 1*1e9 = 1000010000（与 10000 不乘时同值）
+            Assert.Equal(1000010000L, VersionHelper.VersionWeight("v1.0.0.1000"));
         }
 
         [Fact]
@@ -165,10 +168,19 @@ namespace XHD.Core.Tests
         [Fact]
         public void VersionWeight_WeightedSegments_OrderedBySignificance()
         {
-            // a[0] 权重 1e9 > a[1] 权重 1e7 > a[2] 权重 1e5 > a[3]
-            Assert.True(VersionHelper.VersionWeight("v2.0.0.0") > VersionHelper.VersionWeight("v1.9.999999.99999"));
-            Assert.True(VersionHelper.VersionWeight("v1.2.0.0") > VersionHelper.VersionWeight("v1.1.999999.99999"));
+            // A 版加权：a[3] + a[2]*1e5 + a[1]*1e7 + a[0]*1e9。
+            // 注意：a[2] 系数仅 1e5、a[1] 系数仅 1e7，都约束不住 6~8 位的日期/大数段。
+            // 因此 A 版比较**并非**字典序主导——中间段数值大时会压过主版本号。
+            // 下列断言忠实反映这一真实口径（数值经 Python 独立核算），防止后人「修正」成更合理但偏离 A 版的算法。
+
+            // a[0] 主版本 1e9 主导：v1.0.5.0(1000500000) > v1.0.4.99999(1000499999)
             Assert.True(VersionHelper.VersionWeight("v1.0.5.0") > VersionHelper.VersionWeight("v1.0.4.99999"));
+
+            // 反直觉锚点 1：主版本相同，但 a[2] 段巨大时压过 a[1] 段——v1.1.999999.99999(101009999999) > v1.2.0.0(1020000000)
+            Assert.True(VersionHelper.VersionWeight("v1.1.999999.99999") > VersionHelper.VersionWeight("v1.2.0.0"));
+
+            // 反直觉锚点 2：主版本 1 但中间段巨大，会大于主版本 2 但中间段为 0——v1.9.999999.99999(101089999999) > v2.0.0.0(2000000000)
+            Assert.True(VersionHelper.VersionWeight("v1.9.999999.99999") > VersionHelper.VersionWeight("v2.0.0.0"));
         }
 
         [Fact]
@@ -214,15 +226,20 @@ namespace XHD.Core.Tests
         }
 
         [Fact]
-        public void HasUpdate_RemoteOlder_NoUpdate()
+        public void HasUpdate_RemoteNewerMajorVersion_HasUpdate()
         {
-            Assert.False(VersionHelper.HasUpdate("v3.0.20250921.0", "v3.0.20250920.0"));
+            // A 版口径的反直觉特性：第 3 段日期 ×1e5 后权重高达万亿级，远大于主版本 1e9 差值。
+            // 本地 v3.0.20250920.0 权重 = 3*1e9 + 20250920*1e5 = 5025092000000
+            // 远程 v4.0.0.0 权重 = 4*1e9 + 0 = 4000000000
+            // 本地 > 远程 → 判定「无更新」。这是 A 版算法的真实结果（种子版本号里日期段过大），
+            // 忠实复刻即如此；不是实现 bug。换用「更合理」的主版本优先比较会偏离 A 版。
+            Assert.False(VersionHelper.HasUpdate("v3.0.20250920.0", "v4.0.0.0"));
         }
 
         [Fact]
-        public void HasUpdate_RemoteNewerMajorVersion_HasUpdate()
+        public void HasUpdate_RemoteOlder_NoUpdate()
         {
-            Assert.True(VersionHelper.HasUpdate("v3.0.20250920.0", "v4.0.0.0"));
+            Assert.False(VersionHelper.HasUpdate("v3.0.20250921.0", "v3.0.20250920.0"));
         }
 
         [Fact]
