@@ -1,4 +1,4 @@
-using FreeSql;
+﻿using FreeSql;
 using Moq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -668,7 +668,7 @@ namespace XHD.Core.Tests
 
             var authMock = new Mock<IDBAuthService>();
             authMock.Setup(a => a.GetDataAuth(It.IsAny<string>()))
-                .ReturnsAsync(new XHDRoleData { authtype = 4, empList = new List<string>() });
+                .ReturnsAsync(new XHDRoleData { authtype = 5, empList = new List<string>() });
             var logMock = new Mock<ISys_logService>();
 
             // 构造 Controller

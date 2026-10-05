@@ -22,7 +22,7 @@ namespace XHD.Core.Repository
         /// 获取用户所有角色的数据权限最高级别
         /// </summary>
         /// <param name="emp_id">员工ID</param>
-        /// <returns>0无，1本人，2本部，3本部及下级，4全部</returns>
+        /// <returns>0无，1本人，2本部，3本部及下级，4指定部门，5全部</returns>
         public async Task<int> GetAuthType(string emp_id)
         {
             // 1. 先获取当前员工的角色ID
@@ -69,13 +69,15 @@ namespace XHD.Core.Repository
 
         /// <summary>
         /// 根据用户获取数据权限，返回员工ID列表
+        /// authtype 语义对齐 A 版 Controller/GetDataAuth.cs：
+        /// 0 无 / 1 本人 / 2 本部 / 3 本部及下级 / 4 指定部门（跨部）/ 5 全部
         /// </summary>
         public async Task<XHDRoleData> GetDataAuth(string emp_id)
         {
-            // 系统管理员：全部权限
+            // 系统管理员：全部权限（A 版 GetDataAuth.cs:91 管理员不受权限控制 → authtype=5）
             if (string.Equals(emp_id, "admin", StringComparison.OrdinalIgnoreCase))
             {
-                return new XHDRoleData { authtype = 4, empList = new List<string>() };
+                return new XHDRoleData { authtype = 5, empList = new List<string>() };
             }
 
             int authType = await GetAuthType(emp_id);
@@ -109,8 +111,36 @@ namespace XHD.Core.Repository
                     var allEmps = await _fsql.Select<hr_employee>().Where(e => childDeptIds.Contains(e.dep_id)).ToListAsync(e => e.id);
                     return new XHDRoleData { authtype = 3, empList = allEmps };
 
-                case 4: // 全部
-                    return new XHDRoleData { authtype = 4, empList = new List<string>() };
+                case 4: // 指定部门（跨部）：Sys_data_authority 勾选部门下的员工
+                       // 对齐 A 版 get_depAp_emp_ids：dep_id in (select dep_id from Sys_data_authority where Role_id in {role_id})
+                    {
+                        var roleId = await _fsql.Select<hr_employee>()
+                            .Where(e => e.id == emp_id)
+                            .FirstAsync(e => e.role_id);
+
+                        if (string.IsNullOrEmpty(roleId))
+                        {
+                            return new XHDRoleData { authtype = 4, empList = new List<string>() };
+                        }
+
+                        var depIds = await _fsql.Select<Sys_data_authority>()
+                            .Where(a => a.Role_id == roleId)
+                            .ToListAsync(a => a.dep_id);
+
+                        if (depIds == null || depIds.Count == 0)
+                        {
+                            return new XHDRoleData { authtype = 4, empList = new List<string>() };
+                        }
+
+                        var specifiedEmps = await _fsql.Select<hr_employee>()
+                            .Where(e => depIds.Contains(e.dep_id))
+                            .ToListAsync(e => e.id);
+
+                        return new XHDRoleData { authtype = 4, empList = specifiedEmps };
+                    }
+
+                case 5: // 全部
+                    return new XHDRoleData { authtype = 5, empList = new List<string>() };
 
                 default:
                     return new XHDRoleData { authtype = 0, empList = new List<string>() };

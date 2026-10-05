@@ -90,13 +90,13 @@ namespace XHD.Core.Tests
         // ============ Controller 装配辅助 ============
 
         /// <summary>
-        /// 全公司权限（authtype=4）+ 可选按钮权限开关。
+        /// 全公司权限（authtype=5）+ 可选按钮权限开关。
         /// </summary>
         private static Mock<IDBAuthService> CreateFullAccessAuth(bool grantDel = true, bool grantEdit = true)
         {
             var auth = new Mock<IDBAuthService>();
             auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
-                .ReturnsAsync(new XHDRoleData { authtype = 4, empList = new List<string>() });
+                .ReturnsAsync(new XHDRoleData { authtype = 5, empList = new List<string>() });
             auth.Setup(a => a.GetAuth(It.IsAny<string>(), It.Is<string>(x => x == "CRM_Customer|del")))
                 .ReturnsAsync(grantDel);
             auth.Setup(a => a.GetAuth(It.IsAny<string>(), It.Is<string>(x => x == "CRM_Customer|edit")))

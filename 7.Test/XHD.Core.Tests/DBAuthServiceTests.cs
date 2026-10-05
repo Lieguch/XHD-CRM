@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -13,7 +14,7 @@ namespace XHD.Core.Tests
     /// <summary>
     /// Sprint 10.38 Phase 3：DBAuthService（所有 Controller 数据权限闸门的共用底座）真实集成测试。
     /// 不使用任何 Mock，直接 new DBAuthService(new DBAuthRepository(fsql)) + SQLite in-memory，
-    /// 覆盖 admin 短路、GetAuthType（0/1/2/3/4 五分支）、GetDataAuth（含部门递归树）、GetAuth 真值三态。
+    /// 覆盖 admin 短路、GetAuthType（0/1/2/3/4/5 六分支）、GetDataAuth（含指定部门、部门递归树）、GetAuth 真值三态。
     /// </summary>
     public class DBAuthServiceTests : IDisposable
     {
@@ -62,6 +63,22 @@ namespace XHD.Core.Tests
                 Auth_type = 1
             }).ExecuteAffrowsAsync();
 
+        // 缺口 E：角色勾选指定部门（Sys_data_authority）
+        private async Task InsertDataAuthorityAsync(string roleId, params string[] depIds)
+        {
+            foreach (var depId in depIds)
+            {
+                await _fsql.Insert(new Sys_data_authority
+                {
+                    id = Guid.NewGuid().ToString(),
+                    Role_id = roleId,
+                    dep_id = depId,
+                    create_id = "TEST",
+                    create_time = DateTime.Now
+                }).ExecuteAffrowsAsync();
+            }
+        }
+
         // 装配一棵部门树：A(root) → B → C，以及无关部门 D
         private async Task SeedDeptTreeAsync()
         {
@@ -74,25 +91,25 @@ namespace XHD.Core.Tests
         // ============ 1. admin 短路（含大小写） ============
 
         [Fact]
-        public async Task GetAuthType_Admin_UpperCase_Returns4()
+        public async Task GetAuthType_Admin_UpperCase_Returns5()
         {
             // 不插入任何员工/角色数据，证明 admin 完全不查表
             int authType = await _service.GetAuthType("ADMIN");
-            Assert.Equal(4, authType);
+            Assert.Equal(5, authType);
         }
 
         [Fact]
-        public async Task GetAuthType_Admin_LowerCase_Returns4()
+        public async Task GetAuthType_Admin_LowerCase_Returns5()
         {
             int authType = await _service.GetAuthType("admin");
-            Assert.Equal(4, authType);
+            Assert.Equal(5, authType);
         }
 
         [Fact]
-        public async Task GetAuthType_Admin_MixedCase_Returns4()
+        public async Task GetAuthType_Admin_MixedCase_Returns5()
         {
             int authType = await _service.GetAuthType("AdMiN");
-            Assert.Equal(4, authType);
+            Assert.Equal(5, authType);
         }
 
         [Fact]
@@ -105,7 +122,7 @@ namespace XHD.Core.Tests
         }
 
         [Fact]
-        public async Task GetDataAuth_Admin_ReturnsAuthType4AndEmptyList()
+        public async Task GetDataAuth_Admin_ReturnsAuthType5AndEmptyList()
         {
             // 造一些数据，证明 admin 走短路、不看库
             await InsertDeptAsync("D1");
@@ -114,7 +131,7 @@ namespace XHD.Core.Tests
 
             XHDRoleData auth = await _service.GetDataAuth("admin");
 
-            Assert.Equal(4, auth.authtype);
+            Assert.Equal(5, auth.authtype);
             Assert.NotNull(auth.empList);
             Assert.Empty(auth.empList);
         }
@@ -326,13 +343,12 @@ namespace XHD.Core.Tests
             Assert.Equal(new List<string> { "EA" }, auth.empList);
         }
 
-        // ============ 6. authtype=4 全部（不变量：empList 为空） ============
+        // ============ 6. authtype=4 指定部门（Sys_data_authority 勾选部门） ============
 
         [Fact]
-        public async Task GetDataAuth_AuthType4_EmpListIsEmpty_Invariant()
+        public async Task GetDataAuth_AuthType4_NoDepartmentsSelected_EmptyList()
         {
-            // ★ 关键不变量：authtype=4 与 authtype=0 的 empList 都是空列表，
-            // 判权限必须看 authtype，不能看 empList 是否为空
+            // 未在 Sys_data_authority 勾选任何部门 → 可见员工为空集
             await InsertDeptAsync("D1");
             await InsertDeptAsync("D2");
             await InsertRoleAsync("R1", 4);
@@ -348,22 +364,44 @@ namespace XHD.Core.Tests
         }
 
         [Fact]
-        public async Task GetDataAuth_AuthType4_MustNotBeMistakenForNoPermission()
+        public async Task GetDataAuth_AuthType4_ReturnsEmployeesInSelectedDepartments()
         {
-            // 同样是空 empList，authtype=4（全部）与 authtype=0（无权限）语义完全相反
-            await InsertRoleAsync("R_FULL", 4);
-            await InsertRoleAsync("R_NONE", 0);
-            await InsertEmpAsync("E_FULL", roleId: "R_FULL");
-            await InsertEmpAsync("E_NONE", roleId: "R_NONE");
+            // 勾选 D1 → 只见 D1 员工，D2 员工不可见
+            await InsertDeptAsync("D1");
+            await InsertDeptAsync("D2");
+            await InsertRoleAsync("R1", 4);
+            await InsertEmpAsync("E1", "D1", "R1");
+            await InsertEmpAsync("E2", "D1", "R1");
+            await InsertEmpAsync("E3", "D2", "R1");
+            await InsertDataAuthorityAsync("R1", "D1");
 
-            XHDRoleData full = await _service.GetDataAuth("E_FULL");
-            XHDRoleData none = await _service.GetDataAuth("E_NONE");
+            XHDRoleData auth = await _service.GetDataAuth("E1");
 
-            Assert.Equal(4, full.authtype);
-            Assert.Equal(0, none.authtype);
-            Assert.Empty(full.empList);
-            Assert.Empty(none.empList);
-            Assert.NotEqual(full.authtype, none.authtype);
+            Assert.Equal(4, auth.authtype);
+            Assert.Equal(2, auth.empList.Count);
+            Assert.Contains("E1", auth.empList);
+            Assert.Contains("E2", auth.empList);
+            Assert.DoesNotContain("E3", auth.empList);
+        }
+
+        [Fact]
+        public async Task GetDataAuth_AuthType4_OtherRoleDepartmentsNotVisible()
+        {
+            // A 版 get_depAp_emp_ids 只取本角色（B 版单角色）的 Sys_data_authority 行
+            await InsertDeptAsync("D1");
+            await InsertDeptAsync("D2");
+            await InsertRoleAsync("R1", 4);
+            await InsertRoleAsync("R2", 4);
+            await InsertEmpAsync("E1", "D1", "R1");
+            await InsertEmpAsync("E2", "D2", "R2");
+            // R2 勾的是 D2，对 R1 的员工不可见
+            await InsertDataAuthorityAsync("R2", "D2");
+            await InsertDataAuthorityAsync("R1", "D1");
+
+            XHDRoleData auth = await _service.GetDataAuth("E1");
+
+            Assert.Equal(4, auth.authtype);
+            Assert.Equal(new List<string> { "E1" }, auth.empList);
         }
 
         [Fact]
@@ -375,7 +413,56 @@ namespace XHD.Core.Tests
             Assert.Equal(4, await _service.GetAuthType("E1"));
         }
 
-        // ============ 7. 多角色取 Max ============
+        // ============ 7. authtype=5 全部（不变量：empList 为空） ============
+
+        [Fact]
+        public async Task GetDataAuth_AuthType5_EmpListIsEmpty_Invariant()
+        {
+            // ★ 关键不变量：authtype=5 与 authtype=0 的 empList 都是空列表，
+            // 判权限必须看 authtype，不能看 empList 是否为空
+            await InsertDeptAsync("D1");
+            await InsertDeptAsync("D2");
+            await InsertRoleAsync("R1", 5);
+            await InsertEmpAsync("E1", "D1", "R1");
+            await InsertEmpAsync("E2", "D1", "R1");
+            await InsertEmpAsync("E3", "D2", "R1");
+
+            XHDRoleData auth = await _service.GetDataAuth("E1");
+
+            Assert.Equal(5, auth.authtype);
+            Assert.NotNull(auth.empList);
+            Assert.Empty(auth.empList);
+        }
+
+        [Fact]
+        public async Task GetDataAuth_AuthType5_MustNotBeMistakenForNoPermission()
+        {
+            // 同样是空 empList，authtype=5（全部）与 authtype=0（无权限）语义完全相反
+            await InsertRoleAsync("R_FULL", 5);
+            await InsertRoleAsync("R_NONE", 0);
+            await InsertEmpAsync("E_FULL", roleId: "R_FULL");
+            await InsertEmpAsync("E_NONE", roleId: "R_NONE");
+
+            XHDRoleData full = await _service.GetDataAuth("E_FULL");
+            XHDRoleData none = await _service.GetDataAuth("E_NONE");
+
+            Assert.Equal(5, full.authtype);
+            Assert.Equal(0, none.authtype);
+            Assert.Empty(full.empList);
+            Assert.Empty(none.empList);
+            Assert.NotEqual(full.authtype, none.authtype);
+        }
+
+        [Fact]
+        public async Task GetAuthType_AuthType5_Returns5()
+        {
+            await InsertRoleAsync("R1", 5);
+            await InsertEmpAsync("E1", roleId: "R1");
+
+            Assert.Equal(5, await _service.GetAuthType("E1"));
+        }
+
+        // ============ 8. 多角色取 Max ============
 
         [Fact]
         public async Task GetAuthType_MultipleRolesInSystem_ReturnsEmployeeRoleDataAuth()

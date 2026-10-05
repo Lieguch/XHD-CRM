@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -108,7 +108,7 @@ namespace XHD.Core.Tests
         {
             var auth = new Mock<IDBAuthService>();
             auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
-                .ReturnsAsync(new XHDRoleData { authtype = 4, empList = new List<string>() });
+                .ReturnsAsync(new XHDRoleData { authtype = 5, empList = new List<string>() });
             auth.Setup(a => a.GetAuth(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(true);
             return auth;
@@ -665,7 +665,7 @@ namespace XHD.Core.Tests
         [Fact]
         public async Task Grid_RestrictedAuthWithEmptyEmpList_ReturnsNoPermission()
         {
-            // authtype != 4 且 empList 为空 → 无权限
+            // authtype != 5 且 empList 为空 → 无权限
             var auth = new Mock<IDBAuthService>();
             auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
                 .ReturnsAsync(new XHDRoleData { authtype = 2, empList = new List<string>() });

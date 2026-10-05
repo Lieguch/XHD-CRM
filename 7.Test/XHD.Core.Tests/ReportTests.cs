@@ -1,4 +1,4 @@
-using FreeSql;
+﻿using FreeSql;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
@@ -677,7 +677,7 @@ namespace XHD.Core.Tests
             var custSvc = new Mock<ICRM_CustomerService>().Object;
             var authMock = new Mock<IDBAuthService>();
             authMock.Setup(a => a.GetDataAuth(It.IsAny<string>()))
-                .ReturnsAsync(new XHDRoleData { authtype = 4, empList = new List<string>() });
+                .ReturnsAsync(new XHDRoleData { authtype = 5, empList = new List<string>() });
 
             var ctrl = new Report_CustomerController(logger, custSvc, followSvcMock.Object, authMock.Object);
 

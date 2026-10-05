@@ -77,6 +77,8 @@ namespace XHD.Core.Tests
             // Sprint 8 新增
             fsql.CodeFirst.SyncStructure<Task_follow>();
             fsql.CodeFirst.SyncStructure<Sys_log_Err>();
+            // Sprint 10.43 缺口 E 新增：数据权限-指定部门
+            fsql.CodeFirst.SyncStructure<Sys_data_authority>();
         }
     }
 

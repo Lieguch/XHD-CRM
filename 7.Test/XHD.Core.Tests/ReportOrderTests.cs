@@ -1,4 +1,4 @@
-using FreeSql;
+﻿using FreeSql;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -100,7 +100,7 @@ namespace XHD.Core.Tests
 
         /// <summary>
         /// 创建桥接到真实 Sale_orderRepository 的 Report_OrderController。
-        /// roleData 为 null 时默认放行全量（authtype=4 + 空 empList）。
+        /// roleData 为 null 时默认放行全量（authtype=5 + 空 empList）。
         /// </summary>
         private static Report_OrderController CreateController(
             Sale_orderRepository orderRepo,
@@ -128,7 +128,7 @@ namespace XHD.Core.Tests
 
             var authMock = new Mock<IDBAuthService>();
             authMock.Setup(a => a.GetDataAuth(It.IsAny<string>()))
-                .ReturnsAsync(roleData ?? new XHDRoleData { authtype = 4, empList = new List<string>() });
+                .ReturnsAsync(roleData ?? new XHDRoleData { authtype = 5, empList = new List<string>() });
 
             return TestControllerHelper.CreateWithHttpContext<Report_OrderController>(
                 queryString, userId, "Test User",

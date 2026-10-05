@@ -95,7 +95,7 @@ namespace XHD.Core.Tests
         private SaleOrderController CreateController(
             string queryString = "",
             string userId = "TEST_USER",
-            int authtype = 4,
+            int authtype = 5,
             List<string> authEmpList = null)
         {
             // 用真实 Repository 的 Service mock，直接转发到 Repository

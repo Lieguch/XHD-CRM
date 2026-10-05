@@ -54,33 +54,46 @@ namespace XHD.Core.Repository
                 .Distinct()
                 .ToList();
 
-            using (var uow = _fsql.CreateUnitOfWork())
+            // 事务边界与项目既有写法一致（Finance_ReceiveRepository.UpdateReceiveAsync）
+            using (var conn = _fsql.Ado.MasterPool.Get())
+            using (var tx = conn.Value.BeginTransaction())
             {
-                // 1. 删除该角色既有勾选（A 版 save 的 Delete 分支）
-                await uow.Orm.Delete<Sys_data_authority>()
-                    .Where(a => a.Role_id == roleId)
-                    .ExecuteAffrowsAsync();
-
-                var inserted = 0;
-
-                // 2. 逐行插入（A 版 save 按逗号分割 depids 逐行 Add）
-                if (validDepIds.Count > 0)
+                try
                 {
-                    var now = DateTime.Now;
-                    var rows = validDepIds.Select(depId => new Sys_data_authority
+                    // 1. 删除该角色既有勾选（A 版 save 的 Delete 分支）
+                    await _fsql.Delete<Sys_data_authority>()
+                        .WithTransaction(tx)
+                        .Where(a => a.Role_id == roleId)
+                        .ExecuteAffrowsAsync();
+
+                    var inserted = 0;
+
+                    // 2. 逐行插入（A 版 save 按逗号分割 depids 逐行 Add）
+                    if (validDepIds.Count > 0)
                     {
-                        id = Guid.NewGuid().ToString(),
-                        Role_id = roleId,
-                        dep_id = depId,
-                        create_id = createId ?? string.Empty,
-                        create_time = now
-                    }).ToList();
+                        var now = DateTime.Now;
+                        var rows = validDepIds.Select(depId => new Sys_data_authority
+                        {
+                            id = Guid.NewGuid().ToString(),
+                            Role_id = roleId,
+                            dep_id = depId,
+                            create_id = createId ?? string.Empty,
+                            create_time = now
+                        }).ToList();
 
-                    inserted = await uow.Orm.Insert(rows).ExecuteAffrowsAsync();
+                        inserted = await _fsql.Insert(rows)
+                            .WithTransaction(tx)
+                            .ExecuteAffrowsAsync();
+                    }
+
+                    tx.Commit();
+                    return inserted;
                 }
-
-                uow.Commit();
-                return inserted;
+                catch
+                {
+                    tx.Rollback();
+                    throw;
+                }
             }
         }
     }

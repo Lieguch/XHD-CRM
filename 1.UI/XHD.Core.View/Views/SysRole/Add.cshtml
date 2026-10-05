@@ -41,8 +41,15 @@
                             <option value=1>本人</option>
                             <option value=2>本部</option>
                             <option value=3>本部及下级</option>
-                            <option value=4>全部</option>
+                            <option value=4>指定部门</option>
+                            <option value=5>全部</option>
                         </select>
+                    </div>
+                    <div class="layui-input-inline" style="width: auto; padding-top: 8px; display: none;" id="deptPickerWrap">
+                        <button type="button" class="layui-btn layui-btn-sm layui-btn-normal" id="btnDeptPicker">
+                            <i class="fa fa-sitemap"></i> 选择部门
+                        </button>
+                        <span id="deptCountTip" style="margin-left: 6px; color: #999; font-size: 12px;"></span>
                     </div>
                 </div>
                 <div class="layui-inline">
@@ -93,6 +100,58 @@
             $ = layui.$;
 
         form.render("select");
+
+        // ===== 缺口 E：DataAuth == 4（指定部门）时显示「选择部门」入口 =====
+        function toggleDeptPicker() {
+            var v = $("#DataAuth").val();
+            if (v === "4") {
+                $("#deptPickerWrap").show();
+                refreshDeptCount();
+            } else {
+                $("#deptPickerWrap").hide();
+                $("#deptCountTip").text("");
+            }
+        }
+
+        // 已勾选部门数量提示（角色已存在时才查得到）
+        function refreshDeptCount() {
+            var roleId = $("#id").val();
+            if (!roleId) {
+                $("#deptCountTip").text("请先保存角色，再选择部门");
+                return;
+            }
+            $.get('/SysDataAuthority/Get', { roleId: roleId }, function (res) {
+                if (res && res.code === 0 && res.data) {
+                    $("#deptCountTip").text('已勾选 ' + res.data.length + ' 个部门');
+                }
+            });
+        }
+
+        $(document).on('change', '#DataAuth', function () {
+            toggleDeptPicker();
+        });
+
+        $('#btnDeptPicker').on('click', function () {
+            var roleId = $("#id").val();
+            if (!roleId) {
+                layer.msg('请先保存角色，再选择指定部门', { icon: 0 });
+                return;
+            }
+            layer.open({
+                title: '指定部门（角色：' + $('#RoleName').val() + '）',
+                type: 2,
+                anim: 1,
+                area: ['480px', '70%'],
+                maxmin: true,
+                content: '/SysDataAuthority/Index?roleId=' + encodeURIComponent(roleId),
+                end: function () {
+                    refreshDeptCount();
+                }
+            });
+        });
+
+        // 编辑时父页会回填 #DataAuth 与 #id，需在渲染后同步入口显隐
+        setTimeout(function () { toggleDeptPicker(); }, 200);
     });
 </script>
 

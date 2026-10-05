@@ -1,4 +1,4 @@
-using FreeSql;
+﻿using FreeSql;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -146,13 +146,13 @@ namespace XHD.Core.Tests
         }
 
         /// <summary>
-        /// 让 Mock IDBAuthService 返回全公司权限（authtype=4）。
+        /// 让 Mock IDBAuthService 返回全公司权限（authtype=5）。
         /// </summary>
         private static Mock<IDBAuthService> CreateFullAccessAuth()
         {
             var auth = new Mock<IDBAuthService>();
             auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
-                .ReturnsAsync(new XHDRoleData { authtype = 4, empList = new List<string>() });
+                .ReturnsAsync(new XHDRoleData { authtype = 5, empList = new List<string>() });
             // Sprint 10.38：全公司权限应同时放行按钮权限校验。
             // 不 mock 的话 Moq loose mock 默认返回 false，会把 Claimlist/AbanDon/Excute 的
             // CheckAuthAsync("edit") 闸门误判为"无操作权限"。

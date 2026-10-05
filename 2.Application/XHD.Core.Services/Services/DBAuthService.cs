@@ -28,16 +28,15 @@ namespace XHD.Core.Services
         /// 获取用户所有角色的数据权限最高级别
         /// </summary>
         /// <param name="emp_id"></param>
-        /// <returns>0无，1本人，2本部，3本部及下级，4全部</returns>
+        /// <returns>0无，1本人，2本部，3本部及下级，4指定部门，5全部</returns>
         public async Task<int> GetAuthType(string emp_id)
         {
             //系统管理员，绝对的权限
-            //根因修复：GetAuth(:46) 与 GetDataAuth(:65) 都有 admin 短路，唯独本方法漏了。
-            //A 版 GetDataAuth.cs:91「管理员不受权限控制」是原始契约，B 版 GetDataAuth 的 admin
-            //分支返回 authtype=4（全部），此处与同文件另两法保持一致返回 4。
+            //A 版 GetDataAuth.cs:91「管理员不受权限控制」是原始契约，admin → 5（全部），
+            //对齐 A 版 getAuth 中 uid=="admin" 时 da.authtype=5。
             if (emp_id.ToLower().Equals("admin"))
             {
-                return 4;
+                return 5;
             }
 
             return await _irepository.GetAuthType(emp_id);
@@ -74,7 +73,7 @@ namespace XHD.Core.Services
             if (emp_id.ToLower().Equals("admin"))
             {
                 //全部,返回一个标记即可，前端无需处理
-                return new XHDRoleData { authtype = 4, empList = new List<string> { } };
+                return new XHDRoleData { authtype = 5, empList = new List<string> { } };
             }
 
             return await _irepository.GetDataAuth(emp_id);

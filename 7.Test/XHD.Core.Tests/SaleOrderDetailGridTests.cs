@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
@@ -84,7 +84,7 @@ namespace XHD.Core.Tests
 
         private SaleOrderDetailController CreateController(
             string queryString = "",
-            int authtype = 4,
+            int authtype = 5,
             List<string> authEmpList = null)
         {
             var authMock = new Mock<IDBAuthService>();

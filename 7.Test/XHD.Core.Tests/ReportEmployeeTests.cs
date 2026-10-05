@@ -1,4 +1,4 @@
-using FreeSql;
+﻿using FreeSql;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json.Linq;
@@ -100,7 +100,7 @@ namespace XHD.Core.Tests
 
         /// <summary>
         /// 创建桥接到真实 hr_employeeRepository / CRM_followRepository 的 Report_EmployeeController。
-        /// roleData 为 null 时默认放行全量（authtype=4 + 空 empList）。
+        /// roleData 为 null 时默认放行全量（authtype=5 + 空 empList）。
         /// </summary>
         private Report_EmployeeController CreateController(
             XHDRoleData? roleData = null,
@@ -128,7 +128,7 @@ namespace XHD.Core.Tests
 
             var authMock = new Mock<IDBAuthService>();
             authMock.Setup(a => a.GetDataAuth(It.IsAny<string>()))
-                .ReturnsAsync(roleData ?? new XHDRoleData { authtype = 4, empList = new List<string>() });
+                .ReturnsAsync(roleData ?? new XHDRoleData { authtype = 5, empList = new List<string>() });
 
             return TestControllerHelper.CreateWithHttpContext<Report_EmployeeController>(
                 queryString, userId, "Test User",
@@ -166,7 +166,7 @@ namespace XHD.Core.Tests
         [Fact]
         public async Task Grid_AuthType0_EmptyEmpList_ReturnsEmpty()
         {
-            // authtype!=4 且 empList 为空 → empList.Contains(a.id) 命中空集，返回空
+            // authtype!=5 且 empList 为空 → empList.Contains(a.id) 命中空集，返回空
             await InsertEmployeeAsync(NewEmployee("E1", "张三"));
 
             var ctrl = CreateController(roleData: new XHDRoleData { authtype = 0, empList = new List<string>() });
@@ -292,7 +292,7 @@ namespace XHD.Core.Tests
         [Fact]
         public async Task ReportFollowYear_AuthType0_EmptyEmpList_ReturnsPermissionError()
         {
-            // authtype!=4 且 empList 为空 → 返回"权限不足！"
+            // authtype!=5 且 empList 为空 → 返回"权限不足！"
             await InsertFollowAsync(NewFollow("F1", "E1", new DateTime(2024, 3, 10)));
 
             var ctrl = CreateController(

@@ -203,20 +203,21 @@ namespace XHD.Core.Tests
         // ─── DataScope（authtype 语义收口） ──────────────────────────
 
         [Fact]
-        public void DataScope_AuthType4_MeansNoFilter()
+        public void DataScope_AuthType5_MeansNoFilter()
         {
             var r = XHD.Core.View.Authorization.DataScope.Resolve(
-                new XHD.Core.Common.XHDRoleData { authtype = 4, empList = new List<string>() });
+                new XHD.Core.Common.XHDRoleData { authtype = 5, empList = new List<string>() });
 
             Assert.False(r.NeedsFilter);
             Assert.Null(r.EmployeeIds);
-            Assert.Equal(4, r.AuthType);
+            Assert.Equal(5, r.AuthType);
         }
 
         [Fact]
-        public void DataScope_AuthTypeBelow4_RequiresFilter()
+        public void DataScope_AuthTypeBelowScopeAll_RequiresFilter()
         {
-            foreach (var level in new[] { 0, 1, 2, 3 })
+            // 0 无 / 1 本人 / 2 本部 / 3 本部及下级 / 4 指定部门 —— 都需要 empList 过滤
+            foreach (var level in new[] { 0, 1, 2, 3, 4 })
             {
                 var r = XHD.Core.View.Authorization.DataScope.Resolve(
                     new XHD.Core.Common.XHDRoleData
@@ -253,7 +254,7 @@ namespace XHD.Core.Tests
 
         /// <summary>
         /// 最关键的防回归用例：admin 由 DBAuthService.GetDataAuth 返回
-        /// <c>authtype=4 + 空 empList</c>。若用「empList 为空 ⇒ 不过滤」判定，
+        /// <c>authtype=5 + 空 empList</c>。若用「empList 为空 ⇒ 不过滤」判定，
         /// 会把 authtype=0 的无权限用户误当全权限，造成越权。
         /// 本用例证明判定只依赖 authtype，不依赖 empList 长度。
         /// </summary>
@@ -261,7 +262,7 @@ namespace XHD.Core.Tests
         public void DataScope_AdminShape_MustNotBeMistakenForNoPermission()
         {
             var admin = XHD.Core.View.Authorization.DataScope.Resolve(
-                new XHD.Core.Common.XHDRoleData { authtype = 4, empList = new List<string>() });
+                new XHD.Core.Common.XHDRoleData { authtype = 5, empList = new List<string>() });
             var nobody = XHD.Core.View.Authorization.DataScope.Resolve(
                 new XHD.Core.Common.XHDRoleData { authtype = 0, empList = new List<string>() });
 

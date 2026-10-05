@@ -6,13 +6,13 @@
     <div class="layui-card-body">
         <div style="margin-bottom: 12px; color: #7d7e7e; font-size: 13px; line-height: 1.7;">
             <i class="fa fa-info-circle"></i>
-            <b>B 版数据权限说明：</b>
-            基于角色层级（0 无 / 1 本人 / 2 本部 / 3 本部及下级 / 4 全部），
-            由 <code>Sys_role.DataAuth</code> 字段直接控制，
-            <code>DBAuthRepository.GetDataAuth</code> 按整数层级展开可见员工 ID。
-            与 A 版 <code>Sys_data_authority</code> 表按部门勾选不同，
-            本页为 B 版可行配置（<b>非 A 版 1:1 复刻</b>）。
-            直接修改下拉框即保存。
+            <b>数据权限说明（对齐 A 版枚举）：</b>
+            0 无 / 1 本人 / 2 本部 / 3 本部及下级 / <b>4 指定部门</b> / <b>5 全部</b>。
+            由 <code>Sys_role.DataAuth</code> 字段控制，
+            <code>DBAuthRepository.GetDataAuth</code> 按层级展开可见员工 ID；
+            选 <b>4 指定部门</b> 时由 <code>Sys_data_authority</code> 表记录勾选的部门
+            （对应 A 版 <code>Sys_data_authorized.aspx</code>，点「指定部门」列按钮勾选）。
+            直接修改下拉框即保存层级。
         </div>
 
         <div style="margin-bottom: 8px;">
@@ -29,14 +29,23 @@
 <!-- 数据权限下拉单元格：用 JS 函数渲染，避免在 <option> 属性内写 LayUI 模板标记而触发 RZ1030 -->
 <script>
     function DataAuthCellHtml(d) {
-        var labels = ['无', '本人', '本部', '本部及下级', '全部'];
+        var labels = ['无', '本人', '本部', '本部及下级', '指定部门', '全部'];
         var html = '<select name="DataAuth" lay-filter="dataAuthSelect">';
-        for (var i = 0; i <= 4; i++) {
+        for (var i = 0; i <= 5; i++) {
             var sel = (d.DataAuth == i) ? ' selected' : '';
             html += '<option value="' + i + '"' + sel + '>' + i + ' - ' + labels[i] + '</option>';
         }
         html += '</select>';
         return html;
+    }
+
+    // 指定部门勾选入口（仅 DataAuth==4 时可用）
+    function DeptPickerHtml(d) {
+        if (d.DataAuth == 4) {
+            return '<button class="layui-btn layui-btn-xs layui-btn-normal" data-dept-role="' + d.id + '" data-dept-name="' + (d.RoleName || '') + '">' +
+                '<i class="fa fa-sitemap"></i> 勾选部门</button>';
+        }
+        return '<span style="color:#c2c2c2;">层级为 4 时可用</span>';
     }
 </script>
 
@@ -46,7 +55,8 @@
         1: '本人',
         2: '本部',
         3: '本部及下级',
-        4: '全部'
+        4: '指定部门',
+        5: '全部'
     };
 
     function AuthDesc(value) {
@@ -79,6 +89,12 @@
                     templet: DataAuthCellHtml
                 },
                 {
+                    field: 'DeptPicker',
+                    width: 150,
+                    title: '指定部门',
+                    templet: DeptPickerHtml
+                },
+                {
                     field: 'AuthDesc',
                     width: 160,
                     title: '说明',
@@ -109,8 +125,8 @@
             var newVal = parseInt(data.value, 10);
             var oldVal = parseInt(row.DataAuth, 10);
 
-            if (isNaN(newVal) || newVal < 0 || newVal > 4) {
-                layer.msg('数据权限层级必须是 0-4 的整数', { icon: 2 });
+            if (isNaN(newVal) || newVal < 0 || newVal > 5) {
+                layer.msg('数据权限层级必须是 0-5 的整数', { icon: 2 });
                 return;
             }
             if (newVal === oldVal) {
@@ -129,6 +145,23 @@
 
         $('#btnReload').on('click', function () {
             tableIns.reload({}, 'data');
+        });
+
+        // 指定部门勾选弹窗
+        $(document).on('click', '[data-dept-role]', function () {
+            var roleId = $(this).attr('data-dept-role');
+            var roleName = $(this).attr('data-dept-name');
+            layer.open({
+                title: '指定部门（角色：' + roleName + '）',
+                type: 2,
+                anim: 1,
+                area: ['480px', '70%'],
+                maxmin: true,
+                content: '/SysDataAuthority/Index?roleId=' + encodeURIComponent(roleId),
+                end: function () {
+                    tableIns.reload({}, 'data');
+                }
+            });
         });
 
         function save(roleId, dataAuth) {

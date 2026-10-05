@@ -1,4 +1,4 @@
-using FreeSql;
+﻿using FreeSql;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Moq;
@@ -236,7 +236,7 @@ namespace XHD.Core.Tests
         {
             var auth = new Mock<IDBAuthService>();
             auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
-                .ReturnsAsync(new XHDRoleData { authtype = 4, empList = new List<string>() });
+                .ReturnsAsync(new XHDRoleData { authtype = 5, empList = new List<string>() });
             auth.Setup(a => a.GetAuth(It.IsAny<string>(), It.IsAny<string>()))
                 .Returns((string _, string btn) => Task.FromResult(btn == "crm_contact|import" ? grantImport : true));
 

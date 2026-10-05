@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -210,7 +210,7 @@ namespace XHD.Core.Tests
         {
             var authMock = new Mock<IDBAuthService>();
             authMock.Setup(a => a.GetDataAuth(It.IsAny<string>()))
-                .ReturnsAsync(new XHDRoleData { authtype = 4, empList = new List<string>() });
+                .ReturnsAsync(new XHDRoleData { authtype = 5, empList = new List<string>() });
             authMock.Setup(a => a.GetAuth(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(true);
 

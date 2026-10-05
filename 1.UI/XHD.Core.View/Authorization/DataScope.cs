@@ -20,25 +20,29 @@ namespace XHD.Core.View.Authorization
     /// <item>员工 id 列表为 null 时有的判空、有的直接 <c>Contains</c> 抛异常</item>
     /// </list>
     ///
-    /// authtype 语义（<c>IDBAuthService.GetAuthType</c> 注释定义）：
+    /// authtype 语义（对齐 A 版 <c>Controller/GetDataAuth.cs</c> + <c>Sys_role_add.aspx</c> 下拉）：
     /// <list type="table">
     /// <item>0 = 无权限（empList 为空 ⇒ 查询必然为空集）</item>
     /// <item>1 = 仅本人</item>
     /// <item>2 = 本部门</item>
     /// <item>3 = 本部门及下级</item>
-    /// <item>4 = 全公司（**不追加过滤**）</item>
+    /// <item>4 = 指定部门（跨部；empList = <c>Sys_data_authority</c> 勾选部门下的员工）</item>
+    /// <item>5 = 全部（**不追加过滤**；admin 与特殊权限走此分支）</item>
     /// </list>
     ///
     /// <b>注意 admin 语义</b>：<see cref="XHDRoleData"/> 由
-    /// <c>DBAuthService.GetDataAuth</c> 生成，admin 返回 <c>authtype=4 + 空 empList</c>。
-    /// 因此本 helper 用 <c>authtype >= 4</c> 判定“不过滤”，**不能**用
+    /// <c>DBAuthService.GetDataAuth</c> 生成，admin 返回 <c>authtype=5 + 空 empList</c>。
+    /// 因此本 helper 用 <c>authtype >= ScopeAll</c> 判定“不过滤”，**不能**用
     /// <c>empList.Count == 0 ⇒ 不过滤</c>（那会把 authtype=0 的无权限用户当成全权限，
     /// 造成越权）。这是既有代码里最容易埋雷的一点，特此在注释中固化。
     /// </remarks>
     public static class DataScope
     {
-        /// <summary>全公司数据权限级别（不追加 empList 过滤）。</summary>
-        public const int ScopeAll = 4;
+        /// <summary>「全部」数据权限级别（不追加 empList 过滤）。对齐 A 版枚举 5。</summary>
+        public const int ScopeAll = 5;
+
+        /// <summary>「指定部门」数据权限级别。对齐 A 版枚举 4。</summary>
+        public const int ScopeSpecifiedDept = 4;
 
         /// <summary>数据权限解析结果。</summary>
         public sealed class Resolution
@@ -66,8 +70,9 @@ namespace XHD.Core.View.Authorization
         /// <param name="roleData">可为 null（等价于 authtype=0，强制空集过滤）。</param>
         /// <returns>
         /// <list type="bullet">
-        /// <item><c>authtype >= 4</c> → <c>NeedsFilter=false</c>（全公司，不追加条件）</item>
-        /// <item>其他 → <c>NeedsFilter=true</c>，<c>EmployeeIds</c> 为 empList
+        /// <item><c>authtype &gt;= ScopeAll(5)</c> → <c>NeedsFilter=false</c>（全部，不追加条件）</item>
+        /// <item>其他（含 <c>authtype=4</c> 指定部门）→ <c>NeedsFilter=true</c>，
+        /// <c>EmployeeIds</c> 为 empList
         /// （null 安全地归一为空列表 ⇒ 查询结果为空集，而非 NRE）</item>
         /// </list>
         /// </returns>
@@ -82,8 +87,8 @@ namespace XHD.Core.View.Authorization
 
             if (authType >= ScopeAll)
             {
-                // 全公司：不追加 empList 过滤。
-                // admin 走的就是这一支（authtype=4 + empList 为空），
+                // 全部：不追加 empList 过滤。
+                // admin 走的就是这一支（authtype=5 + empList 为空），
                 // 但“空 empList”在此**不代表**全权限 —— 判定只依赖 authtype。
                 return new Resolution(false, null, authType);
             }

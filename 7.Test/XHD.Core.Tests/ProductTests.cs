@@ -1,4 +1,4 @@
-using FreeSql;
+﻿using FreeSql;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -142,7 +142,7 @@ namespace XHD.Core.Tests
         {
             var auth = new Mock<IDBAuthService>();
             auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
-                .ReturnsAsync(new XHDRoleData { authtype = 4, empList = new List<string>() });
+                .ReturnsAsync(new XHDRoleData { authtype = 5, empList = new List<string>() });
             auth.Setup(a => a.GetAuth(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(true);
             return auth;
@@ -442,7 +442,7 @@ namespace XHD.Core.Tests
         {
             var auth = new Mock<IDBAuthService>();
             auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
-                .ReturnsAsync(new XHDRoleData { authtype = 4, empList = new List<string>() });
+                .ReturnsAsync(new XHDRoleData { authtype = 5, empList = new List<string>() });
             auth.Setup(a => a.GetAuth(It.IsAny<string>(), It.IsAny<string>()))
                 .ReturnsAsync(true);
             return auth;

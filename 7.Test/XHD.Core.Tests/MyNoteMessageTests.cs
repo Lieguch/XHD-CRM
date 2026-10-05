@@ -104,7 +104,7 @@ namespace XHD.Core.Tests
             // 不 mock 的话 loose mock 返回 null，authtype 访问会 NullReferenceException。
             auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
                 .ReturnsAsync(new XHD.Core.Common.XHDRoleData
-                { authtype = 4, empList = new List<string>() });
+                { authtype = 5, empList = new List<string>() });
             return auth;
         }
 

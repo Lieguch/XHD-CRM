@@ -1,4 +1,4 @@
-using FreeSql;
+﻿using FreeSql;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Newtonsoft.Json.Linq;
@@ -124,7 +124,7 @@ namespace XHD.Core.Tests
 
         /// <summary>
         /// 创建桥接到真实 Finance_*Repository 的 Report_FinanceController。
-        /// roleData 为 null 时默认放行全量（authtype=4 + 空 empList）。
+        /// roleData 为 null 时默认放行全量（authtype=5 + 空 empList）。
         /// </summary>
         private Report_FinanceController CreateController(
             XHDRoleData? roleData = null,
@@ -149,7 +149,7 @@ namespace XHD.Core.Tests
 
             var authMock = new Mock<IDBAuthService>();
             authMock.Setup(a => a.GetDataAuth(It.IsAny<string>()))
-                .ReturnsAsync(roleData ?? new XHDRoleData { authtype = 4, empList = new List<string>() });
+                .ReturnsAsync(roleData ?? new XHDRoleData { authtype = 5, empList = new List<string>() });
 
             return TestControllerHelper.CreateWithHttpContext<Report_FinanceController>(
                 queryString, userId, "Test User",
@@ -178,7 +178,7 @@ namespace XHD.Core.Tests
             await InsertReceiveAsync(NewReceive("R3", "E1", new DateTime(year, 6, 15)));
             await InsertReceiveAsync(NewReceive("R4", "E1", new DateTime(year - 1, 12, 31)));
 
-            // Act（authtype=4 放行全量）
+            // Act（authtype=5 放行全量）
             var ctrl = CreateController();
             var arr = JArray.Parse(await ctrl.ReportYear());
 
@@ -202,7 +202,7 @@ namespace XHD.Core.Tests
         [Fact]
         public async Task Receive_ReportYear_AuthType0_EmptyEmpList_ReturnsNoPermission()
         {
-            // authtype!=4 且 empList 为空 → 闸门直接返回"无权限"，不查库
+            // authtype!=5 且 empList 为空 → 闸门直接返回"无权限"，不查库
             await InsertReceiveAsync(NewReceive("R1", "E1", new DateTime(DateTime.Now.Year, 3, 10)));
 
             var ctrl = CreateController(roleData: new XHDRoleData { authtype = 0, empList = new List<string>() });

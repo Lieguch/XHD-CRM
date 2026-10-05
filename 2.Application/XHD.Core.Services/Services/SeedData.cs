@@ -785,7 +785,7 @@ namespace XHD.Core.Services
         public static IReadOnlyList<Sys_role> Roles()
         {
                         var list = new List<Sys_role>();
-            list.Add(new Sys_role { id = "SystemAdminRole", RoleName = "系统管理员", RoleDscript = "拥有全部权限", RoleSort = 999, DataAuth = 4, PublicAuth = 1 });
+            list.Add(new Sys_role { id = "SystemAdminRole", RoleName = "系统管理员", RoleDscript = "拥有全部权限", RoleSort = 999, DataAuth = 5, PublicAuth = 1 });
             return list;
         }
         /// <summary>

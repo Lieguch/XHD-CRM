@@ -16,14 +16,13 @@ namespace XHD.Core.View.Controllers
     /// <summary>
     /// Sprint 10.26b：数据权限配置。
     ///
-    /// 【模型差异说明 —— 必读】
-    /// A 版数据权限 = Sys_data_authority 表（role_id + dep_id），可给角色勾选多个部门。
-    /// B 版数据权限 = Sys_role.DataAuth 字段（0=无 / 1=本人 / 2=本部 / 3=本部及下级 / 4=全部），
-    /// 由 DBAuthRepository.GetDataAuth 按整数层级展开为可见员工 ID 列表。
+    /// 【语义 —— 对齐 A 版枚举】
+    /// Sys_role.DataAuth：0=无 / 1=本人 / 2=本部 / 3=本部及下级 /
+    /// 4=指定部门（跨部，由 Sys_data_authority 表记录勾选部门）/
+    /// 5=全部。由 DBAuthRepository.GetDataAuth 按层级展开为可见员工 ID 列表。
     ///
-    /// 本页 **不引入** Sys_data_authority 表，**不修改** DBAuthRepository/DBAuthService，
-    /// 只在 B 版现有字段上提供一个可视化配置入口：管理员在表格中直接切换每个角色的 DataAuth 层级。
-    /// 与 A 版 Sys_data_authorized.aspx（组织架构树勾选）语义不同，不是 1:1 复刻。
+    /// 本页切换角色的 DataAuth 层级；选 4 时通过 SysDataAuthority 弹窗勾选部门
+    /// （对应 A 版 Sys_data_authorized.aspx 的组织架构树勾选）。
     /// </summary>
     [Authorize]
     public class DataAuthConfigController : Controller
@@ -54,7 +53,7 @@ namespace XHD.Core.View.Controllers
 
         /// <summary>
         /// 拉取所有角色的 DataAuth 层级，供前端表格渲染。
-        /// 说明映射：0 无 / 1 本人 / 2 本部 / 3 本部及下级 / 4 全部
+        /// 说明映射：0 无 / 1 本人 / 2 本部 / 3 本部及下级 / 4 指定部门 / 5 全部
         /// </summary>
         [HttpGet("Grid")]
         [ButtonAuth("sys_role", "edit")]
@@ -80,7 +79,7 @@ namespace XHD.Core.View.Controllers
         }
 
         /// <summary>
-        /// 保存单个角色的 DataAuth 层级（0-4）。
+        /// 保存单个角色的 DataAuth 层级（0-5）。
         /// </summary>
         [HttpPost("Save")]
         [ButtonAuth("sys_role", "edit", DenyMessage = "无权限！")]
@@ -91,9 +90,9 @@ namespace XHD.Core.View.Controllers
                 return XHDResult.Error("参数错误：role_id 不能为空").ToString();
             }
 
-            if (!DataAuth.HasValue || DataAuth.Value < 0 || DataAuth.Value > 4)
+            if (!DataAuth.HasValue || DataAuth.Value < 0 || DataAuth.Value > 5)
             {
-                return XHDResult.Error("参数错误：DataAuth 必须是 0-4 之间的整数").ToString();
+                return XHDResult.Error("参数错误：DataAuth 必须是 0-5 之间的整数（4=指定部门，5=全部）").ToString();
             }
 
             var userId = GetUserId();

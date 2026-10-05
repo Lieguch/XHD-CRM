@@ -1,4 +1,4 @@
-using FreeSql;
+﻿using FreeSql;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Moq;
@@ -526,7 +526,7 @@ namespace XHD.Core.Tests
             return auth;
         }
 
-        private SysButtonController CreateController(int authtype = 4, string userId = "TEST_USER")
+        private SysButtonController CreateController(int authtype = 5, string userId = "TEST_USER")
         {
             return TestControllerHelper.CreateWithHttpContext<SysButtonController>(
                 "", userId, "Test User",
@@ -542,7 +542,7 @@ namespace XHD.Core.Tests
             await _fsql.Insert(new Sys_Button { id = "B1", Btn_name = "新增", Btn_type = "add", Menu_id = "M1" }).ExecuteAffrowsAsync();
             await _fsql.Insert(new Sys_Button { id = "B2", Btn_name = "删除", Btn_type = "del", Menu_id = "M1" }).ExecuteAffrowsAsync();
 
-            var ctrl = CreateController(authtype: 4);
+            var ctrl = CreateController(authtype: 5);
 
             var json = await ctrl.Grid();
             var data = JsonConvert.DeserializeObject<XHDData<Sys_Button>>(JObject.Parse(json).ToString());

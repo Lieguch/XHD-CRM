@@ -211,13 +211,13 @@ namespace XHD.Core.Tests
         }
 
         /// <summary>
-        /// 全公司权限（authtype=4）+ GetAuth 通过
+        /// 全公司权限（authtype=5）+ GetAuth 通过
         /// </summary>
         private Mock<IDBAuthService> CreateFullAccessAuth(bool grantDelButton = true)
         {
             var auth = new Mock<IDBAuthService>();
             auth.Setup(a => a.GetDataAuth(It.IsAny<string>()))
-                .ReturnsAsync(new XHDRoleData { authtype = 4, empList = new List<string>() });
+                .ReturnsAsync(new XHDRoleData { authtype = 5, empList = new List<string>() });
             auth.Setup(a => a.GetAuth(It.IsAny<string>(), It.Is<string>(x => x == "CRM_Customer|del")))
                 .ReturnsAsync(grantDelButton);
             return auth;
