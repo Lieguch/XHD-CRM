@@ -192,5 +192,58 @@ namespace XHD.Core.Tests
             Assert.Equal(1, data.count);
             Assert.Equal("E2_Zhang", data.data[0].id);
         }
+
+        // ============ R10-C #80：did 部门过滤（对应 A 版 Getemp_Auth.aspx 的 ?did= 维度）============
+
+        [Fact]
+        public async Task Grid_Admin_WithDid_ReturnsOnlyThatDepartment()
+        {
+            await InsertDeptAsync("D1");
+            await InsertDeptAsync("D2");
+            await InsertEmpAsync("admin", "D1");
+            await InsertEmpAsync("E1", "D1");
+            await InsertEmpAsync("E2", "D1");
+            await InsertEmpAsync("E3", "D2");
+
+            var ctrl = TestControllerHelper.CreateWithHttpContext<HrEmployeeController>(
+                "did=D1", "admin", "Test User",
+                new Mock<ILogger<HrEmployeeController>>().Object,
+                _empSvc,
+                new Mock<ICRM_CustomerService>().Object,
+                new Mock<ICRM_followService>().Object,
+                new Mock<ISale_orderService>().Object,
+                new Mock<ISale_contractService>().Object,
+                new Mock<IFinance_ReceiveService>().Object,
+                new Mock<IFinance_InvoiceService>().Object,
+                new Mock<ISys_logService>().Object,
+                _authSvc);
+
+            var data = await CallGrid(ctrl);
+
+            // admin 本可见全部（除 admin），did=D1 进一步收口到 D1 的 2 名员工
+            Assert.Equal(2, data.count);
+            var ids = data.data.Select(e => e.id).ToHashSet();
+            Assert.Contains("E1", ids);
+            Assert.Contains("E2", ids);
+            Assert.DoesNotContain("E3", ids);
+        }
+
+        [Fact]
+        public async Task Grid_WithoutDid_KeepsFullScope()
+        {
+            await InsertDeptAsync("D1");
+            await InsertDeptAsync("D2");
+            await InsertEmpAsync("admin", "D1");
+            await InsertEmpAsync("E1", "D1");
+            await InsertEmpAsync("E2", "D2");
+
+            // 不传 did：行为不变（admin 全量，除 admin 自身）
+            var data = await CallGrid(CreateController("admin"));
+
+            Assert.Equal(2, data.count);
+            var ids = data.data.Select(e => e.id).ToHashSet();
+            Assert.Contains("E1", ids);
+            Assert.Contains("E2", ids);
+        }
     }
 }

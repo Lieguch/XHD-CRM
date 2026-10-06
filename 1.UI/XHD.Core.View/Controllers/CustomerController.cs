@@ -621,6 +621,118 @@ namespace XHD.Core.View.Controllers
         }
 
         /// <summary>
+        /// 批量标记客户跟进状态（[HttpPost] Ajax）。
+        /// 对应 A 侧 Server.CRM_Customer.UpdateBFmark（「标记已跟进」按钮）：
+        /// A 侧入参为逗号分隔的 idlist 字符串 + bjmark，B 侧改用 JSON 数组 ids + mark，避免手工拆分字符串。
+        /// 语义：ismark → 1（已跟进）/ 0（取消标记）；不改动 state / emp_id。
+        /// 数据权限：仅允许操作本人数据权限范围内的客户（与 AbanDon 同一预筛策略）。
+        /// 返回：JObject { code: 0|1, msg: string, data: count|null }
+        /// </summary>
+        /// <param name="payload">请求体 JSON：{ ids: string[], mark: int }</param>
+        /// <returns>JSON 字符串</returns>
+        [HttpPost]
+        [ButtonAuth("CRM_Customer", "edit", DenyMessage = "无操作权限")]
+        public async Task<string> UpdateMark([FromBody] JObject payload)
+        {
+            var resp = new JObject();
+            if (payload == null)
+            {
+                resp["code"] = 1; resp["msg"] = "标记失败或参数为空"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            var idsToken = payload["ids"] as JArray;
+            if (idsToken == null || idsToken.Count == 0)
+            {
+                resp["code"] = 1; resp["msg"] = "标记失败或参数为空"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            int mark;
+            if (payload["mark"] == null || payload["mark"].Type == JTokenType.Null ||
+                !int.TryParse(payload["mark"].ToString(), out mark) ||
+                (mark != 0 && mark != 1))
+            {
+                resp["code"] = 1; resp["msg"] = "标记值非法"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            var empId = GetUserId();
+            if (string.IsNullOrWhiteSpace(empId))
+            {
+                resp["code"] = 1; resp["msg"] = "登录状态已过期，请重新登录"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            var list = new List<string>(idsToken.Count);
+            foreach (var token in idsToken)
+            {
+                var s = token?.ToString();
+                if (!string.IsNullOrWhiteSpace(s))
+                {
+                    list.Add(s);
+                }
+            }
+
+            if (list.Count == 0)
+            {
+                resp["code"] = 1; resp["msg"] = "标记失败或参数为空"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            // 去重：同 Claimlist/AbanDon，避免重复 id 让 ownData.data.Count < list.Count 误拒正常请求。
+            list = list.Distinct().ToList();
+
+            // 数据权限校验：只能标记本人数据权限范围内的客户（全部权限 authtype==ScopeAll 不受限）。
+            var roledata = await _dBAuthService.GetDataAuth(empId);
+            if (roledata.authtype == 0)
+            {
+                resp["code"] = 1; resp["msg"] = "无操作权限"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            Expression<Func<CRM_Customer, bool>> ownExp = c => list.Contains(c.id);
+            if (roledata.authtype != DataScope.ScopeAll)
+            {
+                ownExp = ownExp.And(c => roledata.empList.Contains(c.emp_id));
+            }
+
+            var ownData = await _service.GridAsync(ownExp);
+            if (ownData.data.Count < list.Count)
+            {
+                resp["code"] = 1; resp["msg"] = "包含无权限操作的客户"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            var ok = await _service.UpdateMark(list, mark);
+            if (!ok)
+            {
+                resp["code"] = 1; resp["msg"] = "标记失败或参数为空"; resp["data"] = null;
+                return resp.ToString();
+            }
+
+            // 审计日志：批量标记客户跟进状态
+            await _logService.UpdateLog(new Sys_log
+            {
+                id = UUIDNext.Uuid.NewSequential().ToString(),
+                EventType = "[客户]标记",
+                EventID = string.Join(",", list),
+                cus_id = string.Join(",", list),
+                EventTitle = $"批量标记 {list.Count} 个客户为{(mark == 1 ? "已跟进" : "未跟进")}",
+                UserID = GetUserId(),
+                UserName = User.FindFirst(ClaimTypes.Name)?.Value,
+                IPStreet = HttpContext.Connection.RemoteIpAddress?.ToString(),
+                EventDate = DateTime.Now,
+                Log_Content = $"标记成功，客户ID列表：{string.Join(",", list)}，ismark={mark}"
+            });
+
+            resp["code"] = 0;
+            resp["msg"] = mark == 1 ? "数据成功标记!" : "已取消标记";
+            resp["data"] = list.Count;
+            return resp.ToString();
+        }
+
+        /// <summary>
         /// 公共客户池 Grid（state=1）
         /// 语义：所有已放弃或从未认领的客户；员工可在本列表点「认领」按钮把客户划归自己
         /// 数据权限已过滤：经 BuildCustomerQueryExpression 按 authtype（0/1/2/3/4/5）过滤，
@@ -1328,7 +1440,16 @@ namespace XHD.Core.View.Controllers
             }
             if (!string.IsNullOrWhiteSpace(Request.Query["keyword"]))
             {
-                exp = exp.And(c => c.cus_name.Contains(Request.Query["keyword"]));
+                // 对应 A 侧 Server.CRM_Customer.seachgrid 的 keyword 语义：
+                // A 侧 = address OR DesCripe OR Remarks 三字段 OR 模糊匹配（cus_name 由独立 company 参数查）；
+                // B 侧合并 keyword 参数同时覆盖 cus_name（B 侧搜索框只有 keyword，无 company），
+                // 补齐 A 侧三字段后即与 A 侧搜索能力对齐。
+                var kw = Request.Query["keyword"].ToString();
+                exp = exp.And(c =>
+                    c.cus_name.Contains(kw) ||
+                    c.cus_add.Contains(kw) ||
+                    c.DesCripe.Contains(kw) ||
+                    c.Remarks.Contains(kw));
             }
             if (!string.IsNullOrWhiteSpace(Request.Query["id"]))
             {

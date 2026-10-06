@@ -131,6 +131,13 @@ namespace XHD.Core.Models {
         public int? state { get; set; }
 
         /// <summary>
+        /// 跟进标记：1=已跟进，其它值（null/0）=未跟进。
+        /// 对应 A 侧 CRM_Customer.ismark：由「标记已跟进」按钮批量置 1（A 侧 Server.CRM_Customer.UpdateBFmark）。
+        /// </summary>
+        [JsonProperty]
+        public int? ismark { get; set; }
+
+        /// <summary>
 		/// 最后跟进时间
 		/// </summary>
 		[JsonProperty]

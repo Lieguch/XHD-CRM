@@ -130,6 +130,15 @@ namespace XHD.Core.View.Controllers
                 exp = exp.And(a => a.name.Contains(Request.Query["keyword"]));
             }
 
+            // 部门过滤：对应 A 版 Getemp_Auth.aspx 的 ?did=<node.id> 维度
+            // （A 版 View/HR/Getemp_Auth.aspx:84 右网格按左树选中部门过滤）。
+            // B 版员工选择器改用 tableSelect 弹窗，本参数让弹窗可按部门收窄，
+            // 不传时行为不变（全量 + 数据权限收口）。
+            if (!string.IsNullOrWhiteSpace(Request.Query["did"]))
+            {
+                exp = exp.And(a => a.dep_id == Request.Query["did"]);
+            }
+
             
 
             var result = await _service.GridAsync(exp, model.Page, model.Limit, "sort");
@@ -149,6 +158,18 @@ namespace XHD.Core.View.Controllers
 
                 if (authbtn)
                 {
+                    // 登录账号（uid）查重，对齐 A 版 Server/hr_employee.cs:258 新增分支的
+                    // ExistUid 校验（:159）。B 版收紧为 uid 单字段：登录链路按 uid 查员工，
+                    // A 版 uid+name 组合条件会漏掉「同 uid 不同 name」的重复
+                    if (!string.IsNullOrWhiteSpace(model.uid))
+                    {
+                        Expression<Func<hr_employee, bool>> expuid = a => a.uid == model.uid;
+                        if (await _service.ExistsAsync(expuid) > 0)
+                        {
+                            return XHDResult.Error("登录账号已存在").ToString();
+                        }
+                    }
+
                     result = await _service.AddAsync(model);
                 }
                 else
@@ -170,6 +191,18 @@ namespace XHD.Core.View.Controllers
                     if (checknulldata.count == 0)
                     {
                         return XHDResult.Error("找不到数据！").ToString();
+                    }
+
+                    // 登录账号（uid）查重：编辑允许改 uid（hr_employeeRepository.UpdateAsync
+                    // 的 IgnoreColumns 不含 uid），排除自身后仍被占用则拦截；
+                    // uid 等于自身不报错（不误报）
+                    if (!string.IsNullOrWhiteSpace(model.uid))
+                    {
+                        Expression<Func<hr_employee, bool>> expuid = a => a.uid == model.uid && a.id != model.id;
+                        if (await _service.ExistsAsync(expuid) > 0)
+                        {
+                            return XHDResult.Error("登录账号已存在").ToString();
+                        }
                     }
 
                     result = await _service.UpdateAsync(model);

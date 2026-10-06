@@ -108,6 +108,30 @@ namespace XHD.Core.Repository
         }
 
         /// <summary>
+        /// 批量标记客户跟进状态（底层更新）：将指定客户列表的 ismark 更新为目标值。
+        /// 语义：对应 A 侧 DAL.CRM_Customer.UpdateBFmark(strWhere, ismark)，
+        /// 但入参由「拼接 id in (...) 字符串」改为「List&lt;string&gt; ids」，由 FreeSql 参数化展开为 IN (@p0,@p1,...)，杜绝 SQL 注入。
+        /// 幂等安全：重复标记同一批客户不会产生副作用（第二次执行影响行数为 0，调用方按返回值判断即可）。
+        /// </summary>
+        /// <param name="ids">客户 ID 列表</param>
+        /// <param name="mark">目标 ismark 值（1=已跟进，0=取消标记）</param>
+        /// <returns>是否有记录被更新</returns>
+        public async Task<bool> UpdateMarkAsync(List<string> ids, int mark)
+        {
+            if (ids == null || ids.Count == 0)
+            {
+                return false;
+            }
+
+            int rows = await _fsql.Update<CRM_Customer>()
+                .Set(a => a.ismark == mark)
+                .Where(a => ids.Contains(a.id))
+                .ExecuteAffrowsAsync();
+
+            return rows > 0;
+        }
+
+        /// <summary>
         /// 分页查询
         /// </summary>
         /// <param name="expWhere"></param>

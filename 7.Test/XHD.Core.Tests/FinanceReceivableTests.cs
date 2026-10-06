@@ -381,6 +381,33 @@ namespace XHD.Core.Tests
             Assert.Equal(0, data.count);
         }
 
+        /// <summary>
+        /// R10-C #4：客户详情「应收」Tab 的 customer_id 过滤。
+        /// 对应 A 侧 View/CRM/Customer/Customer_view.aspx f_receivable() 的
+        /// Finance_Receivable.grid.xhd?customerid=<id> 参数（经订单关联客户）。
+        /// </summary>
+        [Fact]
+        public async Task Controller_Grid_WithCustomerIdFilter_ReturnsOnlyThatCustomers()
+        {
+            await _fsql.Insert(new CRM_Customer { id = "CUST001", cus_name = "客户甲", isDelete = 0, state = 0 }).ExecuteAffrowsAsync();
+            await _fsql.Insert(new CRM_Customer { id = "CUST002", cus_name = "客户乙", isDelete = 0, state = 0 }).ExecuteAffrowsAsync();
+
+            await InsertOrderAsync(NewOrder("O1", 100, customer: "CUST001"));
+            await InsertOrderAsync(NewOrder("O2", 200, customer: "CUST002"));
+            await InsertReceivableAsync(NewReceivable("R1", "O1", 100));
+            await InsertReceivableAsync(NewReceivable("R2", "O2", 200));
+
+            var ctrl = FinanceReceivableControllerFactory.Create(
+                _recvRepo, _receiveRepo, _orderRepo,
+                queryString: "customer_id=CUST001");
+            var json = await ctrl.Grid(new PageView<Finance_Receivable> { Page = 1, Limit = 30 });
+
+            var data = JsonConvert.DeserializeObject<XHDData<Finance_Receivable>>(JObject.Parse(json).ToString());
+            Assert.Equal(1, data.count);
+            Assert.Single(data.data);
+            Assert.Equal("R1", data.data[0].id);
+        }
+
         // =========================================================
         // #11 Finance_ReceiveRepository.UpdateReceiveAsync 三向联动
         // =========================================================

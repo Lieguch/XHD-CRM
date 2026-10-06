@@ -44,6 +44,12 @@ namespace XHD.Core.IRepository
         Task<bool> AbanDonAsync(List<string> ids, int targetState);
 
         /// <summary>
+        /// 批量标记客户跟进状态（底层更新）：将指定客户 ismark 更新为 mark。
+        /// 对应 A 侧 DAL.CRM_Customer.UpdateBFmark，入参改为参数化 List&lt;string&gt;，杜绝 SQL 注入。
+        /// </summary>
+        Task<bool> UpdateMarkAsync(List<string> ids, int mark);
+
+        /// <summary>
         /// 客户转化漏斗：按客户类型（cus_type_id 关联 Sys_Param）统计年度客户数
         /// </summary>
         /// <param name="year">年份过滤，null 表示不限年份</param>

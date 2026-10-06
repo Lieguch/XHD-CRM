@@ -81,6 +81,15 @@ namespace XHD.Core.View.Controllers
                 exp = exp.And(a => a.order_id == Request.Query["order_id"]);
             }
 
+            // 客户ID精确查询（客户详情「应收」Tab）：
+            // 对应 A 侧 View/CRM/Customer/Customer_view.aspx f_receivable() 的
+            // Finance_Receivable.grid.xhd?customerid=<id> 参数。
+            // 经订单关联客户（语义修正版，与 MobileList 的 customer_id 分支一致）。
+            if (!string.IsNullOrWhiteSpace(Request.Query["customer_id"]))
+            {
+                exp = exp.And(a => a.Order.customer.id == Request.Query["customer_id"]);
+            }
+
             // 客户名称模糊查询（通过订单关联）
             if (!string.IsNullOrWhiteSpace(Request.Query["cus_name"]))
             {

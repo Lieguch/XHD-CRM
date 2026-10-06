@@ -251,6 +251,7 @@
                 case "follow": create_follow(); break;
                 case "order": create_order(); break;
                 case "contract": create_contract(); break;
+                case "receivable": create_receivable(); break;
                 case "atta": create_atta(); break;
                 case "log": create_log(); break;
             }
@@ -260,6 +261,7 @@
         active.tabAdd("跟进", "follow");
         active.tabAdd("订单", "order");
         active.tabAdd("合同", "contract");
+        active.tabAdd("应收", "receivable");
         //active.tabAdd("附件", "atta");
         //active.tabAdd("收款", "receive");
         //active.tabAdd("发票", "invoice");
@@ -1097,6 +1099,59 @@
          
         }
 
+
+
+        // 应收 Tab：对应 A 侧 Customer_view.aspx f_receivable()
+        // （#maingrid_receivable，url Finance_Receivable.grid.xhd?customerid=<id>）。
+        // B 侧复用桌面端 Finance_Receivable/Grid（已加 customer_id 分支），
+        // 与订单/合同 Tab 同一 table.render 范式；只读列表（A 侧同为只读）。
+        function create_receivable() {
+            if ($("#table_receivable").length == 0) {
+                $(".layui-show").append("<div id='table_receivable' lay-filter='table_receivable_Filter'></div>");
+            }
+
+            layer.load(2);
+            table.render({
+                elem: '#table_receivable',
+                url: '/Finance_Receivable/Grid?customer_id=' + getparastr("id"),
+                id: 'table_receivable',
+                page: false,
+                defaultToolbar: ['filter'],
+                cols: [[
+                    { type: 'numbers', fixed: 'left', title: "序号" },
+                    { field: 'receivable_no', width: 180, title: '应收单号' },
+                    {
+                        field: 'order_sn', width: 200, title: '订单号', templet: function (t) {
+                            return t.Order ? (t.Order.sn || '') : '';
+                        }
+                    },
+                    {
+                        field: 'receivable_time', width: 120, title: '应收时间', templet: function (item) {
+                            var value = item.receivable_time;
+                            if (isNaN(value) && !isNaN(Date.parse(value))) {
+                                value = value.replace(' 00:00:00', '');
+                            }
+                            return value;
+                        }
+                    },
+                    { field: 'receivable_amount', width: 110, title: '应收金额', align: 'right' },
+                    { field: 'received_amount', width: 110, title: '已收金额', align: 'right' },
+                    { field: 'arrears_amount', width: 110, title: '未收金额', align: 'right' },
+                    { field: 'create_time', width: 180, title: '创建时间' },
+                    {
+                        field: 'Creater', width: 150, title: '创建人', templet: function (t) {
+                            return t.Creater ? (t.Creater.name || '') : '';
+                        }
+                    }
+                ]],
+                limits: [10, 15, 20, 25, 50, 100],
+                limit: 15,
+                page: true,
+                done: function () {
+                    layer.closeAll('loading');
+                }
+            });
+        }
 
 
         f_reload = function (id) {

@@ -105,6 +105,24 @@ namespace XHD.Core.Services
         }
 
         /// <summary>
+        /// 批量标记客户跟进状态：service 层薄封装，委托 Repository 执行。
+        /// 语义：对应 A 侧 BLL.CRM_Customer.UpdateBFmark(id, ismark)。
+        /// 幂等安全：重复标记同一批客户返回 true（已处于目标状态），调用方按受影响条数判断。
+        /// </summary>
+        /// <param name="ids">客户 ID 列表</param>
+        /// <param name="mark">目标 ismark 值（1=已跟进，0=取消标记）</param>
+        /// <returns>是否有记录被更新</returns>
+        public async Task<bool> UpdateMark(List<string> ids, int mark)
+        {
+            if (ids == null || ids.Count == 0)
+            {
+                return false;
+            }
+
+            return await _irepositoryBase.UpdateMarkAsync(ids, mark);
+        }
+
+        /// <summary>
         /// 客户转化漏斗：service 层薄封装，委托 Repository 执行
         /// </summary>
         /// <param name="year">年份过滤，null 表示不限年份</param>

@@ -122,9 +122,10 @@
     </div>
 </div>
 
-<!-- 顶部工具栏：批量放弃 / 批量设回意向 / 导出 -->
+<!-- 顶部工具栏：标记已跟进 / 批量放弃 / 批量设回意向 / 导出 -->
 <script type="text/html" id="toolbarDemo">
     <div class="layui-btn-container">
+        <button class="layui-btn layui-btn-sm" lay-event="mark"><i class="layui-icon layui-icon-ok"></i> 标记已跟进</button>
         <button class="layui-btn layui-btn-sm layui-bg-red" lay-event="aban"><i class="layui-icon layui-icon-close-fill"></i> 批量放弃</button>
         <button class="layui-btn layui-btn-sm layui-bg-cyan" lay-event="backIntention"><i class="layui-icon layui-icon-refresh"></i> 批量降级为意向</button>
         <button class="layui-btn layui-btn-sm layui-bg-blue" lay-event="export"><i class="layui-icon layui-icon-export"></i> 导出</button>
@@ -220,6 +221,13 @@
                         return '<span style="color:#F5222D;">高意向</span>';
                     }
                 },
+                {
+                    field: 'ismark', width: 90, title: '跟进状态', align: 'center', templet: function (t) {
+                        return t.ismark === 1
+                            ? '<span style="color:#52C41A;">已跟进</span>'
+                            : '<span style="color:#8c8c8c;">未跟进</span>';
+                    }
+                },
                 { field: 'lastfollow', width: 180, title: '最后跟进' },
                 { field: 'create_time', width: 180, title: '创建时间' },
                 { templet: '#auth-state', width: 260, align: 'center', fixed: 'right', title: '操作' }
@@ -233,6 +241,7 @@
         });
 
         table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'mark') { doMark(getCheckedIds(), 1, '标记已跟进'); return; }
             if (obj.event === 'aban') { batchAban(); return; }
             if (obj.event === 'backIntention') { batchBackIntention(); return; }
             if (obj.event === 'export') { Export(); return; }
@@ -324,6 +333,36 @@
 
         function batchAban() { doAban(getCheckedIds(), '放弃'); }
         function batchBackIntention() { doSetState(getCheckedIds(), 3, '降级意向'); }
+
+        // 标记已跟进：对应 A 侧 CustomerHighIntention.aspx 的 bfmark()/bjlist(rowid, 1)，
+        // POST Customer/UpdateMark（A 侧为 CRM_Customer.UpdateBFmark.xhd，idlist+bjmark）。
+        function doMark(ids, mark, label) {
+            if (!ids || ids.length === 0) {
+                layer.msg('请选择要' + label + '的客户', { icon: 0 });
+                return;
+            }
+            layer.confirm('确定' + label + '所选 ' + ids.length + ' 个客户？', { icon: 3, title: '提示信息' }, function (index) {
+                $.ajax({
+                    type: 'POST',
+                    url: 'UpdateMark',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ ids: ids, mark: mark }),
+                    dataType: 'json',
+                    success: function (res) {
+                        if (res.code === 0) {
+                            layer.msg(res.msg || label + '成功', { icon: 1 });
+                            f_reload();
+                        } else {
+                            layer.alert(res.msg || '操作失败', { icon: 5 });
+                        }
+                    },
+                    error: function (xhr, status, err) {
+                        layer.alert('操作失败！！！' + xhr.status + '|' + xhr.readyState + '|' + status, { icon: 5 });
+                    }
+                });
+                layer.close(index);
+            });
+        }
 
         function del(id) {
             $.ajax({

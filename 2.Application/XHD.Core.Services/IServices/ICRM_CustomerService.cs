@@ -43,6 +43,14 @@ namespace XHD.Core.IServices
         Task<bool> AbanDon(List<string> ids);
 
         /// <summary>
+        /// 批量标记客户跟进状态（service 层薄封装，委托 Repository 执行）。
+        /// 对应 A 侧 BLL.CRM_Customer.UpdateBFmark。
+        /// </summary>
+        /// <param name="ids">客户 ID 列表</param>
+        /// <param name="mark">目标 ismark 值（1=已跟进，0=取消标记）</param>
+        Task<bool> UpdateMark(List<string> ids, int mark);
+
+        /// <summary>
         /// 客户转化漏斗：按客户类型统计年度客户数
         /// </summary>
         /// <param name="year">年份过滤，null 表示不限年份</param>
