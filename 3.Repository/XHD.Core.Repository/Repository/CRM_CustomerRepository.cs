@@ -428,6 +428,93 @@ namespace XHD.Core.Repository
             return arr;
         }
 
+        /// <summary>
+        /// 客户维度同比环比（Round 11 #56/#57/#58）。
+        /// 对应 A 侧 DAL.CRM_Customer.Compared_type/level/source（:573/:592/:612）：
+        /// SELECT CustomerType AS yy, COUNT(*) AS xx,
+        ///   SUM(CASE WHEN YEAR(create_time)=y1 AND MONTH(create_time)=m1 THEN 1 ELSE 0 END) AS dt1,
+        ///   SUM(CASE WHEN YEAR(create_time)=y2 AND MONTH(create_time)=m2 THEN 1 ELSE 0 END) AS dt2
+        /// FROM CRM_Customer WHERE isDelete=0 GROUP BY CustomerType。
+        /// B 侧等价改写：FreeSql 参数化条件计数（不照抄 A 侧字符串拼接，根除注入面），
+        /// 导航属性分组名对齐 ReportType/ReportLevel/ReportSource 的 params_name 口径。
+        /// </summary>
+        public async Task<JArray> ComparedByDimensionAsync(string dimension, int year1, int month1, int year2, int month2)
+        {
+            // 与 A 侧三个方法唯一差异仅在分组字段，统一收口为一个方法消除三份重复。
+            // 分组表达式沿用本项目既有模式（ReportType/ReportLevel/ReportSource 同款匿名类型），
+            // 避免单值 object 表达式导致 a.Key 为 object、后续 JObject.Add 无法装箱。
+            // FreeSql 聚合内三元条件官方翻译为 sum(case when ... then 1 else 0 end)
+            // （见 freesql.net issues-expression-groupbysum 与 gitcode 实测博客），无需自定义表达式。
+            var data = dimension switch
+            {
+                "level" => await _fsql.Select<CRM_Customer>()
+                    .Where(a => a.isDelete == 0)
+                    .GroupBy(a => new { xmonth = a.cus_level.params_name })
+                    .ToListAsync(a => new
+                    {
+                        name = a.Key.xmonth,
+                        xx = a.Count(),
+                        dt1 = a.Sum(a.Value.create_time != null
+                            && a.Value.create_time.Value.Year == year1
+                            && a.Value.create_time.Value.Month == month1 ? 1 : 0),
+                        dt2 = a.Sum(a.Value.create_time != null
+                            && a.Value.create_time.Value.Year == year2
+                            && a.Value.create_time.Value.Month == month2 ? 1 : 0)
+                    }),
+                "source" => await _fsql.Select<CRM_Customer>()
+                    .Where(a => a.isDelete == 0)
+                    .GroupBy(a => new { xmonth = a.cus_source.params_name })
+                    .ToListAsync(a => new
+                    {
+                        name = a.Key.xmonth,
+                        xx = a.Count(),
+                        dt1 = a.Sum(a.Value.create_time != null
+                            && a.Value.create_time.Value.Year == year1
+                            && a.Value.create_time.Value.Month == month1 ? 1 : 0),
+                        dt2 = a.Sum(a.Value.create_time != null
+                            && a.Value.create_time.Value.Year == year2
+                            && a.Value.create_time.Value.Month == month2 ? 1 : 0)
+                    }),
+                _ => await _fsql.Select<CRM_Customer>()
+                    .Where(a => a.isDelete == 0)
+                    .GroupBy(a => new { xmonth = a.cus_type.params_name })
+                    .ToListAsync(a => new
+                    {
+                        name = a.Key.xmonth,
+                        xx = a.Count(),
+                        dt1 = a.Sum(a.Value.create_time != null
+                            && a.Value.create_time.Value.Year == year1
+                            && a.Value.create_time.Value.Month == month1 ? 1 : 0),
+                        dt2 = a.Sum(a.Value.create_time != null
+                            && a.Value.create_time.Value.Year == year2
+                            && a.Value.create_time.Value.Month == month2 ? 1 : 0)
+                    })
+            };
+
+            JArray arr = new JArray();
+            foreach (var item in data)
+            {
+                JObject obj = new JObject();
+
+                if (string.IsNullOrWhiteSpace(item.name))
+                {
+                    obj.Add("yy", "未分类");
+                }
+                else
+                {
+                    obj.Add("yy", item.name);
+                }
+
+                obj.Add("xx", item.xx);
+                obj.Add("dt1", item.dt1);
+                obj.Add("dt2", item.dt2);
+
+                arr.Add(obj);
+            }
+
+            return arr;
+        }
+
         public async Task<JArray> ReportCity(Expression<Func<CRM_Customer, bool>> expWhere)
         {
             var data = await _fsql.Select<CRM_Customer>()
