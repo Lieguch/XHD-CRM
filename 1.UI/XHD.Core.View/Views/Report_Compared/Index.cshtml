@@ -40,6 +40,25 @@
                     </div>
                 </div>
                 <div class="layui-inline">
+                    <label class="layui-form-label">同比年月1</label>
+                    <div class="layui-input-inline" style="width:90px;">
+                        <input type="text" name="year1" id="year1" autocomplete="off" placeholder="年" class="layui-input">
+                    </div>
+                    <div class="layui-input-inline" style="width:70px;">
+                        <select name="month1" id="month1" lay-filter="month1"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select>
+                    </div>
+                </div>
+                <div class="layui-inline">
+                    <label class="layui-form-label">同比年月2</label>
+                    <div class="layui-input-inline" style="width:90px;">
+                        <input type="text" name="year2" id="year2" autocomplete="off" placeholder="年" class="layui-input">
+                    </div>
+                    <div class="layui-input-inline" style="width:70px;">
+                        <select name="month2" id="month2" lay-filter="month2"><option value="1">1月</option><option value="2">2月</option><option value="3">3月</option><option value="4">4月</option><option value="5">5月</option><option value="6">6月</option><option value="7">7月</option><option value="8">8月</option><option value="9">9月</option><option value="10">10月</option><option value="11">11月</option><option value="12">12月</option></select>
+                    </div>
+                </div>
+
+                <div class="layui-inline">
                     <label class="layui-form-label">员工</label>
                     <div class="layui-input-inline">
                         <input type="text" id="employee" autocomplete="off" class="layui-input">
@@ -83,6 +102,34 @@
             </div>
         </div>
     </div>
+
+    <div class="layui-row layui-col-space15">
+        <div class="layui-col-xs12 layui-col-md4">
+            <div class="layui-card">
+                <div class="layui-card-header">客户类型同比</div>
+                <div class="layui-card-body">
+                    <table id="table-cus-type" class="layui-table layui-table-hide"></table>
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-xs12 layui-col-md4">
+            <div class="layui-card">
+                <div class="layui-card-header">客户级别同比</div>
+                <div class="layui-card-body">
+                    <table id="table-cus-level" class="layui-table layui-table-hide"></table>
+                </div>
+            </div>
+        </div>
+        <div class="layui-col-xs12 layui-col-md4">
+            <div class="layui-card">
+                <div class="layui-card-header">客户来源同比</div>
+                <div class="layui-card-body">
+                    <table id="table-cus-source" class="layui-table layui-table-hide"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script type="text/javascript" src="/js/home/echarts.min.js"></script>
@@ -95,6 +142,8 @@ layui.use(['table', 'treetable', 'form', 'tableSelect', 'laydate'], function () 
     var laydate = layui.laydate;
 
     laydate.render({ elem: '#year', type: 'year' });
+    laydate.render({ elem: '#year1', type: 'year' });
+    laydate.render({ elem: '#year2', type: 'year' });
 
     tableSelect.render({
         elem: '#employee',
@@ -230,6 +279,111 @@ layui.use(['table', 'treetable', 'form', 'tableSelect', 'laydate'], function () 
                         { field: 'name', title: '员工', width: 120 },
                         { field: 'dt1', title: '起始月数', width: 100 },
                         { field: 'dt2', title: '结束月数', width: 100 },
+                        { title: '增幅', width: 100, templet: function (d) { return growthCell(d.dt1, d.dt2); } },
+                        { title: '增幅率', width: 100, templet: function (d) { return rateCell(d.dt1, d.dt2); } }
+                    ]],
+                    data: rows,
+                    page: false,
+                    skin: 'line'
+                });
+            }
+        });
+
+        // 客户类型同比对比
+        $.ajax({
+            url: "/Report_Customer/ComparedType",
+            data: fields,
+            type: "get", dataType: "json",
+            success: function (res) {
+                var rows = [];
+                if (res && res.length > 0) {
+                    for (var i = 0; i < res.length; i++) {
+                        var d = res[i];
+                        rows.push({
+                            name: d.yy || '未分类',
+                            dt1: d.dt1 || 0,
+                            dt2: d.dt2 || 0,
+                            xx: d.xx || 0
+                        });
+                    }
+                }
+                table.render({
+                    elem: '#table-cus-type',
+                    cols: [[
+                        { field: 'name', title: '客户类型', width: 140 },
+                        { field: 'xx', title: '总数', width: 90 },
+                        { field: 'dt1', title: '年月1数', width: 100 },
+                        { field: 'dt2', title: '年月2数', width: 100 },
+                        { title: '增幅', width: 100, templet: function (d) { return growthCell(d.dt1, d.dt2); } },
+                        { title: '增幅率', width: 100, templet: function (d) { return rateCell(d.dt1, d.dt2); } }
+                    ]],
+                    data: rows,
+                    page: false,
+                    skin: 'line'
+                });
+            }
+        });
+
+        // 客户级别同比对比
+        $.ajax({
+            url: "/Report_Customer/ComparedLevel",
+            data: fields,
+            type: "get", dataType: "json",
+            success: function (res) {
+                var rows = [];
+                if (res && res.length > 0) {
+                    for (var i = 0; i < res.length; i++) {
+                        var d = res[i];
+                        rows.push({
+                            name: d.yy || '未分类',
+                            dt1: d.dt1 || 0,
+                            dt2: d.dt2 || 0,
+                            xx: d.xx || 0
+                        });
+                    }
+                }
+                table.render({
+                    elem: '#table-cus-level',
+                    cols: [[
+                        { field: 'name', title: '客户级别', width: 140 },
+                        { field: 'xx', title: '总数', width: 90 },
+                        { field: 'dt1', title: '年月1数', width: 100 },
+                        { field: 'dt2', title: '年月2数', width: 100 },
+                        { title: '增幅', width: 100, templet: function (d) { return growthCell(d.dt1, d.dt2); } },
+                        { title: '增幅率', width: 100, templet: function (d) { return rateCell(d.dt1, d.dt2); } }
+                    ]],
+                    data: rows,
+                    page: false,
+                    skin: 'line'
+                });
+            }
+        });
+
+        // 客户来源同比对比
+        $.ajax({
+            url: "/Report_Customer/ComparedSource",
+            data: fields,
+            type: "get", dataType: "json",
+            success: function (res) {
+                var rows = [];
+                if (res && res.length > 0) {
+                    for (var i = 0; i < res.length; i++) {
+                        var d = res[i];
+                        rows.push({
+                            name: d.yy || '未分类',
+                            dt1: d.dt1 || 0,
+                            dt2: d.dt2 || 0,
+                            xx: d.xx || 0
+                        });
+                    }
+                }
+                table.render({
+                    elem: '#table-cus-source',
+                    cols: [[
+                        { field: 'name', title: '客户来源', width: 140 },
+                        { field: 'xx', title: '总数', width: 90 },
+                        { field: 'dt1', title: '年月1数', width: 100 },
+                        { field: 'dt2', title: '年月2数', width: 100 },
                         { title: '增幅', width: 100, templet: function (d) { return growthCell(d.dt1, d.dt2); } },
                         { title: '增幅率', width: 100, templet: function (d) { return rateCell(d.dt1, d.dt2); } }
                     ]],
