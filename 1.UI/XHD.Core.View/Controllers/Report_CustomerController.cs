@@ -658,6 +658,64 @@ namespace XHD.Core.View.Controllers
         }
 
         /// <summary>
+        /// 客户类型同比环比（Round 11 #56）。对应 A 侧 Server CRM_Customer.Compared_type + View/ReportForm/Compared/customer_type.aspx。
+        /// GET /Report_Customer/ComparedType?year1=&month1=&year2=&month2=
+        /// </summary>
+        [HttpGet("ComparedType")]
+        public async Task<string> ComparedType(int year1, int month1, int year2, int month2)
+        {
+            return await ComparedByDimensionCore("type", year1, month1, year2, month2);
+        }
+
+        /// <summary>
+        /// 客户级别同比环比（Round 11 #57）。对应 A 侧 Compared_level + customer_level.aspx。
+        /// </summary>
+        [HttpGet("ComparedLevel")]
+        public async Task<string> ComparedLevel(int year1, int month1, int year2, int month2)
+        {
+            return await ComparedByDimensionCore("level", year1, month1, year2, month2);
+        }
+
+        /// <summary>
+        /// 客户来源同比环比（Round 11 #58）。对应 A 侧 Compared_source + customer_source.aspx。
+        /// </summary>
+        [HttpGet("ComparedSource")]
+        public async Task<string> ComparedSource(int year1, int month1, int year2, int month2)
+        {
+            return await ComparedByDimensionCore("source", year1, month1, year2, month2);
+        }
+
+        /// <summary>
+        /// 三维度同比环比共用收口：年月参数校验 + GetDataAuth 数据权限闸门。
+        /// A 侧无数据权限（2018 版全量可见），B 侧按迁移基线统一走 GetDataAuth——
+        /// 与本文件 ReportType/ReportLevel/ReportSource 同口径（empList 过滤）。
+        /// 但同比统计在仓储层按 isDelete=0 全量分组，非权限员工的数据不进分组行，
+        /// 故此处仅做闸门判定（无权限直接 403 语义返回），不做行级过滤。
+        /// </summary>
+        private async Task<string> ComparedByDimensionCore(string dimension, int year1, int month1, int year2, int month2)
+        {
+            // 参数校验：年月必须构成合法日期
+            if (year1 < 1900 || year1 > 9999 || year2 < 1900 || year2 > 9999 ||
+                month1 < 1 || month1 > 12 || month2 < 1 || month2 > 12)
+            {
+                return XHDResult.Error("年月参数不合法").ToString();
+            }
+
+            // 数据权限闸门：与本文件占比端点同口径
+            var roledata = await _dBAuthService.GetDataAuth(User.FindFirst(ClaimTypes.Sid).Value);
+            if (roledata.authtype != DataScope.ScopeAll)
+            {
+                if (roledata.empList == null || roledata.empList.Count == 0)
+                {
+                    return XHDResult.Error("无权限").ToString();
+                }
+            }
+
+            var data = await _service.ComparedByDimension(dimension, year1, month1, year2, month2);
+            return data.ToString();
+        }
+
+        /// <summary>
         /// 员工维度双月客户新增对比（Wave 3b #15）：
         /// 输出每员工 startMonth 与 endMonth 的新增数及差值
         /// </summary>
