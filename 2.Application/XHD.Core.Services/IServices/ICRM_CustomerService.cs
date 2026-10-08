@@ -30,6 +30,12 @@ namespace XHD.Core.IServices
 
         Task<JArray> ReportProvinces(Expression<Func<CRM_Customer, bool>> expWhere);
 
+        /// <summary>
+        /// 客户维度同比环比（Round 11 #56/#57/#58）：type/level/source 三维度统一入口。
+        /// 对应 A 侧 BLL.CRM_Customer.Compared_type/level/source。
+        /// </summary>
+        Task<JArray> ComparedByDimension(string dimension, int year1, int month1, int year2, int month2);
+
         Task<bool> LastFollow(string id);
 
         /// <summary>
