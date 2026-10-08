@@ -62,6 +62,15 @@ namespace XHD.Core.Services
             return await _irepositoryBase.ReportProvinces(expWhere);
         }
 
+        /// <summary>
+        /// 客户维度同比环比（Round 11 #56/#57/#58）：type/level/source 三维度统一入口。
+        /// 对应 A 侧 BLL.CRM_Customer.Compared_type/level/source，薄封装委托仓储执行。
+        /// </summary>
+        public async Task<JArray> ComparedByDimension(string dimension, int year1, int month1, int year2, int month2)
+        { 
+            return await _irepositoryBase.ComparedByDimensionAsync(dimension, year1, month1, year2, month2);
+        }
+
         public async Task<bool> LastFollow(string id)
         { 
             return await _irepositoryBase.LastFollow(id);
