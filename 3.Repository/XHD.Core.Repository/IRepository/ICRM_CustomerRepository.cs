@@ -31,6 +31,20 @@ namespace XHD.Core.IRepository
 
         Task<JArray> ReportProvinces(Expression<Func<CRM_Customer, bool>> expWhere);
 
+        /// <summary>
+        /// 客户维度同比环比（Round 11 #56/#57/#58）：按参数维度分组，
+        /// 统计总数 xx、(year1,month1) 新增 dt1、(year2,month2) 新增 dt2。
+        /// 对应 A 侧 DAL.CRM_Customer.Compared_type/level/source（DAL/CRM_Customer.cs:573/592/612），
+        /// A 侧字符串拼接 SQL 改为 FreeSql 参数化表达式，语义不变。
+        /// </summary>
+        /// <param name="dimension">分组维度：type=客户类型 / level=客户级别 / source=客户来源</param>
+        /// <param name="year1">第一期年份</param>
+        /// <param name="month1">第一期月份（1-12）</param>
+        /// <param name="year2">第二期年份</param>
+        /// <param name="month2">第二期月份（1-12）</param>
+        /// <returns>JArray，每分组一项：{yy, xx, dt1, dt2}</returns>
+        Task<JArray> ComparedByDimensionAsync(string dimension, int year1, int month1, int year2, int month2);
+
         Task<bool> LastFollow(string id);
 
         /// <summary>
