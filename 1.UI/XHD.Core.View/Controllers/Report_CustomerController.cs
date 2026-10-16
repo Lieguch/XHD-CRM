@@ -686,6 +686,18 @@ namespace XHD.Core.View.Controllers
         }
 
         /// <summary>
+        /// 客户新增总览同比环比（G1 修复，对应 A 侧 Server CRM_Customer.Compared + View/ReportForm/Compared/customer_add.aspx）。
+        /// GET /Report_Customer/ComparedTotal?year1=&month1=&year2=&month2=
+        /// A 侧为全表聚合单行（yy=客户总数 + dt1/dt2 两时间窗计数），不分维度；
+        /// B 侧以 "total" 分支复刻，走 ComparedByDimensionCore 同款参数校验与数据权限闸门。
+        /// </summary>
+        [HttpGet("ComparedTotal")]
+        public async Task<string> ComparedTotal(int year1, int month1, int year2, int month2)
+        {
+            return await ComparedByDimensionCore("total", year1, month1, year2, month2);
+        }
+
+        /// <summary>
         /// 三维度同比环比共用收口：年月参数校验 + GetDataAuth 数据权限闸门。
         /// A 侧无数据权限（2018 版全量可见），B 侧按迁移基线统一走 GetDataAuth——
         /// 与本文件 ReportType/ReportLevel/ReportSource 同口径（empList 过滤）。

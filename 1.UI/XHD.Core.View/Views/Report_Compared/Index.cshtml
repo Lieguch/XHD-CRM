@@ -74,9 +74,20 @@
     </div>
 
     <div class="layui-row layui-col-space15">
+        <div class="layui-col-xs12 layui-col-md12">
+            <div class="layui-card">
+                <div class="layui-card-header">客户新增总览（全表）</div>
+                <div class="layui-card-body">
+                    <table id="table-cus-total" class="layui-table layui-table-hide"></table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="layui-row layui-col-space15">
         <div class="layui-col-xs12 layui-col-md6">
             <div class="layui-card">
-                <div class="layui-card-header">客户新增对比</div>
+                <div class="layui-card-header">员工客户新增对比</div>
                 <div class="layui-card-body">
                     <table id="table-cus-add" class="layui-table layui-table-hide"></table>
                 </div>
@@ -187,6 +198,41 @@ layui.use(['table', 'treetable', 'form', 'tableSelect', 'laydate'], function () 
 
     form.on('submit(data-search-btn)', function (data) {
         var fields = data.field;
+
+        // 客户新增总览（全表单行，A 侧 customer_add.aspx 对应 CRM_Customer.Compared）
+        $.ajax({
+            url: "/Report_Customer/ComparedTotal",
+            data: fields,
+            type: "get", dataType: "json",
+            success: function (res) {
+                var rows = [];
+                if (res && res.length > 0) {
+                    for (var i = 0; i < res.length; i++) {
+                        var d = res[i];
+                        rows.push({
+                            name: '客户总数',
+                            dt1: d.dt1 || 0,
+                            dt2: d.dt2 || 0,
+                            xx: d.xx || 0
+                        });
+                    }
+                }
+                table.render({
+                    elem: '#table-cus-total',
+                    cols: [[
+                        { field: 'name', title: '统计项', width: 140 },
+                        { field: 'xx', title: '客户总数', width: 120 },
+                        { field: 'dt1', title: '年月1数', width: 120 },
+                        { field: 'dt2', title: '年月2数', width: 120 },
+                        { title: '增幅', width: 110, templet: function (d) { return growthCell(d.dt1, d.dt2); } },
+                        { title: '增幅率', width: 110, templet: function (d) { return rateCell(d.dt1, d.dt2); } }
+                    ]],
+                    data: rows,
+                    page: false,
+                    skin: 'line'
+                });
+            }
+        });
 
         // 客户新增对比
         $.ajax({

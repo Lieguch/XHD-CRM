@@ -445,6 +445,54 @@ namespace XHD.Core.Repository
             // 避免单值 object 表达式导致 a.Key 为 object、后续 JObject.Add 无法装箱。
             // FreeSql 聚合内三元条件官方翻译为 sum(case when ... then 1 else 0 end)
             // （见 freesql.net issues-expression-groupbysum 与 gitcode 实测博客），无需自定义表达式。
+
+            // ---- total：A 侧 CRM_Customer.Compared（DAL/CRM_Customer.cs:556）为全表聚合 ----
+            // SELECT count(id) AS yy + 两个时间窗条件计数 dt1/dt2，不分维度，无 GROUP BY。
+            // SQL Server 对空表执行标量聚合仍返回单行（yy=0/dt1=0/dt2=0），
+            // 而 FreeSql GroupBy(a => 1) 在空表上返回空集合。
+            // 因此这里独立处理：取数后若为空则补一行零值，保证与 A 侧行为一致。
+            if (dimension == "total")
+            {
+                var totalRows = await _fsql.Select<CRM_Customer>()
+                    .Where(a => a.isDelete == 0)
+                    .GroupBy(a => 1)
+                    .ToListAsync(a => new
+                    {
+                        name = (string)null,
+                        xx = a.Count(),
+                        dt1 = a.Sum(a.Value.create_time != null
+                            && a.Value.create_time.Value.Year == year1
+                            && a.Value.create_time.Value.Month == month1 ? 1 : 0),
+                        dt2 = a.Sum(a.Value.create_time != null
+                            && a.Value.create_time.Value.Year == year2
+                            && a.Value.create_time.Value.Month == month2 ? 1 : 0)
+                    });
+
+                JArray totalArr = new JArray();
+                if (totalRows.Count == 0)
+                {
+                    JObject zero = new JObject();
+                    zero.Add("name", null);
+                    zero.Add("xx", 0);
+                    zero.Add("dt1", 0);
+                    zero.Add("dt2", 0);
+                    totalArr.Add(zero);
+                }
+                else
+                {
+                    foreach (var r in totalRows)
+                    {
+                        JObject o = new JObject();
+                        o.Add("name", r.name == null ? null : r.name);
+                        o.Add("xx", r.xx);
+                        o.Add("dt1", r.dt1);
+                        o.Add("dt2", r.dt2);
+                        totalArr.Add(o);
+                    }
+                }
+                return totalArr;
+            }
+
             var data = dimension switch
             {
                 "level" => await _fsql.Select<CRM_Customer>()

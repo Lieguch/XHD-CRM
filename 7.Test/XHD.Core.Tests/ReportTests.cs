@@ -492,6 +492,58 @@ namespace XHD.Core.Tests
             Assert.Equal(0, (int)arr[0]["diff"]!);
         }
 
+        // ============ G1：CRM_Customer.Compared 全表总览（对应 A 侧 DAL:556） ============
+
+        [Fact]
+        public async Task ComparedByDimension_Total_ReturnsOverallCounts()
+        {
+            // Arrange：3 客户，其中 2 个在 2024-03，1 个在 2024-04
+            await InsertEmployeeAsync(NewEmployee("E1", "张三"));
+            await InsertCustomerAsync(NewCustomer("C1", "E1", new DateTime(2024, 3, 5)));
+            await InsertCustomerAsync(NewCustomer("C2", "E1", new DateTime(2024, 3, 20)));
+            await InsertCustomerAsync(NewCustomer("C3", "E1", new DateTime(2024, 4, 8)));
+
+            // Act
+            var arr = await _custRepo.ComparedByDimensionAsync("total", 2024, 3, 2024, 4);
+
+            // Assert：单行全表聚合
+            Assert.Single(arr);
+            Assert.Equal(3, (int)arr[0]["xx"]!);      // 客户总数（A 侧 yy=count(id)）
+            Assert.Equal(2, (int)arr[0]["dt1"]!);     // 时间窗1（2024-03）
+            Assert.Equal(1, (int)arr[0]["dt2"]!);     // 时间窗2（2024-04）
+        }
+
+        [Fact]
+        public async Task ComparedByDimension_Total_EmptyDB_ReturnsSingleZeroRow()
+        {
+            // Act：空库
+            var arr = await _custRepo.ComparedByDimensionAsync("total", 2024, 3, 2024, 4);
+
+            // Assert：FreeSql GroupBy(1) 在空表上仍返回单组，计数为 0
+            Assert.Single(arr);
+            Assert.Equal(0, (int)arr[0]["xx"]!);
+            Assert.Equal(0, (int)arr[0]["dt1"]!);
+            Assert.Equal(0, (int)arr[0]["dt2"]!);
+        }
+
+        [Fact]
+        public async Task ComparedByDimension_Total_ExcludesDeleted()
+        {
+            // Arrange：1 正常 + 1 已删除
+            await InsertEmployeeAsync(NewEmployee("E1", "张三"));
+            await InsertCustomerAsync(NewCustomer("C1", "E1", new DateTime(2024, 3, 5)));
+            await InsertCustomerAsync(NewCustomer("C2", "E1", new DateTime(2024, 3, 6), isDelete: 1));
+
+            // Act
+            var arr = await _custRepo.ComparedByDimensionAsync("total", 2024, 3, 2024, 4);
+
+            // Assert：isDelete=1 不计入
+            Assert.Single(arr);
+            Assert.Equal(1, (int)arr[0]["xx"]!);
+            Assert.Equal(1, (int)arr[0]["dt1"]!);
+            Assert.Equal(0, (int)arr[0]["dt2"]!);
+        }
+
         // =========================================================
         // Sprint 3 Wave 2 #11：Funnel 扩展 stype_val 参数
         // =========================================================
@@ -696,6 +748,100 @@ namespace XHD.Core.Tests
             httpCtx.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
             ctrl.ControllerContext = new ControllerContext { HttpContext = httpCtx };
             return ctrl;
+        }
+
+        // ============ G1：Controller ComparedTotal（客户新增总览） ============
+
+        /// <summary>
+        /// 创建桥接到真实 CRM_CustomerRepository 的 Report_CustomerController，
+        /// 使 ComparedByDimension 走真实仓储（含 total 分支）。
+        /// roleData 为 null 时默认放行全量（authtype=5）。
+        /// </summary>
+        private static Report_CustomerController CreateComparedController(
+            CRM_CustomerRepository custRepo,
+            XHDRoleData? roleData = null,
+            string userId = "TEST_USER")
+        {
+            var custSvcMock = new Mock<ICRM_CustomerService>();
+            custSvcMock.Setup(s => s.ComparedByDimension(It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>()))
+                .Returns((string dim, int y1, int m1, int y2, int m2)
+                    => custRepo.ComparedByDimensionAsync(dim, y1, m1, y2, m2));
+
+            var logger = new Mock<ILogger<Report_CustomerController>>().Object;
+            var followSvcMock = new Mock<ICRM_followService>();
+            var authMock = new Mock<IDBAuthService>();
+            authMock.Setup(a => a.GetDataAuth(It.IsAny<string>()))
+                .ReturnsAsync(roleData ?? new XHDRoleData { authtype = 5, empList = new List<string>() });
+
+            var ctrl = new Report_CustomerController(logger, custSvcMock.Object, followSvcMock.Object, authMock.Object);
+
+            var httpCtx = new DefaultHttpContext();
+            httpCtx.Connection.RemoteIpAddress = System.Net.IPAddress.Loopback;
+            var claims = new[]
+            {
+                new Claim(ClaimTypes.Sid, userId),
+                new Claim(ClaimTypes.Name, "Test User")
+            };
+            httpCtx.User = new ClaimsPrincipal(new ClaimsIdentity(claims, "Test"));
+            ctrl.ControllerContext = new ControllerContext { HttpContext = httpCtx };
+            return ctrl;
+        }
+
+        [Fact]
+        public async Task Controller_ComparedTotal_WithData_ReturnsSingleOverallRow()
+        {
+            // Arrange：3 客户，2 个在 2024-03，1 个在 2024-04
+            await InsertEmployeeAsync(NewEmployee("E1", "张三"));
+            await InsertCustomerAsync(NewCustomer("C1", "E1", new DateTime(2024, 3, 5)));
+            await InsertCustomerAsync(NewCustomer("C2", "E1", new DateTime(2024, 3, 20)));
+            await InsertCustomerAsync(NewCustomer("C3", "E1", new DateTime(2024, 4, 8)));
+
+            var ctrl = CreateComparedController(_custRepo);
+
+            // Act
+            var json = await ctrl.ComparedTotal(2024, 3, 2024, 4);
+            var arr = JArray.Parse(json);
+
+            // Assert：全表单行聚合
+            Assert.Single(arr);
+            Assert.Equal(3, (int)arr[0]["xx"]!);
+            Assert.Equal(2, (int)arr[0]["dt1"]!);
+            Assert.Equal(1, (int)arr[0]["dt2"]!);
+        }
+
+        [Fact]
+        public async Task Controller_ComparedTotal_NoPermission_ReturnsError()
+        {
+            // Arrange：数据权限为无员工列表（authtype=0），应拒绝
+            await InsertEmployeeAsync(NewEmployee("E1", "张三"));
+            await InsertCustomerAsync(NewCustomer("C1", "E1", new DateTime(2024, 3, 5)));
+
+            var ctrl = CreateComparedController(
+                _custRepo,
+                roleData: new XHDRoleData { authtype = 0, empList = new List<string>() });
+
+            // Act
+            var json = await ctrl.ComparedTotal(2024, 3, 2024, 4);
+            var obj = JObject.Parse(json);
+
+            // Assert：无权限
+            Assert.Equal(-1, (int)obj["code"]!);
+            Assert.Contains("无权限", (string)obj["msg"]!);
+        }
+
+        [Fact]
+        public async Task Controller_ComparedTotal_InvalidMonths_ReturnsError()
+        {
+            // Arrange：month=13 非法
+            var ctrl = CreateComparedController(_custRepo);
+
+            // Act
+            var json = await ctrl.ComparedTotal(2024, 13, 2024, 4);
+            var obj = JObject.Parse(json);
+
+            // Assert
+            Assert.Equal(-1, (int)obj["code"]!);
+            Assert.Contains("年月参数不合法", (string)obj["msg"]!);
         }
     }
 }
