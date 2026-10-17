@@ -110,6 +110,13 @@
                     
                 },
                 {
+                    field: 'C_depname', width: 90, title: '开票部门', templet: function (t) {
+                        if (t.employee && t.employee.department) {
+                            return t.employee.department.dep_name;
+                        }
+                    }
+                },
+                {
                     field: 'C_empid_name', width: 120, title: '开票人', templet: function (t) {
                         if (t.employee) {
                             return t.employee.name;
