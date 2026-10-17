@@ -546,5 +546,41 @@ namespace XHD.Core.Tests
             Assert.Equal(800m, order.receive_money);
             Assert.Equal(1200m, order.arrears_money);
         }
+
+        // =========================================================
+        // 开票部门列：A 版 invoice_list.aspx:51 复刻（employee.department.dep_name）
+        // =========================================================
+
+        [Fact]
+        public async Task Grid_ReturnsDepartmentName()
+        {
+            await _fsql.Insert(new hr_department { id = "D1", dep_name = "财务部" }).ExecuteAffrowsAsync();
+            await _fsql.Insert(new hr_employee { id = "E_A", name = "张三", dep_id = "D1" }).ExecuteAffrowsAsync();
+            await InsertCustomerAsync(NewCustomer("C1", "E_A"));
+            await InsertOrderAsync(NewOrder("O1", "C1", "E_A", 3000m));
+            var invoice = NewInvoice("I1", "O1", "INV-001", 1000m, new DateTime(2024, 6, 1));
+            invoice.emp_id = "E_A";
+            await _fsql.Insert(invoice).ExecuteAffrowsAsync();
+
+            var ctrl = CreateInvoiceController(authMock: CreateAuthMock(4, new List<string> { "E_A" }));
+
+            var json = await ctrl.Grid(TestControllerHelper.BuildPageView<Finance_Invoice>());
+
+            // 观察实际结构，断言拿到的为准
+            var obj = JObject.Parse(json);
+            Assert.Equal(0, (int)obj["code"]!);
+
+            var rows = (JArray)obj["data"]!;
+            Assert.Single(rows);
+
+            // 行内 employee/department 由 Repository GridAsync 的 LeftJoin 回填
+            var empToken = rows[0]["employee"];
+            Assert.NotNull(empToken);
+
+            var deptToken = empToken!["department"];
+            Assert.NotNull(deptToken);
+
+            Assert.Equal("财务部", (string?)deptToken!["dep_name"]);
+        }
     }
 }
